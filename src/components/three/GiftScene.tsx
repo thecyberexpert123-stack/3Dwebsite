@@ -11,6 +11,7 @@ import { SatinBow } from "./parts";
 import { BreathingLight, DustMotes, HeartBurst, Sway } from "./anim";
 import { AdaptiveCanvas, Breeze, StudioLights, StudioShadows } from "./Stage";
 import { useQuality } from "@/lib/quality";
+import { shared as finish } from "./materials";
 
 const damp = THREE.MathUtils.damp;
 
@@ -39,7 +40,7 @@ function GiftHeart({
   const heart = (
     <group ref={ref} position={position} scale={0.0001}>
       <mesh geometry={geo} scale={0.24}>
-        <meshStandardMaterial color={color} roughness={0.62} />
+        <primitive object={finish("yarn", color)} attach="material" />
       </mesh>
     </group>
   );
@@ -89,31 +90,31 @@ function OpenableGift({
     <group position={[0, -0.35, 0]}>
       {/* body */}
       <RoundedBox args={[0.62, 0.42, 0.52]} radius={0.05} smoothness={4} position={[0, 0.21, 0]} {...hover}>
-        <meshStandardMaterial color={PALETTE.blush} roughness={0.55} />
+        <primitive object={finish("clay", PALETTE.blush)} attach="material" />
       </RoundedBox>
       {/* body ribbons */}
       <mesh position={[0, 0.22, 0]} {...hover}>
         <boxGeometry args={[0.07, 0.44, 0.545]} />
-        <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
+        <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
       </mesh>
       <mesh position={[0, 0.22, 0]} {...hover}>
         <boxGeometry args={[0.645, 0.44, 0.07]} />
-        <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
+        <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
       </mesh>
 
       {/* lid — pivots on its back edge */}
       <group ref={lid} position={[0, 0.44, -0.26]}>
         <group position={[0, 0, 0.26]}>
           <RoundedBox args={[0.68, 0.14, 0.58]} radius={0.05} smoothness={4} {...hover}>
-            <meshStandardMaterial color={PALETTE.rose} roughness={0.55} />
+            <primitive object={finish("clay", PALETTE.rose)} attach="material" />
           </RoundedBox>
           <mesh {...hover}>
             <boxGeometry args={[0.075, 0.15, 0.605]} />
-            <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
+            <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
           </mesh>
           <mesh {...hover}>
             <boxGeometry args={[0.705, 0.15, 0.075]} />
-            <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
+            <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
           </mesh>
           {/* bow */}
           <group position={[0, 0.1, 0]} {...hover}>

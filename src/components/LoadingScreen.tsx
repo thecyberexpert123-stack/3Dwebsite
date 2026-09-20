@@ -113,9 +113,10 @@ export function LoadingScreen() {
 
   useEffect(() => {
     if (!opened || override.current === "hold") return;
-    // the lid pops at 0.25s, the burst at 0.4s, the camera pushes in from 0.55s —
-    // the curtain irises out just as the lens reaches the opening.
-    const t = setTimeout(lift, webgl === false ? 700 : 1150);
+    // the lid pops at 0.25s, the burst at 0.4s, the bouquet springs up 0.4–0.95s,
+    // the camera pushes in from 0.55s — the curtain irises out once the bouquet
+    // has been *seen* (≈0.5s of hold), landing on the hero that grows it in full.
+    const t = setTimeout(lift, webgl === false ? 700 : 1500);
     return () => clearTimeout(t);
   }, [opened, lift, webgl]);
 

@@ -12,6 +12,7 @@ import { PALETTE } from "./CrochetFlower";
 import { Hook, SatinBow, YarnBall } from "./parts";
 import { DustMotes } from "./anim";
 import { AdaptiveCanvas, SoftGround, StudioLights, StudioShadows } from "./Stage";
+import { shared as finish } from "./materials";
 
 const damp = THREE.MathUtils.damp;
 
@@ -158,7 +159,7 @@ function GrowingFlower({ p: pr }: { p: P }) {
     <group ref={root}>
       <mesh ref={stem} position={[0, 0, 0]}>
         <cylinderGeometry args={[0.02, 0.028, H, 8]} />
-        <meshStandardMaterial color={PALETTE.sageDeep} roughness={0.7} />
+        <primitive object={finish("yarn", PALETTE.sageDeep)} attach="material" />
       </mesh>
       {[0.42, 0.62].map((f, i) => (
         <group
@@ -170,7 +171,7 @@ function GrowingFlower({ p: pr }: { p: P }) {
           rotation={[0, rnd(i * 9 + 3) * Math.PI * 2, 0]}
         >
           <mesh geometry={leafGeo} rotation={[1.15, 0, 0.15]} scale={[0.55, 0.42, 0.55]} position={[0, 0.01, 0.03]}>
-            <meshStandardMaterial color={PALETTE.sage} roughness={0.7} />
+            <primitive object={finish("yarn", PALETTE.sage)} attach="material" />
           </mesh>
         </group>
       ))}
@@ -186,14 +187,14 @@ function GrowingFlower({ p: pr }: { p: P }) {
               rotation={[0, (i / PETALS) * Math.PI * 2 + j * 0.4, 0]}
             >
               <mesh geometry={petalGeo} rotation={[1.05 + j * 0.12, 0, 0]} position={[0, 0.01, 0.05]} scale={[0.92 + j * 0.16, 0.19, 1]}>
-                <meshStandardMaterial color={PALETTE.blush} roughness={0.7} />
+                <primitive object={finish("yarn", PALETTE.blush)} attach="material" />
               </mesh>
             </group>
           );
         })}
         <mesh ref={center}>
           <sphereGeometry args={[0.09, 12, 12]} />
-          <meshStandardMaterial color={PALETTE.butter} roughness={0.62} />
+          <primitive object={finish("yarn", PALETTE.butter)} attach="material" />
         </mesh>
       </group>
     </group>
@@ -242,7 +243,7 @@ function FeedingYarn({ p: pr }: { p: P }) {
         <YarnBall position={[0, 0, 0]} radius={0.24} color={PALETTE.blush} rings={11} seed={4} />
       </group>
       <mesh ref={thread} geometry={geo} visible={false}>
-        <meshStandardMaterial color={PALETTE.rose} roughness={0.7} />
+        <primitive object={finish("yarn", PALETTE.rose)} attach="material" />
       </mesh>
     </>
   );
@@ -289,15 +290,15 @@ function Tools({ p: pr }: { p: P }) {
         {/* a stubby pencil: body, tip, eraser */}
         <mesh>
           <cylinderGeometry args={[0.03, 0.03, 0.7, 6]} />
-          <meshStandardMaterial color={PALETTE.butter} roughness={0.62} />
+          <primitive object={finish("clay", PALETTE.butter)} attach="material" />
         </mesh>
         <mesh position={[0, -0.4, 0]}>
           <coneGeometry args={[0.03, 0.1, 6]} />
-          <meshStandardMaterial color="#5B4A44" roughness={0.7} />
+          <primitive object={finish("wood", "#5B4A44")} attach="material" />
         </mesh>
         <mesh position={[0, 0.37, 0]}>
           <cylinderGeometry args={[0.031, 0.031, 0.06, 6]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
+          <primitive object={finish("satin", PALETTE.rose)} attach="material" />
         </mesh>
       </group>
       <group ref={hook} visible={false}>
@@ -352,15 +353,15 @@ function PackBox({ p: pr }: { p: P }) {
       </mesh>
       <group ref={lid} visible={false}>
         <RoundedBox args={[1.08, 0.14, 0.78]} radius={0.04} smoothness={3} position={[0, 0.07, 0]}>
-          <meshStandardMaterial color={PALETTE.blush} roughness={0.7} />
+          <primitive object={finish("clay", PALETTE.blush)} attach="material" />
         </RoundedBox>
         <mesh position={[0, 0.075, 0]}>
           <boxGeometry args={[0.08, 0.15, 0.8]} />
-          <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
+          <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
         </mesh>
         <mesh position={[0, 0.075, 0]}>
           <boxGeometry args={[1.1, 0.15, 0.08]} />
-          <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
+          <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
         </mesh>
         <group ref={bow} position={[0, 0.17, 0]} visible={false}>
           <SatinBow position={[0, 0.02, 0]} scale={1.2} />

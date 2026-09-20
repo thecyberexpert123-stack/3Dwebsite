@@ -9,6 +9,7 @@ import { MIX_PALETTE, type DesignConfig } from "@/lib/design";
 import { DustMotes } from "./anim";
 import { AdaptiveCanvas, StudioLights, StudioShadows } from "./Stage";
 import { useQuality } from "@/lib/quality";
+import { create as createMat, syncSheen } from "./materials";
 
 const damp = THREE.MathUtils.damp;
 
@@ -55,11 +56,11 @@ function Pop({
 function useLerpedFlowerMaterials(petalHex: string, centerHex: string) {
   const mats = useMemo(
     () => ({
-      outer: new THREE.MeshStandardMaterial({ color: petalHex, roughness: 0.7 }),
-      inner: new THREE.MeshStandardMaterial({ color: petalHex, roughness: 0.7 }),
-      center: new THREE.MeshStandardMaterial({ color: centerHex, roughness: 0.62 }),
-      stem: new THREE.MeshStandardMaterial({ color: "#7C977A", roughness: 0.7 }),
-      leaf: new THREE.MeshStandardMaterial({ color: "#A9BFA3", roughness: 0.7 }),
+      outer: createMat("yarn", petalHex),
+      inner: createMat("yarn", petalHex),
+      center: createMat("yarn", centerHex),
+      stem: createMat("yarn", "#7C977A"),
+      leaf: createMat("yarn", "#A9BFA3"),
     }),
     // created once per instance mount — targets update via refs below
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,6 +91,9 @@ function useLerpedFlowerMaterials(petalHex: string, centerHex: string) {
     mats.outer.color.lerp(targets.current.outer, k);
     mats.inner.color.lerp(targets.current.inner, k);
     mats.center.color.lerp(targets.current.center, k);
+    syncSheen(mats.outer);
+    syncSheen(mats.inner);
+    syncSheen(mats.center);
   });
 
   return mats;
@@ -270,9 +274,9 @@ function StudioFlower({
    ================================================================ */
 
 function BouquetWrap({ ribbonColor }: { ribbonColor: string }) {
-  const ribbon = useMemo(() => new THREE.MeshStandardMaterial({ color: ribbonColor, roughness: 0.62 }), []);
+  const ribbon = useMemo(() => createMat("satin", ribbonColor), []);
   const cream = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#F6EBDA", roughness: 0.95, side: THREE.DoubleSide }),
+    () => createMat("paper", "#F6EBDA", { side: THREE.DoubleSide }),
     []
   );
   const target = useRef(new THREE.Color(ribbonColor));
@@ -290,6 +294,7 @@ function BouquetWrap({ ribbonColor }: { ribbonColor: string }) {
 
   useFrame((_, dt) => {
     ribbon.color.lerp(target.current, 1 - Math.exp(-5 * dt));
+    syncSheen(ribbon);
   });
 
   return (

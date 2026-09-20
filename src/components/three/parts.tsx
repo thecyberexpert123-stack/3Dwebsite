@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { makeHeartGeometry, makePetalGeometry, makeThreadGeometry, rnd } from "./geometry";
 import { PALETTE } from "./CrochetFlower";
+import { shared as finish } from "./materials";
 
 /* ---------------- yarn ball ---------------- */
 
@@ -53,13 +54,10 @@ export function YarnBall({
 
   return (
     <group ref={ball} position={position}>
-      <mesh>
+      <mesh material={finish("yarn", color)}>
         <sphereGeometry args={[radius * 0.965, 18, 18]} />
-        <meshStandardMaterial color={color} roughness={0.7} />
       </mesh>
-      <mesh geometry={ringGeo}>
-        <meshStandardMaterial color={color} roughness={0.7} />
-      </mesh>
+      <mesh geometry={ringGeo} material={finish("yarn", color)} />
     </group>
   );
 }
@@ -79,18 +77,18 @@ export function Hook({ position, rotation = [0, 0.35, Math.PI / 2 - 0.12], lengt
       {/* tapered shaft */}
       <mesh>
         <cylinderGeometry args={[0.009, 0.016, length, 10]} />
-        <meshStandardMaterial color={PALETTE.wood} roughness={0.7} />
+        <primitive object={finish("wood", PALETTE.wood)} attach="material" />
       </mesh>
       {/* thumb rest */}
       <mesh position={[0, length / 2 - 0.07, 0]} scale={[1, 0.45, 1]}>
         <sphereGeometry args={[0.019, 10, 10]} />
-        <meshStandardMaterial color={PALETTE.wood} roughness={0.7} />
+        <primitive object={finish("wood", PALETTE.wood)} attach="material" />
       </mesh>
       {/* the hook itself: a small open arc at the working end */}
       <group position={[0, -length / 2 + 0.03, 0]} rotation={[Math.PI / 2, 0, 1.1]}>
         <mesh>
           <torusGeometry args={[0.042, 0.011, 8, 14, Math.PI * 1.35]} />
-          <meshStandardMaterial color={PALETTE.wood} roughness={0.7} />
+          <primitive object={finish("wood", PALETTE.wood)} attach="material" />
         </mesh>
       </group>
     </group>
@@ -104,33 +102,33 @@ export function GiftBox({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
       <RoundedBox args={[0.5, 0.34, 0.42]} radius={0.05} smoothness={4} position={[0, 0.17, 0]}>
-        <meshStandardMaterial color="#FFF6EC" roughness={0.7} />
+        <primitive object={finish("clay", "#FFF6EC")} attach="material" />
       </RoundedBox>
       <RoundedBox args={[0.54, 0.12, 0.46]} radius={0.05} smoothness={4} position={[0, 0.38, 0]}>
-        <meshStandardMaterial color={PALETTE.blush} roughness={0.7} />
+        <primitive object={finish("clay", PALETTE.blush)} attach="material" />
       </RoundedBox>
       {/* ribbons wrapping the box */}
       <mesh position={[0, 0.2, 0]}>
         <boxGeometry args={[0.06, 0.52, 0.435]} />
-        <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
+        <primitive object={finish("satin", PALETTE.rose)} attach="material" />
       </mesh>
       <mesh position={[0, 0.2, 0]}>
         <boxGeometry args={[0.515, 0.52, 0.06]} />
-        <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
+        <primitive object={finish("satin", PALETTE.rose)} attach="material" />
       </mesh>
       {/* bow */}
       <group position={[0, 0.46, 0]}>
         <mesh position={[-0.055, 0.01, 0]} rotation={[Math.PI / 2, 0, 0.5]}>
           <torusGeometry args={[0.05, 0.015, 8, 16, Math.PI * 1.4]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
+          <primitive object={finish("satin", PALETTE.rose)} attach="material" />
         </mesh>
         <mesh position={[0.055, 0.01, 0]} rotation={[Math.PI / 2, 0, Math.PI - 0.5]}>
           <torusGeometry args={[0.05, 0.015, 8, 16, Math.PI * 1.4]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
+          <primitive object={finish("satin", PALETTE.rose)} attach="material" />
         </mesh>
         <mesh>
           <sphereGeometry args={[0.024, 8, 8]} />
-          <meshStandardMaterial color={PALETTE.dusty} roughness={0.62} />
+          <primitive object={finish("pearl", PALETTE.white)} attach="material" />
         </mesh>
       </group>
     </group>
@@ -151,7 +149,7 @@ export function FloatingHeart({ position, scale = 0.3, color = PALETTE.dusty }: 
   return (
     <Float speed={1.5} rotationIntensity={0.22} floatIntensity={0.45} floatingRange={[0.02, 0.08]}>
       <mesh geometry={geo} position={position} scale={scale} rotation={[0.1, -0.35, 0.06]}>
-        <meshStandardMaterial color={color} roughness={0.62} />
+        <primitive object={finish("yarn", color)} attach="material" />
       </mesh>
     </Float>
   );
@@ -170,7 +168,7 @@ export function ThreadTube({ points, radius = 0.016, color = PALETTE.rose }: Thr
   const geo = useMemo(() => makeThreadGeometry(points, radius), [points, radius]);
   return (
     <mesh geometry={geo}>
-      <meshStandardMaterial color={color} roughness={0.7} />
+      <primitive object={finish("yarn", color)} attach="material" />
     </mesh>
   );
 }
@@ -196,13 +194,13 @@ export function TinyDaisy({ position, seed = 11, petalColor = PALETTE.white }: T
             position={[0, 0, 0.035]}
             scale={[1, 0.16, 1]}
           >
-            <meshStandardMaterial color={petalColor} roughness={0.7} />
+            <primitive object={finish("yarn", petalColor)} attach="material" />
           </mesh>
         </group>
       ))}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <sphereGeometry args={[0.045, 10, 10]} />
-        <meshStandardMaterial color={PALETTE.butter} roughness={0.62} />
+        <primitive object={finish("yarn", PALETTE.butter)} attach="material" />
       </mesh>
     </group>
   );
@@ -259,29 +257,29 @@ export function SatinBow({
   rotation = [0, 0, 0],
   scale = 1,
   color = PALETTE.strawberry,
-  knotColor = PALETTE.dusty,
+  knotColor = PALETTE.white,
 }: BowProps) {
   return (
     <group position={position} rotation={rotation} scale={scale}>
       <mesh position={[-0.11, 0.02, 0]} rotation={[Math.PI / 2, 0, 0.5]} scale={[1, 0.62, 1]}>
         <torusGeometry args={[0.09, 0.034, 10, 22]} />
-        <meshStandardMaterial color={color} roughness={0.45} />
+        <primitive object={finish("satin", color)} attach="material" />
       </mesh>
       <mesh position={[0.11, 0.02, 0]} rotation={[Math.PI / 2, 0, -0.5]} scale={[1, 0.62, 1]}>
         <torusGeometry args={[0.09, 0.034, 10, 22]} />
-        <meshStandardMaterial color={color} roughness={0.45} />
+        <primitive object={finish("satin", color)} attach="material" />
       </mesh>
       <mesh>
         <sphereGeometry args={[0.045, 12, 12]} />
-        <meshStandardMaterial color={knotColor} roughness={0.45} />
+        <primitive object={finish("pearl", knotColor)} attach="material" />
       </mesh>
       <mesh position={[-0.06, -0.12, 0.02]} rotation={[0.1, 0, 0.5]}>
         <boxGeometry args={[0.05, 0.22, 0.012]} />
-        <meshStandardMaterial color={color} roughness={0.45} />
+        <primitive object={finish("satin", color)} attach="material" />
       </mesh>
       <mesh position={[0.06, -0.12, 0.02]} rotation={[0.1, 0, -0.5]}>
         <boxGeometry args={[0.05, 0.22, 0.012]} />
-        <meshStandardMaterial color={color} roughness={0.45} />
+        <primitive object={finish("satin", color)} attach="material" />
       </mesh>
     </group>
   );
@@ -337,13 +335,13 @@ export function StrawberryCharm({
       {/* body: a squashed teardrop */}
       <mesh scale={[0.42, 0.55, 0.42]} position={[0, 0.5, 0]}>
         <sphereGeometry args={[1, 18, 16]} />
-        <meshStandardMaterial color={PALETTE.strawberry} roughness={0.6} />
+        <primitive object={finish("yarn", PALETTE.strawberry)} attach="material" />
       </mesh>
       <mesh geometry={seedGeo}>
-        <meshStandardMaterial color={PALETTE.butter} roughness={0.6} />
+        <primitive object={finish("yarn", PALETTE.butter)} attach="material" />
       </mesh>
       <mesh geometry={leafGeo}>
-        <meshStandardMaterial color={PALETTE.sageDeep} roughness={0.7} />
+        <primitive object={finish("yarn", PALETTE.sageDeep)} attach="material" />
       </mesh>
       {/* keyring */}
       <mesh position={[0, 1.2, 0]}>
@@ -381,19 +379,19 @@ export function PuffyCloud({
     <group ref={ref} position={position} scale={scale}>
       <mesh position={[0, 0, 0]}>
         <sphereGeometry args={[0.22, 16, 14]} />
-        <meshStandardMaterial color={color} roughness={0.8} />
+        <primitive object={finish("clay", color)} attach="material" />
       </mesh>
       <mesh position={[-0.22, -0.05, 0.02]}>
         <sphereGeometry args={[0.16, 14, 12]} />
-        <meshStandardMaterial color={color} roughness={0.8} />
+        <primitive object={finish("clay", color)} attach="material" />
       </mesh>
       <mesh position={[0.22, -0.04, 0]}>
         <sphereGeometry args={[0.17, 14, 12]} />
-        <meshStandardMaterial color={color} roughness={0.8} />
+        <primitive object={finish("clay", color)} attach="material" />
       </mesh>
       <mesh position={[0.02, -0.1, 0.06]} scale={[1.6, 0.6, 1]}>
         <sphereGeometry args={[0.2, 14, 12]} />
-        <meshStandardMaterial color={color} roughness={0.8} />
+        <primitive object={finish("clay", color)} attach="material" />
       </mesh>
     </group>
   );

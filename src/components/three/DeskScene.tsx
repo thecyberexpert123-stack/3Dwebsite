@@ -6,6 +6,7 @@ import { RoundedBox } from "@react-three/drei";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { PALETTE } from "./CrochetFlower";
+import { shared as finish } from "./materials";
 import { CrochetFlower } from "./CrochetFlower";
 import { FloatingHeart, GiftBox, Hook, Sparkle3D, YarnBall } from "./parts";
 import { BreathingLight, DustMotes } from "./anim";
@@ -82,7 +83,7 @@ function Desk({ reduced, density }: { reduced: boolean; density: number }) {
       ].map((s, i) => (
         <group key={i} position={[-0.15 - i * 0.02, 0.008 + i * 0.004, 1.05 - i * 0.06]} rotation={[-Math.PI / 2, 0, s.r]}>
           <RoundedBox args={[0.42, 0.3, 0.012]} radius={0.015} smoothness={3}>
-            <meshStandardMaterial color={s.c} roughness={0.62} />
+            <primitive object={finish("yarn", s.c)} attach="material" />
           </RoundedBox>
         </group>
       ))}
@@ -94,7 +95,7 @@ function Desk({ reduced, density }: { reduced: boolean; density: number }) {
       <group position={[0.15, 0.06, -0.75]}>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.14, 0.045, 10, 28]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
+          <primitive object={finish("satin", PALETTE.rose)} attach="material" />
         </mesh>
       </group>
 

@@ -31,6 +31,7 @@ import {
   useIntroClock,
 } from "./Stage";
 import { makeThreadGeometry } from "./geometry";
+import { shared as finish } from "./materials";
 
 const damp = THREE.MathUtils.damp;
 
@@ -104,7 +105,7 @@ function UnspoolingThread({ points }: { points: [number, number, number][] }) {
 
   return (
     <mesh ref={ref} geometry={geo} visible={false}>
-      <meshStandardMaterial color={PALETTE.rose} roughness={0.7} />
+      <primitive object={finish("yarn", PALETTE.rose)} attach="material" />
     </mesh>
   );
 }
@@ -255,11 +256,11 @@ function Bouquet({
       <Entrance at={BEAT.wrap} duration={0.7} kind="drop" height={0.6}>
         <mesh position={[0, 0.38, 0]}>
           <cylinderGeometry args={[0.4, 0.17, 0.75, 18, 1, true]} />
-          <meshStandardMaterial color="#F6EBDA" roughness={0.7} side={THREE.DoubleSide} />
+          <primitive object={finish("paper", "#F6EBDA", { side: THREE.DoubleSide })} attach="material" />
         </mesh>
         <mesh position={[0, 0.46, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.31, 0.035, 10, 28]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
+          <primitive object={finish("satin", PALETTE.rose)} attach="material" />
         </mesh>
       </Entrance>
       {/* invisible tap target so clicks between petals still count */}

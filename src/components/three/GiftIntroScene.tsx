@@ -7,8 +7,9 @@ import * as THREE from "three";
 import { useQuality } from "@/lib/quality";
 import { clamp01, easeInOutCubic, easeOutBack, easeOutCubic, seg } from "@/lib/intro";
 import { makeHeartGeometry, rnd } from "./geometry";
-import { PALETTE } from "./CrochetFlower";
+import { CrochetFlower, PALETTE } from "./CrochetFlower";
 import { AdaptiveCanvas, SoftGround, StudioLights, StudioShadows } from "./Stage";
+import { shared as finish } from "./materials";
 
 const damp = THREE.MathUtils.damp;
 
@@ -22,6 +23,8 @@ const damp = THREE.MathUtils.damp;
  *   0.25  lid pops, tilts and floats up & back    (anticipation → release)
  *   0.35  warm glow blooms inside the box
  *   0.40  hearts + confetti burst upward          (payoff)
+ *   0.40  a little crochet bouquet springs up out of the box — the surprise
+ *         is the product; the hero then grows the same bouquet in full
  *   0.55  camera pushes in toward the opening     (we go *into* the gift…)
  *   1.15  `onOpened` → the curtain irises out     (…and land on the site)
  *
@@ -195,7 +198,7 @@ function Bow({ untie }: { untie: React.RefObject<number> }) {
     }
   });
 
-  const ribbon = <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />;
+  const ribbon = <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />;
 
   return (
     <group position={[0, 0.06, 0]}>
@@ -212,7 +215,7 @@ function Bow({ untie }: { untie: React.RefObject<number> }) {
       </group>
       <mesh ref={knot} position={[0, 0.09, 0]}>
         <sphereGeometry args={[0.085, 14, 14]} />
-        <meshStandardMaterial color={PALETTE.dusty} roughness={0.45} />
+        <primitive object={finish("pearl", PALETTE.white)} attach="material" />
       </mesh>
       {/* tails */}
       <mesh ref={tailL} position={[-0.09, -0.02, 0.1]} rotation={[0, 0, 0.55]}>
@@ -243,6 +246,7 @@ function Gift({
   const glow = useRef<THREE.Mesh>(null!);
   const glowMat = useRef<THREE.MeshBasicMaterial>(null!);
   const light = useRef<THREE.PointLight>(null!);
+  const bloom = useRef<THREE.Group>(null!);
   const untie = useRef(0);
   const [hover, setHover] = useState(false);
   const { gl } = useThree();
@@ -298,6 +302,15 @@ function Gift({
       glowMat.current.opacity = 0.9 * (1 - p * 0.7);
     }
     if (light.current) light.current.intensity = easeOutCubic(seg(since, 0.3, 0.5)) * 6;
+    if (bloom.current) {
+      // the surprise inside: a little bouquet springs up past the rim just as
+      // the lens pushes in — the same bouquet the hero then grows in full
+      const b = easeOutBack(seg(since, 0.4, 0.55), 1.25);
+      bloom.current.visible = b > 0.002;
+      bloom.current.scale.setScalar(Math.max(0.001, b));
+      bloom.current.position.y = 0.1 + b * 0.12;
+      bloom.current.rotation.y = -0.3 + seg(since, 0.4, 1.2) * 0.35;
+    }
   });
 
   const tap = {
@@ -316,16 +329,16 @@ function Gift({
     <group ref={root} {...tap}>
       {/* body */}
       <RoundedBox args={[0.9, 0.62, 0.78]} radius={0.09} smoothness={5} position={[0, 0.31, 0]}>
-        <meshStandardMaterial color={PALETTE.blush} roughness={0.55} />
+        <primitive object={finish("clay", PALETTE.blush)} attach="material" />
       </RoundedBox>
       {/* body ribbons */}
       <mesh position={[0, 0.31, 0]}>
         <boxGeometry args={[0.11, 0.64, 0.8]} />
-        <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
+        <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
       </mesh>
       <mesh position={[0, 0.31, 0]}>
         <boxGeometry args={[0.92, 0.64, 0.11]} />
-        <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
+        <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
       </mesh>
       {/* the warm surprise inside */}
       <mesh ref={glow} position={[0, 0.45, 0]} visible={false}>
@@ -333,19 +346,26 @@ function Gift({
         <meshBasicMaterial ref={glowMat} color="#FFF1C9" transparent opacity={0} depthWrite={false} />
       </mesh>
       <pointLight ref={light} position={[0, 0.6, 0]} color="#FFE1A6" intensity={0} distance={3} decay={2} />
+      {/* what was inside all along */}
+      <group ref={bloom} position={[0, 0.12, 0]} scale={0.001} visible={false}>
+        <CrochetFlower position={[0, 0, 0]} height={1.05} color={PALETTE.blush} seed={7} scale={0.6} sway={false} />
+        <CrochetFlower position={[0.1, 0, -0.08]} height={0.95} color={PALETTE.lavender} seed={8} scale={0.55} tilt={[-0.05, 0, -0.16]} sway={false} />
+        <CrochetFlower position={[-0.1, 0, 0.04]} height={0.9} color={PALETTE.white} seed={9} scale={0.55} tilt={[0.06, 0, 0.18]} sway={false} />
+        <CrochetFlower position={[0.02, 0, 0.1]} height={0.84} color={PALETTE.rose} seed={10} scale={0.5} tilt={[0.16, 0, 0.02]} sway={false} />
+      </group>
       {/* lid: pops off and floats away */}
       <group ref={lid} position={[0, 0.36 + 0.31 - 0.31, 0]}>
         <group position={[0, 0.3, 0]}>
           <RoundedBox args={[0.98, 0.2, 0.86]} radius={0.08} smoothness={5}>
-            <meshStandardMaterial color={PALETTE.rose} roughness={0.55} />
+            <primitive object={finish("clay", PALETTE.rose)} attach="material" />
           </RoundedBox>
           <mesh>
             <boxGeometry args={[0.115, 0.215, 0.88]} />
-            <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
+            <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
           </mesh>
           <mesh>
             <boxGeometry args={[1.0, 0.215, 0.115]} />
-            <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
+            <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
           </mesh>
           <group position={[0, 0.1, 0]}>
             <Bow untie={untie} />
@@ -402,12 +422,14 @@ function Twinkles({ count, reduced }: { count: number; reduced: boolean }) {
 /* ---------- camera: still, then pushes into the opening ---------- */
 
 const CAM_IDLE = new THREE.Vector3(0, 0.95, 2.55);
-const CAM_IN = new THREE.Vector3(0, 0.9, 1.05);
+const CAM_IN = new THREE.Vector3(0, 1.15, 1.9);
 const LOOK = new THREE.Vector3(0, 0.42, 0);
+const LOOK_IN = new THREE.Vector3(0, 0.72, 0);
 
 function Camera({ openedAt, reduced }: { openedAt: React.RefObject<number>; reduced: boolean }) {
   const { camera } = useThree();
   const pos = useMemo(() => new THREE.Vector3(), []);
+  const look = useMemo(() => new THREE.Vector3(), []);
   useFrame((state, dt) => {
     const since = openedAt.current < 0 ? -1 : performance.now() / 1000 - openedAt.current;
     const push = since < 0 ? 0 : easeInOutCubic(seg(since, 0.55, 0.75));
@@ -419,7 +441,8 @@ function Camera({ openedAt, reduced }: { openedAt: React.RefObject<number>; redu
     camera.position.x = damp(camera.position.x, pos.x, 6, dt);
     camera.position.y = damp(camera.position.y, pos.y, 6, dt);
     camera.position.z = damp(camera.position.z, pos.z, 6, dt);
-    camera.lookAt(LOOK);
+    look.lerpVectors(LOOK, LOOK_IN, push);
+    camera.lookAt(look);
   });
   return null;
 }

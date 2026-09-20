@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { makePetalGeometry, rnd } from "./geometry";
 import { useWind } from "./Stage";
+import { create as createMat } from "./materials";
 
 /** Whimlet yarn palette — shared across all 3D scenes. */
 export const PALETTE = {
@@ -81,11 +82,11 @@ export function CrochetFlower({
     const base = new THREE.Color(color);
     const inner = base.clone().lerp(new THREE.Color("#B98A93"), 0.22);
     return {
-      outer: new THREE.MeshStandardMaterial({ color: base, roughness: 0.7 }),
-      inner: new THREE.MeshStandardMaterial({ color: inner, roughness: 0.7 }),
-      center: new THREE.MeshStandardMaterial({ color: centerColor, roughness: 0.62 }),
-      stem: new THREE.MeshStandardMaterial({ color: PALETTE.sageDeep, roughness: 0.7 }),
-      leaf: new THREE.MeshStandardMaterial({ color: PALETTE.sage, roughness: 0.7 }),
+      outer: createMat("yarn", base),
+      inner: createMat("yarn", inner),
+      center: createMat("yarn", centerColor),
+      stem: createMat("yarn", PALETTE.sageDeep),
+      leaf: createMat("yarn", PALETTE.sage),
     };
   }, [color, centerColor]);
 

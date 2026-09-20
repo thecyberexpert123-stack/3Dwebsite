@@ -7,6 +7,7 @@ import { makeHeartGeometry, makePetalGeometry } from "./geometry";
 import { PALETTE } from "./CrochetFlower";
 import { useIntroClock, useWind } from "./Stage";
 import { easeOutBack, easeOutCubic, seg } from "@/lib/intro";
+import { shared as finish } from "./materials";
 
 /* ================================================================
    Sway — layered, multi-axis breeze motion for anything alive.
@@ -227,7 +228,7 @@ export function FallingPetals({
           scale={d.s}
           position={[d.x, d.y, d.z]}
         >
-          <meshStandardMaterial color={d.color} roughness={0.7} />
+          <primitive object={finish("yarn", d.color)} attach="material" />
         </mesh>
       ))}
     </group>
