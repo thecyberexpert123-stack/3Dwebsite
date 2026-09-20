@@ -115,3 +115,21 @@ gift scene, and richer animation across the page.
 - First-load JS grew only 176 kB → 181 kB; all 3D remains in lazy chunks.
 - Three of four canvases are viewport-gated; the desk scene is still
   frameloop-on-demand.
+
+## [0.2.1] — 2026-09-20
+
+### Added — GitHub CI verification
+- `.github/workflows/ci.yml`: on every push to the work branch, GitHub Actions
+  verifies the project on a clean runner — `npm ci` (lockfile-exact install) →
+  design-domain tests → production build (which includes full TypeScript
+  checking). Also triggerable manually via `workflow_dispatch`.
+- `scripts/design-tests.mjs` + `npm run test:design`: the 16-check suite for
+  `src/lib/design.ts` (URL round-trips, tamper/garbage rejection, bouquet
+  business rules, hex normalization, 5,000-random-config stability, preset
+  round-trips, WhatsApp message shape) — previously run ad-hoc, now committed
+  and repeatable anywhere.
+
+### Maintenance
+- Restored the local clone after the sandbox reset `.git` to its initial
+  state between sessions (work was safe on GitHub; branch pointer re-fetched
+  and verified byte-identical via tree-SHA comparison before resetting).

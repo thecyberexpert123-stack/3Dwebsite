@@ -157,3 +157,43 @@ scenes, adding dependencies or touching the build.
 - **Word-staggered headlines split SSR strings:** "Little Stitches." no longer
   appears contiguously in HTML once words are wrapped in motion spans —
   expected, not a regression (SEO-safe: text still present in spans).
+
+## Environment lessons (this sandbox, learned the hard way)
+
+### The local .git can reset to its session-start state between turns
+- **Event:** at the start of a new turn, `git log` showed only the initial
+  commit, the local branch pointed at `80ad57d`, my commits were missing from
+  the object store — while every working-tree file survived fine (all showing
+  as untracked).
+- **Mechanism:** the platform snapshots working files, but the `.git` state
+  can be restored to how the session began. GitHub is the durable source of
+  truth for anything committed **and pushed**.
+- **Condition → strategy:**
+  1. At the start of every turn, check `git log --oneline -3` and
+     `git status --short` before trusting local state.
+  2. Repair pattern (zero-loss, verified): fetch the branch with an explicit
+     refspec, stage the working tree (`git add -A`), compare `git write-tree`
+     against `origin/<branch>^{tree}` — if the tree SHAs match, the working
+     tree is *cryptographically identical* to the pushed commit and
+     `git reset --hard <sha>` is safe. Never reset blind.
+  3. Commit and push promptly at the end of any substantial change.
+
+### `.git/config` edits do not persist across turns
+- The clone uses a single-branch fetch refspec (`main` only). Adding
+  `remote.origin.fetch` entries works within a turn and is silently gone the
+  next. **Use explicit refspecs on the command instead**:
+  `git fetch origin "+refs/heads/<branch>:refs/remotes/origin/<branch>"`.
+
+### `node_modules`, `.next`, and background processes do not survive turns
+- Expect to `npm install` + `npm run build` + restart the preview server at
+  the start of a turn that needs them. Check first (`ls node_modules | wc -l`,
+  `curl localhost:3000`) — restoring is cheap but must not be assumed away.
+
+### Verification commands have their own failure modes
+- `git ls-tree <branch> | awk '{print $3}'` prints the SHA of **every root
+  entry**, not the branch's tree SHA — it produced a wall of misleading
+  "mismatched" hashes. The correct comparison is
+  `git rev-parse "<branch>^{tree}"` (or the GitHub API's `commit.tree.sha`).
+- Pipe truncation lies: `ls … | head -12` made `src/` look empty. When
+  verifying directory integrity, list each directory separately without
+  truncation.
