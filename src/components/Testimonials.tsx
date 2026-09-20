@@ -36,11 +36,8 @@ export function Testimonials() {
       <div className="wrap flex flex-col items-center gap-10">
         <SectionHeading
           eyebrow="kind words"
-          title={
-            <>
-              Little Notes, <span className="font-script font-normal text-rose">Big Smiles</span>
-            </>
-          }
+          title="Little Notes,"
+          accent="Big Smiles"
         />
 
         <div

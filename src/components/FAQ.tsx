@@ -15,11 +15,8 @@ export function FAQ() {
       <div className="wrap">
         <SectionHeading
           eyebrow="good questions"
-          title={
-            <>
-              Little <span className="font-script font-normal text-rose">FAQs</span>
-            </>
-          }
+          title="Little"
+          accent="FAQs"
           lead="Everything people usually ask before ordering something handmade."
         />
 

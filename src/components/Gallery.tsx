@@ -55,11 +55,8 @@ export function Gallery() {
       <div className="wrap">
         <SectionHeading
           eyebrow="a peek inside"
-          title={
-            <>
-              The Little Things <span className="font-script font-normal text-rose">Gallery</span>
-            </>
-          }
+          title="The Little Things"
+          accent="Gallery"
           lead="Pieces, works-in-progress and little corners of the studio — tap any photo to look closer."
         />
 

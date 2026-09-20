@@ -5,7 +5,8 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { waLink, waMessages, PHONE_DISPLAY, PHONE_TEL } from "@/lib/whatsapp";
 import { useInViewport, useWebGL } from "@/lib/hooks";
-import { Reveal } from "./Reveal";
+import { Reveal, TextReveal } from "./Reveal";
+import { Magnetic } from "./Magnetic";
 import {
   BowDoodle,
   FlowerDoodle,
@@ -43,7 +44,7 @@ export function ContactSection() {
               <HeartDoodle className="h-3.5 w-3.5" /> say hello
             </p>
             <h2 className="max-w-xl text-balance font-script text-5xl leading-tight text-cocoa md:text-7xl">
-              Let's Make Something Lovely.
+              <TextReveal text="Let's Make Something Lovely." stagger={0.12} />
             </h2>
             <p className="max-w-md text-pretty text-lg leading-relaxed text-cocoa-soft md:text-xl">
               Have an idea, a gift in mind, or simply found something you love?
@@ -52,18 +53,22 @@ export function ContactSection() {
           </Reveal>
 
           <Reveal delay={0.12} className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
-            <a href="#custom" className="btn btn-primary btn-lg min-w-52">
-              Start an Order
-            </a>
-            <a
-              href={waLink(waMessages.general)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-whatsapp btn-lg min-w-52"
-            >
-              <WhatsAppGlyph className="h-5 w-5" strokeWidth={1.8} />
-              Chat on WhatsApp
-            </a>
+            <Magnetic>
+              <a href="#custom" className="btn btn-primary btn-lg min-w-52">
+                Start an Order
+              </a>
+            </Magnetic>
+            <Magnetic>
+              <a
+                href={waLink(waMessages.general)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-whatsapp btn-lg min-w-52"
+              >
+                <WhatsAppGlyph className="h-5 w-5" strokeWidth={1.8} />
+                Chat on WhatsApp
+              </a>
+            </Magnetic>
           </Reveal>
 
           <Reveal delay={0.2} className="flex flex-col items-start gap-3">

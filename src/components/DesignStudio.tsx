@@ -122,11 +122,8 @@ export function DesignStudio() {
       <div className="wrap">
         <SectionHeading
           eyebrow="the 3D design studio"
-          title={
-            <>
-              Design Your <span className="font-script font-normal text-rose">Own.</span>
-            </>
-          }
+          title="Design Your"
+          accent="Own."
           lead="A little crochet sketch pad — pick petals and colours, or draw your very own petal, watch it bloom in 3D, then send your design straight to Whimlet."
         />
 

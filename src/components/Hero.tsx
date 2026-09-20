@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useTransform, type Variants } from "framer-motion";
 import { useInViewport } from "@/lib/hooks";
+import { useIntroStarted } from "@/lib/intro";
 import { HeroStatic } from "./HeroStatic";
+import { Magnetic } from "./Magnetic";
 import { HeartDoodle, SquiggleDoodle, YarnDoodle } from "./Decorations";
 
 const HeroScene3D = dynamic(() => import("./three/HeroScene3D"), {
@@ -38,13 +40,27 @@ export function Hero() {
   const reduce = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const heroActive = useInViewport(sectionRef, "120px");
+  // the copy animates from the moment the loading curtain lifts (shared beat
+  // with the 3D choreography) — never unseen behind the loader.
+  // SSR/no-JS: intro is "not started" ⇒ variants are omitted ⇒ content is visible.
+  const started = useIntroStarted();
+  // hand-off to the next section: as the hero scrolls away, the copy drifts up
+  // faster than the scene and fades — the eye is released toward the story
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
+  const copyY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -120]);
+  const copyOpacity = useTransform(scrollYProgress, [0, 0.55], [1, reduce ? 1 : 0]);
+  const sceneY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -40]);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const animate = hydrated && !reduce; // run the choreography
+  const show = started || !hydrated; // pre-hydration: render final state
 
   const fadeUp = (delay: number) =>
-    reduce
+    !animate
       ? {}
       : {
           initial: { opacity: 0, y: 24 },
-          animate: { opacity: 1, y: 0 },
+          animate: show ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 },
           transition: { duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] as const },
         };
 
@@ -55,8 +71,15 @@ export function Hero() {
       <LeafBg />
 
       <div className="wrap grid min-h-[92vh] items-center gap-10 pb-16 pt-32 md:pb-24 md:pt-36 lg:grid-cols-[1.02fr_1fr] lg:gap-8">
-        {/* ---------- left: editorial copy ---------- */}
-        <div className="relative z-10 flex max-w-xl flex-col items-start gap-6">
+        {/* ---------- left: editorial copy ----------
+            keyed on hydration: framer's `initial` only applies at mount, so the
+            SSR-visible copy remounts once (under the curtain) into its hidden
+            pose and then plays from the shared intro beat. */}
+        <motion.div
+          key={hydrated ? "live" : "ssr"}
+          style={{ y: copyY, opacity: copyOpacity }}
+          className="relative z-10 flex max-w-xl flex-col items-start gap-6"
+        >
           <motion.p
             {...fadeUp(0.05)}
             className="flex items-center gap-2.5 text-[0.7rem] font-bold uppercase tracking-[0.3em] text-rose md:text-xs"
@@ -66,16 +89,16 @@ export function Hero() {
           </motion.p>
 
           <motion.h1
-            initial={reduce ? false : "hidden"}
-            animate="show"
-            variants={reduce ? undefined : wordContainer}
+            initial={!animate ? false : "hidden"}
+            animate={show ? "show" : "hidden"}
+            variants={!animate ? undefined : wordContainer}
             className="text-balance text-[2.6rem] font-bold leading-[1.05] tracking-tight text-cocoa md:text-6xl"
           >
             <span className="block">
               {"Little Stitches.".split(" ").map((w, i) => (
                 <motion.span
                   key={w}
-                  variants={reduce ? undefined : word}
+                  variants={!animate ? undefined : word}
                   className="inline-block will-change-transform"
                 >
                   {w}
@@ -84,7 +107,7 @@ export function Hero() {
               ))}
             </span>
             <motion.span
-              variants={reduce ? undefined : word}
+              variants={!animate ? undefined : word}
               className="mt-1 block font-script text-[3rem] font-normal leading-[1.15] text-rose md:text-[4.2rem]"
             >
               Big Feelings.
@@ -103,12 +126,16 @@ export function Hero() {
           </motion.p>
 
           <motion.div {...fadeUp(0.4)} className="mt-2 flex flex-wrap items-center gap-3.5">
-            <a href="#shop" className="btn btn-primary btn-lg">
-              Explore the Collection
-            </a>
-            <a href="#custom" className="btn btn-outline btn-lg">
-              Create Something Custom
-            </a>
+            <Magnetic>
+              <a href="#shop" className="btn btn-primary btn-lg">
+                Explore the Collection
+              </a>
+            </Magnetic>
+            <Magnetic strength={0.2}>
+              <a href="#custom" className="btn btn-outline btn-lg">
+                Create Something Custom
+              </a>
+            </Magnetic>
           </motion.div>
 
           <motion.p
@@ -123,33 +150,48 @@ export function Hero() {
               <HeartDoodle className="h-3.5 w-3.5 text-rose" /> WhatsApp enquiries
             </span>
           </motion.p>
-        </div>
+        </motion.div>
 
         {/* ---------- right: the 3D studio ---------- */}
-        <motion.div
-          {...(reduce
-            ? {}
-            : {
-                initial: { opacity: 0, scale: 0.96 },
-                animate: { opacity: 1, scale: 1 },
-                transition: { duration: 1.1, delay: 0.2, ease: [0.22, 1, 0.36, 1] as const },
-              })}
-          className="relative h-[420px] w-full sm:h-[480px] md:h-[560px] lg:h-[620px]"
-        >
+        <motion.div style={{ y: sceneY }} className="relative h-[420px] w-full sm:h-[480px] md:h-[560px] lg:h-[620px]">
+          {/* the canvas is always mounted so shaders compile behind the curtain */}
           <HeroScene3D active={heroActive} />
 
-          {/* floating handmade annotations */}
+          {/* floating handmade annotations — arrive after the charms land (~3s beat) */}
           {ANNOTATIONS.map((a, i) => (
-            <span
+            <motion.span
               key={a.text}
               aria-hidden="true"
-              style={{ animationDelay: `${i * 1.1}s` }}
-              className={`pointer-events-none absolute z-10 hidden animate-float font-hand text-xl text-rose/85 sm:block ${a.className}`}
+              {...(!animate
+                ? {}
+                : {
+                    initial: { opacity: 0, y: 8 },
+                    animate: show ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 },
+                    transition: { duration: 0.7, delay: 3.0 + i * 0.16, ease: [0.22, 1, 0.36, 1] as const },
+                  })}
+              className={`pointer-events-none absolute z-10 hidden font-hand text-xl text-rose/85 sm:block ${a.className}`}
             >
-              {a.text}
-              <SquiggleDoodle className="mt-0.5 h-2 w-full text-blush-deep/70" />
-            </span>
+              <span className="block animate-float" style={{ animationDelay: `${i * 1.1}s` }}>
+                {a.text}
+                <SquiggleDoodle className="mt-0.5 h-2 w-full text-blush-deep/70" />
+              </span>
+            </motion.span>
           ))}
+
+          {/* a quiet hint that the bouquet is tappable */}
+          <motion.span
+            aria-hidden="true"
+            {...(!animate
+              ? {}
+              : {
+                  initial: { opacity: 0 },
+                  animate: show ? { opacity: 1 } : { opacity: 0 },
+                  transition: { duration: 0.8, delay: 4.2 },
+                })}
+            className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap font-hand text-base text-cocoa-soft/80"
+          >
+            tap the bouquet ✿
+          </motion.span>
         </motion.div>
       </div>
 

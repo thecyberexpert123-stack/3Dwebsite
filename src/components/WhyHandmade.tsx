@@ -34,11 +34,8 @@ export function WhyHandmade() {
       <div className="wrap">
         <SectionHeading
           eyebrow="the handmade difference"
-          title={
-            <>
-              Why <span className="font-script font-normal text-rose">Handmade?</span>
-            </>
-          }
+          title="Why"
+          accent="Handmade?"
           lead="Slow-made things carry something machines can't measure."
         />
 

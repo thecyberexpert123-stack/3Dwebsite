@@ -1,14 +1,16 @@
 "use client";
 
 import { useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, RoundedBox } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { RoundedBox } from "@react-three/drei";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { PALETTE } from "./CrochetFlower";
 import { CrochetFlower } from "./CrochetFlower";
-import { FloatingHeart, GiftBox, GroundDisk, Hook, Sparkle3D, YarnBall } from "./parts";
+import { FloatingHeart, GiftBox, Hook, Sparkle3D, YarnBall } from "./parts";
 import { BreathingLight, DustMotes } from "./anim";
+import { AdaptiveCanvas, Breeze, SoftGround, StudioLights, StudioShadows } from "./Stage";
+import { useQuality } from "@/lib/quality";
 
 const damp = THREE.MathUtils.damp;
 
@@ -18,22 +20,22 @@ const damp = THREE.MathUtils.damp;
  * through the light and a little heart bobs. `active` flips the render
  * loop off while the desk is off-screen, so it costs nothing unseen.
  */
-function Desk({ reduced }: { reduced: boolean }) {
+function Desk({ reduced, density }: { reduced: boolean; density: number }) {
   const world = useRef<THREE.Group>(null!);
 
-  useFrame((state) => {
+  useFrame((state, dt) => {
     if (!world.current) return;
     const px = reduced ? 0 : state.pointer.x;
     const py = reduced ? 0 : state.pointer.y;
-    world.current.rotation.y = damp(world.current.rotation.y, px * 0.16, 3, 0.016);
-    world.current.rotation.x = damp(world.current.rotation.x, -py * 0.05, 3, 0.016);
+    world.current.rotation.y = damp(world.current.rotation.y, px * 0.16, 3, dt);
+    world.current.rotation.x = damp(world.current.rotation.x, -py * 0.05, 3, dt);
   });
 
   return (
     <group ref={world}>
-      <GroundDisk radius={3.2} color="#FAF1E5" />
+      <SoftGround radius={2.8} color="#FAF1E5" />
 
-      <DustMotes count={24} area={[3.4, 2.1, 2.4]} reduced={reduced} />
+      <DustMotes count={Math.round(24 * density)} area={[3.4, 2.1, 2.4]} reduced={reduced} />
       <BreathingLight position={[-1.2, 1.1, 0.9]} intensity={0.45} reduced={reduced} />
 
       <CrochetFlower
@@ -105,24 +107,20 @@ function Desk({ reduced }: { reduced: boolean }) {
 
 export default function DeskScene({ active = true }: { active?: boolean }) {
   const reduce = useReducedMotion();
+  const quality = useQuality();
   return (
-    <Canvas
+    <AdaptiveCanvas
+      quality={quality}
       className="!absolute inset-0"
       frameloop={active ? "always" : "never"}
-      dpr={[1, 1.5]}
       camera={{ position: [0.3, 1.9, 4.4], fov: 34 }}
-      gl={{ antialias: true, alpha: true }}
       aria-hidden="true"
     >
-      <ambientLight intensity={0.95} color="#FFF6EC" />
-      <directionalLight position={[3, 5, 2.5]} intensity={1.05} color="#FFFFFF" />
-      <directionalLight position={[-4, 2.5, -2]} intensity={0.35} color="#FFDCE4" />
-      <Environment resolution={64} frames={1}>
-        <Lightformer form="rect" intensity={1.0} color="#FFF3E4" position={[0, 3, 4]} scale={[7, 3, 1]} target={[0, 0.7, 0]} />
-        <Lightformer form="rect" intensity={0.45} color="#FFDEE7" position={[-5, 1.5, -3]} scale={[6, 2.5, 1]} target={[0, 0.7, 0]} />
-      </Environment>
-      <Desk reduced={!!reduce} />
-      <ContactShadows position={[0, 0.001, 0]} opacity={0.32} scale={8} blur={2.4} far={2.2} resolution={256} color="#96566A" />
-    </Canvas>
+      <StudioLights target={[0, 0.7, 0]} keyIntensity={1.05} />
+      <Breeze reduced={!!reduce}>
+        <Desk reduced={!!reduce} density={quality.density} />
+      </Breeze>
+      <StudioShadows opacity={0.32} scale={8} far={2.2} resolution={Math.min(384, quality.shadowRes)} />
+    </AdaptiveCanvas>
   );
 }

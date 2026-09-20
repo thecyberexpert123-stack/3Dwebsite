@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { makePetalGeometry, rnd } from "./geometry";
+import { useWind } from "./Stage";
 
 /** Whimlet yarn palette — shared across all 3D scenes. */
 export const PALETTE = {
@@ -50,6 +51,9 @@ export function CrochetFlower({
   const head = useRef<THREE.Group>(null!);
   const plant = useRef<THREE.Group>(null!);
   const flutterRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const wind = useWind();
+  // the bend responds to the wind with a little lag — stems are springy
+  const bend = useRef(0);
 
   const petals = useMemo(
     () => ({
@@ -86,23 +90,28 @@ export function CrochetFlower({
     [mats, petals, leaf]
   );
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, dt) => {
     if (!sway) return;
     const t = clock.elapsedTime;
+    // wind: taller stems bend more, each flower lags a little differently
+    const w = wind.current ?? 0;
+    bend.current = THREE.MathUtils.damp(bend.current, w, 3 + rnd(seed) * 2, dt);
+    const gust = bend.current * (0.12 + height * 0.06);
+    const flutterGain = 1 + Math.abs(bend.current) * 3;
     // the whole plant leans ever so slightly in the breeze
     if (plant.current) {
-      plant.current.rotation.z = Math.sin(t * 0.35 + seed * 0.9) * 0.028;
+      plant.current.rotation.z = Math.sin(t * 0.35 + seed * 0.9) * 0.028 - gust;
       plant.current.rotation.x = Math.cos(t * 0.29 + seed * 0.7) * 0.02;
     }
     // the head sways on its own clock
     if (head.current) {
-      head.current.rotation.z = Math.sin(t * 0.6 + seed * 2.1) * 0.035;
+      head.current.rotation.z = Math.sin(t * 0.6 + seed * 2.1) * 0.035 - gust * 0.5;
       head.current.rotation.x = Math.sin(t * 0.42 + seed * 1.3) * 0.02;
     }
     // each petal flutters individually, like fabric catching air
     for (let i = 0; i < flutterRefs.current.length; i++) {
       const m = flutterRefs.current[i];
-      if (m) m.rotation.x = flutterBase[i] + Math.sin(t * 0.9 + i * 1.3 + seed) * 0.05;
+      if (m) m.rotation.x = flutterBase[i] + Math.sin(t * (0.9 + Math.abs(w) * 2) + i * 1.3 + seed) * 0.05 * flutterGain;
     }
   });
 

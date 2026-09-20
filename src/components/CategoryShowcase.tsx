@@ -22,11 +22,8 @@ export function CategoryShowcase() {
       <div className="wrap">
         <SectionHeading
           eyebrow="browse the little shop"
-          title={
-            <>
-              Find Your <span className="font-script font-normal text-rose">Little Something</span>
-            </>
-          }
+          title="Find Your"
+          accent="Little Something"
           lead="Five little worlds of crochet — pick the one that feels most like you (or the person you're gifting)."
         />
 

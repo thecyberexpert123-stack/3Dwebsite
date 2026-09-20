@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
+import { LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import { PRODUCT_CATEGORIES, productCategoryLabel, products, type Product } from "@/data/products";
 import { waLink, waMessages } from "@/lib/whatsapp";
 import { Reveal } from "./Reveal";
@@ -23,15 +23,13 @@ export function ProductGrid() {
   const shown = filter === "all" ? products : products.filter((p) => p.category === filter);
 
   return (
+    <LayoutGroup id="shop">
     <section id="shop" className="relative bg-cream/60 py-20 md:py-28">
       <div className="wrap">
         <SectionHeading
           eyebrow="the current favourites"
-          title={
-            <>
-              Made To <span className="font-script font-normal text-rose">Make You Smile</span>
-            </>
-          }
+          title="Made To"
+          accent="Make You Smile"
           lead="A little shelf of current favourites. Every piece is handmade to order — ask about any of them and we'll make it yours."
         />
 
@@ -82,6 +80,7 @@ export function ProductGrid() {
 
       <ProductModal product={selected} onClose={() => setSelected(null)} />
     </section>
+    </LayoutGroup>
   );
 }
 
@@ -94,6 +93,7 @@ function ProductCard({
   index: number;
   onOpen: () => void;
 }) {
+  const reduce = useReducedMotion();
   return (
     <Reveal delay={Math.min(index * 0.06, 0.3)} className="h-full">
       <TiltCard className="h-full">
@@ -105,7 +105,11 @@ function ProductCard({
           aria-label={`View details for ${product.name}`}
           className="relative block w-full overflow-hidden rounded-[1.75rem] shadow-card transition-shadow duration-500 group-hover:shadow-lift"
         >
-          <span className="relative block aspect-[4/3]">
+          <motion.span
+            layoutId={reduce ? undefined : `product-image-${product.id}`}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            className="relative block aspect-[4/3] overflow-hidden rounded-[1.75rem]"
+          >
             <Image
               src={product.image}
               alt={product.alt}
@@ -113,7 +117,7 @@ function ProductCard({
               sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 92vw"
               className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
             />
-          </span>
+          </motion.span>
           {/* tiny heart appears on hover */}
           <span className="absolute right-3.5 top-3.5 flex h-9 w-9 scale-50 items-center justify-center rounded-full bg-white/85 text-rose opacity-0 shadow-card transition-all duration-300 group-hover:scale-100 group-hover:opacity-100">
             <HeartDoodle className="h-5 w-5 animate-heartbeat" />

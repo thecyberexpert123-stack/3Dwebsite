@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { productCategoryLabel, type Product } from "@/data/products";
 import { waLink, waMessages } from "@/lib/whatsapp";
 import { HeartDoodle, SparkleDoodle, WhatsAppGlyph } from "./Decorations";
@@ -19,6 +19,7 @@ export function ProductModal({
   onClose: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const reduce = useReducedMotion();
 
   // Escape to close + focus the close button on open + body scroll lock
   useEffect(() => {
@@ -74,18 +75,22 @@ export function ProductModal({
               </svg>
             </button>
 
-            {/* image */}
-            <div className="relative aspect-[4/3] sm:aspect-auto sm:min-h-[440px]">
+            {/* image — shared element: flies in from the card that was tapped */}
+            <motion.div
+              layoutId={reduce ? undefined : `product-image-${product.id}`}
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              className="relative aspect-[4/3] overflow-hidden rounded-t-[2rem] sm:aspect-auto sm:min-h-[440px] sm:rounded-l-[2rem] sm:rounded-tr-none"
+            >
               <Image
                 src={product.image}
                 alt={product.alt}
                 fill
                 sizes="(min-width: 640px) 50vw, 100vw"
-                className="object-cover sm:rounded-l-[2rem]"
+                className="object-cover"
                 priority
               />
               <span className="chip chip-white absolute left-4 top-4">made to order</span>
-            </div>
+            </motion.div>
 
             {/* details */}
             <div className="flex flex-col gap-4 p-6 sm:p-8 md:justify-center">

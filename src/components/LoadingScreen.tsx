@@ -1,35 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { startIntro, useHeroReady } from "@/lib/intro";
 
 /**
- * A brief "yarn loop drawing a heart" welcome — capped at ~1.2s so it never
- * makes anyone wait. Client-only: SSR and no-JS visitors never see it.
+ * The curtain. A yarn loop draws a heart while the hero scene compiles its
+ * shaders behind it; the moment the hero has painted its first frame (or a
+ * hard cap of 2.4s passes — nobody waits on a slow GPU), the curtain lifts
+ * and `startIntro()` fires: headline, buttons and 3D choreography all begin
+ * from that one shared beat instead of playing unseen behind the loader.
+ *
+ * Client-only: SSR and no-JS visitors never see it (and the intro store's
+ * server snapshot keeps the hero visible for them).
  */
 export function LoadingScreen() {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [gone, setGone] = useState(false);
   const reduce = useReducedMotion();
+  const heroReady = useHeroReady();
 
   useEffect(() => {
     setMounted(true);
-    // tiny delay so the entrance is perceived, then dismissed
-    const showTimer = setTimeout(() => setVisible(true), 0);
-    let hidden = false;
-    const hide = () => {
-      if (hidden) return;
-      hidden = true;
+    setVisible(true);
+  }, []);
+
+  // lift the curtain: min hold (so the mark is perceived) · hero ready · hard cap.
+  // `shownAt` is fixed once — re-running this effect (heroReady flips, the
+  // media query resolves) must never restart the clock.
+  const shownAt = useRef<number | null>(null);
+  const lifted = useRef(false);
+  useEffect(() => {
+    if (!mounted || gone) return;
+    if (shownAt.current === null) shownAt.current = performance.now();
+    const minHold = reduce ? 250 : 900;
+    const hardCap = reduce ? 600 : 2400;
+
+    const lift = () => {
+      if (lifted.current) return;
+      lifted.current = true;
       setVisible(false);
-      setTimeout(() => setGone(true), 700);
+      startIntro();
+      setTimeout(() => setGone(true), 750);
     };
-    const hideTimer = setTimeout(hide, reduce ? 350 : 1150);
-    return () => {
-      clearTimeout(showTimer);
-      clearTimeout(hideTimer);
-    };
-  }, [reduce]);
+
+    const elapsed = performance.now() - shownAt.current;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    if (heroReady) timers.push(setTimeout(lift, Math.max(0, minHold - elapsed)));
+    timers.push(setTimeout(lift, Math.max(0, hardCap - elapsed)));
+    return () => timers.forEach(clearTimeout);
+  }, [mounted, gone, heroReady, reduce]);
 
   if (!mounted || gone) return null;
 
@@ -39,7 +60,18 @@ export function LoadingScreen() {
         <motion.div
           aria-hidden="true"
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-ivory"
-          exit={{ opacity: 0, transition: { duration: 0.55, ease: "easeOut" } }}
+          exit={
+            reduce
+              ? { opacity: 0, transition: { duration: 0.2 } }
+              : {
+                  // the curtain lifts: fades while the mark drifts up and the
+                  // background parts along a soft radial — reads as a reveal, not a cut
+                  opacity: 0,
+                  clipPath: "circle(0% at 50% 50%)",
+                  transition: { duration: 0.7, ease: [0.76, 0, 0.24, 1] },
+                }
+          }
+          style={{ clipPath: "circle(150% at 50% 50%)" }}
         >
           <svg viewBox="0 0 24 24" className="h-16 w-16 text-rose">
             <path

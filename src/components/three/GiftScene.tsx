@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
-import { ContactShadows, Environment, Float, Lightformer, RoundedBox } from "@react-three/drei";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { Float, RoundedBox } from "@react-three/drei";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { makeHeartGeometry } from "./geometry";
-import { BreathingLight, DustMotes, Sway } from "./anim";
+import { BreathingLight, DustMotes, HeartBurst, Sway } from "./anim";
+import { AdaptiveCanvas, Breeze, StudioLights, StudioShadows } from "./Stage";
+import { useQuality } from "@/lib/quality";
 
 const damp = THREE.MathUtils.damp;
 
@@ -152,6 +154,16 @@ export default function GiftScene({
   onToggle: () => void;
 }) {
   const reduce = useReducedMotion();
+  const quality = useQuality();
+  // every *opening* releases a burst of hearts (closing does not)
+  const burst = useRef(0);
+  const [burstId, setBurstId] = useState(0);
+  useEffect(() => {
+    if (open) {
+      burst.current += 1;
+      setBurstId(burst.current);
+    }
+  }, [open]);
 
   // if the scene unmounts mid-hover, never leave a stuck pointer cursor
   useEffect(() => () => {
@@ -159,32 +171,20 @@ export default function GiftScene({
   }, []);
 
   return (
-    <Canvas
+    <AdaptiveCanvas
+      quality={quality}
       className="!absolute inset-0 cursor-pointer"
-      dpr={[1, 1.6]}
       camera={{ position: [0.15, 0.95, 2.75], fov: 36 }}
-      gl={{ antialias: true, alpha: true }}
       aria-hidden="true"
     >
-      <ambientLight intensity={0.95} color="#FFF6EC" />
-      <directionalLight position={[2.5, 4, 3]} intensity={1.05} color="#FFFFFF" />
-      <directionalLight position={[-3, 2, -2]} intensity={0.35} color="#FFDCE4" />
-      <Environment resolution={64} frames={1}>
-        <Lightformer form="rect" intensity={1.0} color="#FFF3E4" position={[0, 3, 4]} scale={[6, 3, 1]} target={[0, 0.4, 0]} />
-        <Lightformer form="rect" intensity={0.45} color="#FFDEE7" position={[-4, 1.5, -3]} scale={[5, 2, 1]} target={[0, 0.4, 0]} />
-      </Environment>
-      <OpenableGift open={open} onToggle={onToggle} reduced={!!reduce} />
-      <DustMotes count={14} area={[2.4, 1.9, 1.6]} size={0.035} reduced={!!reduce} />
+      <StudioLights target={[0, 0.4, 0]} keyIntensity={1.05} />
+      <Breeze reduced={!!reduce}>
+        <OpenableGift open={open} onToggle={onToggle} reduced={!!reduce} />
+        <HeartBurst origin={[0, 0.25, 0]} burstId={burstId} count={quality.simple ? 8 : 12} reduced={!!reduce} />
+        <DustMotes count={Math.round(14 * quality.density)} area={[2.4, 1.9, 1.6]} size={0.035} reduced={!!reduce} />
+      </Breeze>
       <BreathingLight position={[0.9, 1.0, 0.9]} intensity={0.42} reduced={!!reduce} />
-      <ContactShadows
-        position={[0, -0.45, 0]}
-        opacity={0.3}
-        scale={6}
-        blur={2.6}
-        far={1.8}
-        resolution={256}
-        color="#96566A"
-      />
-    </Canvas>
+      <StudioShadows position={[0, -0.45, 0]} opacity={0.3} scale={6} far={1.8} resolution={Math.min(256, quality.shadowRes)} />
+    </AdaptiveCanvas>
   );
 }

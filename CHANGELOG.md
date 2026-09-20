@@ -173,3 +173,23 @@ gift scene, and richer animation across the page.
   covered in CI (resampling, smoothing, symmetry, quantization round-trips,
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
+
+## [0.4.0] — 2026-09-20
+
+The "directed" release — one shared intro clock, adaptive quality and a
+scroll-scrubbed 3D sequence.
+
+### Added
+- `lib/intro.ts` + `three/Stage.tsx`: one intro clock shared by the loading
+  curtain, hero copy and hero 3D choreography (ground → yarn rolls in → thread
+  unspools → bouquet grows → charms land → camera settles). The curtain lifts
+  the moment the hero has painted its first frame (hard cap 2.4 s).
+- `lib/quality.ts`: device-tier detection (low/mid/high) → DPR caps, particle
+  density, shadow resolution; corrected at runtime by drei `PerformanceMonitor`
+  inside `AdaptiveCanvas` (also handles WebGL context loss with a fallback).
+- Shared lighting/shadow rig (`StudioLights`, `StudioShadows`, `SoftGround`) —
+  one visual language for every scene; pointer velocity becomes wind (`Breeze`).
+- `three/ProcessScene.tsx`: "The making of a flower" — the process timeline is
+  a scroll-scrubbed 3D timeline (yarn → sketch → stitch → bloom → pack → you).
+- `Magnetic` CTAs, `TextReveal` headlines, tilt sheen on cards, section curtain
+  edges, hero copy hand-off on scroll.

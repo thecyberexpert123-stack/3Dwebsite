@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { makePetalGeometry, makePointedPetalGeometry, makeCustomPetalGeometry, rnd } from "./geometry";
 import { MIX_PALETTE, type DesignConfig } from "@/lib/design";
 import { DustMotes } from "./anim";
+import { AdaptiveCanvas, StudioLights, StudioShadows } from "./Stage";
+import { useQuality } from "@/lib/quality";
 
 const damp = THREE.MathUtils.damp;
 
@@ -494,35 +495,20 @@ function Rig({ reduced }: { reduced: boolean }) {
  */
 export default function DesignScene({ config }: { config: DesignConfig }) {
   const reduce = useReducedMotion();
+  const quality = useQuality();
 
   return (
-    <Canvas
+    <AdaptiveCanvas
+      quality={quality}
       className="!absolute inset-0 cursor-grab active:cursor-grabbing"
-      dpr={[1, 1.75]}
       camera={{ position: [0.7, 1.9, 5.2], fov: 33 }}
-      gl={{ antialias: true, alpha: true }}
       aria-hidden="true"
     >
-      <ambientLight intensity={0.95} color="#FFF6EC" />
-      <directionalLight position={[2.5, 4, 3]} intensity={1.05} color="#FFFFFF" />
-      <directionalLight position={[-3, 2, -2]} intensity={0.35} color="#FFDCE4" />
-      <Environment resolution={64} frames={1}>
-        <Lightformer form="rect" intensity={1.0} color="#FFF3E4" position={[0, 3, 4]} scale={[6, 3, 1]} target={[0, 0.8, 0]} />
-        <Lightformer form="rect" intensity={0.45} color="#FFDEE7" position={[-4, 1.5, -3]} scale={[5, 2, 1]} target={[0, 0.8, 0]} />
-      </Environment>
-
+      <StudioLights target={[0, 0.8, 0]} keyIntensity={1.05} />
       <Scene config={config} reduced={!!reduce} />
-      <DustMotes count={16} area={[4.5, 2.6, 2.5]} size={0.035} reduced={!!reduce} />
+      <DustMotes count={Math.round(16 * quality.density)} area={[4.5, 2.6, 2.5]} size={0.035} reduced={!!reduce} />
       <Rig reduced={!!reduce} />
-      <ContactShadows
-        position={[0, -0.15, 0]}
-        opacity={0.28}
-        scale={8}
-        blur={3}
-        far={2.5}
-        resolution={512}
-        color="#96566A"
-      />
-    </Canvas>
+      <StudioShadows position={[0, -0.15, 0]} opacity={0.28} scale={8} far={2.5} resolution={quality.shadowRes} />
+    </AdaptiveCanvas>
   );
 }

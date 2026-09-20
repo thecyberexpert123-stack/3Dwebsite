@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Reveal } from "./Reveal";
+import { Reveal, TextReveal } from "./Reveal";
 import { HeartDoodle, LadybugDoodle, SquiggleDoodle } from "./Decorations";
 
 /**
@@ -19,7 +19,7 @@ export function OurStory() {
             <HeartDoodle className="h-3.5 w-3.5" /> our story
           </p>
           <h2 className="text-balance text-3xl font-bold leading-tight tracking-tight text-cocoa md:text-5xl">
-            The Whimlet <span className="font-script font-normal text-rose">Story</span>
+            <TextReveal text="The Whimlet" /> <TextReveal text="Story" className="font-script font-normal text-rose" />
           </h2>
 
           <p className="text-pretty leading-relaxed text-cocoa-soft md:text-lg">

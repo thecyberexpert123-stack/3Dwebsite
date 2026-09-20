@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { makePetalGeometry } from "./geometry";
+import { makeHeartGeometry, makePetalGeometry } from "./geometry";
 import { PALETTE } from "./CrochetFlower";
+import { useIntroClock, useWind } from "./Stage";
+import { easeOutBack, easeOutCubic, seg } from "@/lib/intro";
 
 /* ================================================================
    Sway — layered, multi-axis breeze motion for anything alive.
@@ -86,6 +88,7 @@ export function DustMotes({
   reduced = false,
 }: DustMotesProps) {
   const ref = useRef<THREE.Points>(null!);
+  const wind = useWind();
 
   const data = useMemo(
     () =>
@@ -118,10 +121,16 @@ export function DustMotes({
     if (reduced || !ref.current) return;
     const pos = ref.current.geometry.attributes.position as THREE.BufferAttribute;
     const t = clock.elapsedTime;
+    const w = wind.current ?? 0;
+    const half = area[0] / 2;
     for (let i = 0; i < data.length; i++) {
       const d = data[i];
       d.y += dt * 0.045 * d.sp;
       if (d.y > area[1]) d.y -= area[1];
+      // motes are carried sideways by the breeze and wrap around
+      d.x += dt * w * 0.9 * d.sp;
+      if (d.x > half) d.x -= area[0];
+      else if (d.x < -half) d.x += area[0];
       pos.setXYZ(
         i,
         d.x + Math.sin(t * 0.3 * d.sp + d.ph) * 0.16,
@@ -165,6 +174,7 @@ export function FallingPetals({
   reduced = false,
 }: FallingPetalsProps) {
   const refs = useRef<(THREE.Mesh | null)[]>([]);
+  const wind = useWind();
   const geo = useMemo(() => makePetalGeometry(0.16, 0.34, 0.06, 99), []);
   useEffect(() => () => geo.dispose(), [geo]);
 
@@ -189,13 +199,18 @@ export function FallingPetals({
   useFrame(({ clock }, dt) => {
     if (reduced) return;
     const t = clock.elapsedTime;
+    const w = wind.current ?? 0;
+    const half = area[0] / 2;
     data.forEach((d, i) => {
       const m = refs.current[i];
       if (!m) return;
       d.y -= dt * d.fall;
       if (d.y < 0.02) d.y = area[1];
+      d.x += dt * w * 1.1 * d.sway;
+      if (d.x > half) d.x -= area[0];
+      else if (d.x < -half) d.x += area[0];
       m.position.set(d.x + Math.sin(t * 0.4 * d.sway + d.ph) * 0.22, d.y, d.z);
-      m.rotation.x += dt * d.spinX;
+      m.rotation.x += dt * (d.spinX + w * 2);
       m.rotation.z += dt * d.spinZ;
     });
   });
@@ -256,5 +271,171 @@ export function BreathingLight({
       distance={6.5}
       decay={2}
     />
+  );
+}
+
+/* ================================================================
+   Entrance — how an object arrives during the intro choreography.
+   Reads the scene-wide intro clock, so every prop lands on the beat.
+
+   kinds:
+   - "drop":  falls a little onto the surface and settles (props)
+   - "grow":  scales up from the base with a soft overshoot (flowers)
+   - "pop":   quick scale-in with overshoot (small charms)
+   - "fade":  no transform, just present (reserved for lights via opacity)
+   ================================================================ */
+
+type EntranceProps = {
+  children: React.ReactNode;
+  /** seconds into the intro when this object starts arriving */
+  at: number;
+  duration?: number;
+  kind?: "drop" | "grow" | "pop";
+  /** drop height in world units (kind="drop") */
+  height?: number;
+};
+
+export function Entrance({ children, at, duration = 0.8, kind = "pop", height = 0.45 }: EntranceProps) {
+  const ref = useRef<THREE.Group>(null!);
+  const { t, reduced } = useIntroClock();
+  const done = useRef(false);
+
+  useFrame(() => {
+    const g = ref.current;
+    if (!g || done.current) return;
+    if (reduced) {
+      g.scale.setScalar(1);
+      g.position.y = 0;
+      g.visible = true;
+      done.current = true;
+      return;
+    }
+    const p = seg(t.current, at, duration);
+    if (p <= 0) {
+      g.visible = false;
+      return;
+    }
+    g.visible = true;
+    if (kind === "drop") {
+      // ease-out fall + a single soft bounce at the end
+      const fall = 1 - easeOutCubic(Math.min(1, p / 0.7));
+      const bounce = p > 0.7 ? Math.sin(((p - 0.7) / 0.3) * Math.PI) * 0.06 : 0;
+      g.position.y = height * fall + bounce * height;
+      g.scale.setScalar(1);
+    } else if (kind === "grow") {
+      const s = easeOutBack(p, 1.2);
+      g.scale.set(0.001 + s * 0.999, 0.001 + s * 0.999, 0.001 + s * 0.999);
+    } else {
+      const s = easeOutBack(p, 1.7);
+      g.scale.setScalar(Math.max(0.001, s));
+    }
+    if (p >= 1) {
+      g.scale.setScalar(1);
+      g.position.y = 0;
+      done.current = true;
+    }
+  });
+
+  return (
+    <group ref={ref} visible={false}>
+      {children}
+    </group>
+  );
+}
+
+/* ================================================================
+   HeartBurst — a one-shot celebration: hearts rise from a point,
+   drift apart, spin and fade. Triggered by `burstId` changing.
+   Instanced (one draw call); pooled so repeated taps are free.
+   ================================================================ */
+
+type HeartBurstProps = {
+  origin: [number, number, number];
+  burstId: number;
+  count?: number;
+  colors?: string[];
+  reduced?: boolean;
+};
+
+const BURST_COLORS = [PALETTE.rose, PALETTE.blush, PALETTE.lavender, PALETTE.dusty, PALETTE.white];
+
+export function HeartBurst({
+  origin,
+  burstId,
+  count = 14,
+  colors = BURST_COLORS,
+  reduced = false,
+}: HeartBurstProps) {
+  const mesh = useRef<THREE.InstancedMesh>(null!);
+  const mat = useRef<THREE.MeshStandardMaterial>(null!);
+  const geo = useMemo(() => makeHeartGeometry(21), []);
+  useEffect(() => () => geo.dispose(), [geo]);
+
+  const life = useRef(-1); // <0 idle
+  const parts = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => ({
+        dir: new THREE.Vector3((Math.random() - 0.5) * 1.6, 1.1 + Math.random() * 0.9, (Math.random() - 0.5) * 1.2),
+        spin: (Math.random() - 0.5) * 6,
+        size: 0.09 + Math.random() * 0.1,
+        delay: Math.random() * 0.18,
+        color: new THREE.Color(colors[i % colors.length]),
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [count]
+  );
+
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const lastBurst = useRef(burstId);
+
+  useEffect(() => {
+    if (burstId !== lastBurst.current) {
+      lastBurst.current = burstId;
+      life.current = 0;
+    }
+  }, [burstId]);
+
+  // per-instance colours set once
+  useEffect(() => {
+    const m = mesh.current;
+    if (!m) return;
+    parts.forEach((p, i) => m.setColorAt(i, p.color));
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
+  }, [parts]);
+
+  useFrame((_, dt) => {
+    const m = mesh.current;
+    if (!m) return;
+    if (life.current < 0) {
+      m.visible = false;
+      return;
+    }
+    m.visible = true;
+    life.current += dt;
+    const DUR = reduced ? 0.6 : 1.6;
+    for (let i = 0; i < parts.length; i++) {
+      const p = parts[i];
+      const t = Math.max(0, life.current - p.delay) / DUR;
+      const e = 1 - Math.pow(1 - Math.min(1, t), 2.2);
+      const g = -0.35 * t * t; // a little gravity so they arc
+      dummy.position.set(
+        origin[0] + p.dir.x * e,
+        origin[1] + p.dir.y * e + g,
+        origin[2] + p.dir.z * e
+      );
+      dummy.rotation.set(0.2, p.spin * t, Math.sin(t * 5 + i) * 0.4);
+      const s = t <= 0 ? 0 : p.size * (t < 0.15 ? t / 0.15 : t > 0.65 ? Math.max(0, 1 - (t - 0.65) / 0.35) : 1);
+      dummy.scale.setScalar(Math.max(0.0001, reduced ? p.size * (1 - t) : s));
+      dummy.updateMatrix();
+      m.setMatrixAt(i, dummy.matrix);
+    }
+    m.instanceMatrix.needsUpdate = true;
+    if (life.current > DUR + 0.25) life.current = -1;
+  });
+
+  return (
+    <instancedMesh ref={mesh} args={[geo, undefined, count]} visible={false} frustumCulled={false}>
+      <meshStandardMaterial ref={mat} roughness={0.85} />
+    </instancedMesh>
   );
 }

@@ -207,18 +207,6 @@ export function TinyDaisy({ position, seed = 11, petalColor = PALETTE.white }: T
   );
 }
 
-/* ---------------- ground ---------------- */
-
-/** The soft cream surface everything rests on. */
-export function GroundDisk({ radius = 3.6, color = "#FAF1E5" }: { radius?: number; color?: string }) {
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]}>
-      <circleGeometry args={[radius, 48]} />
-      <meshStandardMaterial color={color} roughness={1} />
-    </mesh>
-  );
-}
-
 /* ---------------- sparkle ---------------- */
 
 type Sparkle3DProps = {

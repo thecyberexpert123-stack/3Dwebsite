@@ -14,11 +14,8 @@ export function OccasionSection() {
       <div className="wrap">
         <SectionHeading
           eyebrow="why people order"
-          title={
-            <>
-              For Every <span className="font-script font-normal text-rose">Little Moment</span>
-            </>
-          }
+          title="For Every"
+          accent="Little Moment"
           lead="Gifts, celebrations, ordinary Tuesdays — there's a handmade piece for each of them."
         />
 

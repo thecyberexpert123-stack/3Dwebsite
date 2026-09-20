@@ -264,6 +264,44 @@
   .acc-panel[data-open="true"] { grid-template-rows: 1fr; }
   .acc-panel > div { overflow: hidden; }
 
+  /* --- tilt sheen: a soft window-light highlight that follows the pointer --- */
+  .tilt-sheen {
+    position: relative;
+    --sheen-x: 50%;
+    --sheen-y: 50%;
+    --sheen-o: 0;
+  }
+  .tilt-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    border-radius: inherit;
+    opacity: var(--sheen-o);
+    transition: opacity 0.4s ease;
+    background: radial-gradient(
+      circle at var(--sheen-x) var(--sheen-y),
+      rgb(255 255 255 / 0.28),
+      rgb(255 255 255 / 0.06) 32%,
+      transparent 60%
+    );
+    mix-blend-mode: soft-light;
+  }
+
+  /* --- section curtain: sections rise into place with a soft top edge --- */
+  .section-curtain {
+    position: relative;
+  }
+  .section-curtain::before {
+    content: "";
+    position: absolute;
+    inset: -1px 0 auto 0;
+    height: 3.5rem;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgb(71 56 51 / 0.035), transparent);
+  }
+
   /* --- stitch divider --- */
   .stitch-hr {
     border: 0;

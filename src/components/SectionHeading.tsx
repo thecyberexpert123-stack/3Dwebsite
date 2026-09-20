@@ -1,10 +1,13 @@
 import type { ReactNode } from "react";
 import { HeartDoodle } from "@/components/Decorations";
-import { Reveal } from "@/components/Reveal";
+import { Reveal, TextReveal } from "@/components/Reveal";
 
 type SectionHeadingProps = {
   eyebrow: string;
+  /** plain text ⇒ word-by-word masked reveal; ReactNode ⇒ soft fade (for mixed script/sans titles) */
   title: ReactNode;
+  /** optional script-styled tail rendered after `title` (e.g. "Make You Smile") */
+  accent?: string;
   lead?: ReactNode;
   align?: "center" | "left";
   className?: string;
@@ -14,6 +17,7 @@ type SectionHeadingProps = {
 export function SectionHeading({
   eyebrow,
   title,
+  accent,
   lead,
   align = "center",
   className = "",
@@ -28,7 +32,13 @@ export function SectionHeading({
         <HeartDoodle className="h-3.5 w-3.5" strokeWidth={1.8} />
       </p>
       <h2 className="text-balance text-3xl font-bold leading-tight tracking-tight text-cocoa md:text-5xl">
-        {title}
+        {typeof title === "string" ? <TextReveal text={title} /> : title}
+        {accent ? (
+          <>
+            {" "}
+            <TextReveal text={accent} className="font-script font-normal text-rose" stagger={0.09} />
+          </>
+        ) : null}
       </h2>
       {lead ? (
         <p className="text-pretty text-base leading-relaxed text-cocoa-soft md:text-lg">{lead}</p>

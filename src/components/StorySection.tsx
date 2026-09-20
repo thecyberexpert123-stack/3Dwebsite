@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { Reveal } from "./Reveal";
+import { Reveal, TextReveal } from "./Reveal";
 import { HeartDoodle, SparkleDoodle, StitchDoodle } from "./Decorations";
 
 const VALUES = [
@@ -21,21 +21,31 @@ export function StorySection() {
     offset: ["start end", "end start"],
   });
   const y = useTransform(scrollYProgress, [0, 1], [reduce ? 0 : -18, reduce ? 0 : 18]);
+  // the photograph is revealed by a soft rounded wipe as it enters — the
+  // hero's camera tilted down onto a table; this is the next table
+  const clip = useTransform(
+    scrollYProgress,
+    [0.05, 0.4],
+    reduce ? ["inset(0% round 2.5rem)", "inset(0% round 2.5rem)"] : ["inset(18% 12% 18% 12% round 3rem)", "inset(0% 0% 0% 0% round 2.5rem)"]
+  );
+  const imgScale = useTransform(scrollYProgress, [0.05, 0.4], [reduce ? 1 : 1.16, 1]);
 
   return (
     <section id="story-beat" className="gingham-pink relative overflow-hidden py-20 md:py-28" ref={ref}>
       <div className="wrap grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
         {/* image with soft parallax */}
         <motion.div style={{ y }} className="relative mx-auto w-full max-w-lg">
-          <div className="relative aspect-[4/3] -rotate-1 overflow-hidden rounded-[2.5rem] shadow-lift">
-            <Image
-              src="/images/story-hands.jpg"
-              alt="A half-finished blush pink crochet flower resting on linen, with a wooden crochet hook mid-stitch and a strand of yarn trailing away"
-              fill
-              sizes="(min-width: 1024px) 46vw, 92vw"
-              className="object-cover"
-            />
-          </div>
+          <motion.div style={{ clipPath: clip }} className="relative aspect-[4/3] -rotate-1 overflow-hidden rounded-[2.5rem] shadow-lift">
+            <motion.div style={{ scale: imgScale }} className="absolute inset-0">
+              <Image
+                src="/images/story-hands.jpg"
+                alt="A half-finished blush pink crochet flower resting on linen, with a wooden crochet hook mid-stitch and a strand of yarn trailing away"
+                fill
+                sizes="(min-width: 1024px) 46vw, 92vw"
+                className="object-cover"
+              />
+            </motion.div>
+          </motion.div>
           <p className="absolute -bottom-5 left-6 -rotate-2 font-hand text-xl text-rose md:text-2xl">
             one stitch at a time
           </p>
@@ -48,8 +58,8 @@ export function StorySection() {
             <HeartDoodle className="h-3.5 w-3.5" /> the whimbles &amp; wonders
           </p>
           <h2 className="text-balance text-3xl font-bold leading-tight tracking-tight text-cocoa md:text-5xl">
-            Made Slowly.
-            <span className="block font-script font-normal text-rose">Made Specially.</span>
+            <TextReveal text="Made Slowly." />
+            <TextReveal text="Made Specially." className="block font-script font-normal text-rose" stagger={0.1} />
           </h2>
           <p className="text-pretty text-lg leading-relaxed text-cocoa-soft">
             At Whimlet, every piece begins with yarn, imagination and a lot of
