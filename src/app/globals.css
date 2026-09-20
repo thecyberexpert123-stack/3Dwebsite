@@ -1,0 +1,285 @@
+@import "tailwindcss";
+
+/* ============================================================
+   WHIMLET DESIGN TOKENS
+   70/20/10: cream/ivory space · soft pink surfaces · accents
+   ============================================================ */
+@theme {
+  /* palette */
+  --color-ivory: #fbf5ec;
+  --color-cream: #f6eee1;
+  --color-whitish: #fffdf9;
+  --color-blush: #f2c4ce;
+  --color-blush-soft: #f9dce3;
+  --color-blush-deep: #e9a9bc;
+  --color-rose: #d8849c;
+  --color-dusty: #c96a5e;
+  --color-sage: #a9bfa3;
+  --color-sage-deep: #7c977a;
+  --color-lavender: #d9c7ee;
+  --color-cocoa: #473833;
+  --color-cocoa-soft: #7a6a62;
+  --color-bark: #40332e;
+
+  /* typography (variables provided by next/font in layout) */
+  --font-body: var(--font-quicksand), ui-rounded, "Segoe UI", system-ui, sans-serif;
+  --font-script: var(--font-parisienne), "Segoe Script", cursive;
+  --font-hand: var(--font-caveat), "Segoe Print", cursive;
+
+  /* shadows */
+  --shadow-card: 0 10px 30px -14px rgb(71 56 51 / 0.16);
+  --shadow-soft: 0 20px 45px -22px rgb(216 132 156 / 0.32);
+  --shadow-lift: 0 30px 60px -24px rgb(216 132 156 / 0.45);
+
+  /* motion */
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-float-slow: float 11s ease-in-out infinite;
+  --animate-sway: sway 9s ease-in-out infinite;
+  --animate-heartbeat: heartbeat 2.6s ease-in-out infinite;
+  --animate-bounce-soft: bounce-soft 2.2s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-9px); }
+  }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-2.5deg); }
+    50% { transform: rotate(2.5deg); }
+  }
+  @keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    14% { transform: scale(1.14); }
+    28% { transform: scale(1); }
+    42% { transform: scale(1.08); }
+    56% { transform: scale(1); }
+  }
+  @keyframes bounce-soft {
+    0%, 100% { transform: translateY(0); opacity: 0.9; }
+    50% { transform: translateY(6px); opacity: 0.5; }
+  }
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+  }
+
+  body {
+    background-color: var(--color-ivory);
+    color: var(--color-cocoa);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--color-blush);
+    color: var(--color-cocoa);
+  }
+
+  :focus-visible {
+    outline: 2px dashed var(--color-rose);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* soft film grain over the whole experience (very subtle) */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ============================================================
+   COMPONENT CLASSES
+   ============================================================ */
+@layer components {
+  .wrap {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 76rem;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 768px) {
+    .wrap { padding-inline: 2rem; }
+  }
+
+  /* --- gingham fabric backgrounds (extremely subtle) --- */
+  .gingham {
+    background-color: var(--color-ivory);
+    background-image:
+      linear-gradient(90deg, rgb(233 169 188 / 0.09) 50%, transparent 50%),
+      linear-gradient(0deg, rgb(233 169 188 / 0.09) 50%, transparent 50%);
+    background-size: 26px 26px;
+  }
+  .gingham-pink {
+    background-color: var(--color-blush-soft);
+    background-image:
+      linear-gradient(90deg, rgb(255 255 255 / 0.28) 50%, transparent 50%),
+      linear-gradient(0deg, rgb(255 255 255 / 0.28) 50%, transparent 50%);
+    background-size: 26px 26px;
+  }
+
+  /* --- buttons --- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    cursor: pointer;
+    text-align: center;
+    transition:
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.3s ease,
+      color 0.3s ease,
+      border-color 0.3s ease;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-primary {
+    background: var(--color-blush);
+    color: var(--color-cocoa);
+    box-shadow: var(--shadow-soft);
+  }
+  .btn-primary:hover {
+    background: var(--color-blush-deep);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .btn-outline {
+    border: 1.5px solid var(--color-rose);
+    color: var(--color-rose);
+    background: rgb(255 253 249 / 0.65);
+  }
+  .btn-outline:hover {
+    background: var(--color-blush-soft);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .btn-whatsapp {
+    background: #22c55e;
+    color: #fff;
+    box-shadow: 0 18px 40px -18px rgb(34 197 94 / 0.55);
+  }
+  .btn-whatsapp:hover {
+    background: #16a34a;
+    box-shadow: 0 26px 50px -20px rgb(34 197 94 / 0.6);
+  }
+
+  .btn-md { padding: 0.85rem 1.7rem; font-size: 0.95rem; }
+  .btn-lg { padding: 1rem 2rem; font-size: 1.02rem; }
+  .btn-sm { padding: 0.6rem 1.15rem; font-size: 0.85rem; }
+
+  /* --- cards & chips --- */
+  .card {
+    background: var(--color-whitish);
+    border-radius: 2rem;
+    border: 1px solid rgb(255 255 255 / 0.9);
+    box-shadow: var(--shadow-card);
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    background: rgb(242 196 206 / 0.4);
+    color: var(--color-rose);
+  }
+  .chip-white {
+    background: rgb(255 253 249 / 0.85);
+    color: var(--color-rose);
+  }
+
+  /* --- nav links with stitch underline --- */
+  .nav-link {
+    position: relative;
+    padding: 0.25rem 0.05rem;
+    color: var(--color-cocoa-soft);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+  }
+  .nav-link:hover,
+  .nav-link:focus-visible { color: var(--color-rose); }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 100%;
+    bottom: -3px;
+    border-bottom: 2px dashed var(--color-rose);
+    transition: right 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .nav-link:hover::after,
+  .nav-link:focus-visible::after { right: 0; }
+
+  /* --- accordion (CSS grid height animation) --- */
+  .acc-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .acc-panel[data-open="true"] { grid-template-rows: 1fr; }
+  .acc-panel > div { overflow: hidden; }
+
+  /* --- stitch divider --- */
+  .stitch-hr {
+    border: 0;
+    border-top: 2px dashed var(--color-blush-deep);
+    opacity: 0.6;
+  }
+
+  /* --- skip link --- */
+  .skip-link {
+    position: fixed;
+    top: -100px;
+    left: 1rem;
+    z-index: 200;
+    background: var(--color-whitish);
+    color: var(--color-cocoa);
+    padding: 0.6rem 1.1rem;
+    border-radius: 9999px;
+    box-shadow: var(--shadow-soft);
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: top 0.3s ease;
+  }
+  .skip-link:focus { top: 1rem; }
+}

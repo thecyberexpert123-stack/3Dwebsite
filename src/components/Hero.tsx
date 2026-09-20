@@ -1,0 +1,164 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { motion, useReducedMotion } from "framer-motion";
+import { HeroStatic } from "./HeroStatic";
+import { HeartDoodle, SquiggleDoodle, YarnDoodle } from "./Decorations";
+
+const HeroScene3D = dynamic(() => import("./three/HeroScene3D"), {
+  ssr: false,
+  loading: () => <HeroStatic />,
+});
+
+const ANNOTATIONS = [
+  { text: "handmade", className: "left-[1%] top-[14%] -rotate-6" },
+  { text: "custom made", className: "right-[2%] top-[24%] rotate-3" },
+  { text: "one stitch at a time", className: "left-[4%] bottom-[20%] rotate-2" },
+  { text: "tiny things, happy things", className: "right-[3%] bottom-[12%] -rotate-3" },
+] as const;
+
+export function Hero() {
+  const reduce = useReducedMotion();
+
+  const fadeUp = (delay: number) =>
+    reduce
+      ? {}
+      : {
+          initial: { opacity: 0, y: 24 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] as const },
+        };
+
+  return (
+    <section id="home" className="gingham relative overflow-hidden">
+      {/* decorative doodles — kept few, with breathing room */}
+      <FlowerDoodleBg />
+      <LeafBg />
+
+      <div className="wrap grid min-h-[92vh] items-center gap-10 pb-16 pt-32 md:pb-24 md:pt-36 lg:grid-cols-[1.02fr_1fr] lg:gap-8">
+        {/* ---------- left: editorial copy ---------- */}
+        <div className="relative z-10 flex max-w-xl flex-col items-start gap-6">
+          <motion.p
+            {...fadeUp(0.05)}
+            className="flex items-center gap-2.5 text-[0.7rem] font-bold uppercase tracking-[0.3em] text-rose md:text-xs"
+          >
+            <HeartDoodle className="h-4 w-4" strokeWidth={1.8} />
+            Handmade crochet&nbsp;•&nbsp;made with love
+          </motion.p>
+
+          <motion.h1
+            {...fadeUp(0.15)}
+            className="text-balance text-[2.6rem] font-bold leading-[1.05] tracking-tight text-cocoa md:text-6xl"
+          >
+            Little Stitches.
+            <span className="mt-1 block font-script text-[3rem] font-normal leading-[1.15] text-rose md:text-[4.2rem]">
+              Big Feelings.
+            </span>
+          </motion.h1>
+
+          <motion.p {...fadeUp(0.25)} className="text-pretty text-lg font-medium leading-relaxed text-cocoa md:text-xl">
+            Handmade crochet pieces for gifting, collecting, celebrating — and
+            making everyday moments a little sweeter.
+          </motion.p>
+
+          <motion.p {...fadeUp(0.32)} className="max-w-md text-pretty leading-relaxed text-cocoa-soft">
+            From tiny charms and keychains to floral bouquets and custom
+            creations, every Whimlet piece is made by hand, one stitch at a
+            time.
+          </motion.p>
+
+          <motion.div {...fadeUp(0.4)} className="mt-2 flex flex-wrap items-center gap-3.5">
+            <a href="#shop" className="btn btn-primary btn-lg">
+              Explore the Collection
+            </a>
+            <a href="#custom" className="btn btn-outline btn-lg">
+              Create Something Custom
+            </a>
+          </motion.div>
+
+          <motion.p
+            {...fadeUp(0.48)}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold text-cocoa-soft"
+          >
+            <span className="flex items-center gap-1.5">
+              <HeartDoodle className="h-3.5 w-3.5 text-rose" /> Custom orders available
+            </span>
+            <span aria-hidden="true" className="text-blush-deep">•</span>
+            <span className="flex items-center gap-1.5">
+              <HeartDoodle className="h-3.5 w-3.5 text-rose" /> WhatsApp enquiries
+            </span>
+          </motion.p>
+        </div>
+
+        {/* ---------- right: the 3D studio ---------- */}
+        <motion.div
+          {...(reduce
+            ? {}
+            : {
+                initial: { opacity: 0, scale: 0.96 },
+                animate: { opacity: 1, scale: 1 },
+                transition: { duration: 1.1, delay: 0.2, ease: [0.22, 1, 0.36, 1] as const },
+              })}
+          className="relative h-[420px] w-full sm:h-[480px] md:h-[560px] lg:h-[620px]"
+        >
+          <HeroScene3D />
+
+          {/* floating handmade annotations */}
+          {ANNOTATIONS.map((a) => (
+            <span
+              key={a.text}
+              aria-hidden="true"
+              className={`pointer-events-none absolute z-10 hidden font-hand text-xl text-rose/85 sm:block ${a.className}`}
+            >
+              {a.text}
+              <SquiggleDoodle className="mt-0.5 h-2 w-full text-blush-deep/70" />
+            </span>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* scroll cue */}
+      <a
+        href="#story"
+        className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 text-cocoa-soft transition-colors hover:text-rose md:flex"
+        aria-label="Scroll to the next section"
+      >
+        <span className="text-[0.65rem] font-bold uppercase tracking-[0.3em]">scroll</span>
+        <YarnDoodle className="h-5 w-5 animate-bounce-soft" />
+      </a>
+    </section>
+  );
+}
+
+/* off-screen decorative doodles */
+function FlowerDoodleBg() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="absolute -left-6 bottom-24 -z-0 h-40 w-40 -rotate-12 text-blush/40"
+    >
+      <g fill="none" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round">
+        {[0, 72, 144, 216, 288].map((deg) => (
+          <ellipse key={deg} cx="12" cy="7" rx="2.4" ry="3.6" transform={`rotate(${deg} 12 12)`} />
+        ))}
+        <circle cx="12" cy="12" r="2.1" />
+      </g>
+    </svg>
+  );
+}
+
+function LeafBg() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="absolute right-[6%] top-24 -z-0 h-16 w-16 rotate-45 text-sage/50 lg:right-[52%]"
+    >
+      <g fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
+        <path d="M5 19C5 11 11 5 19 5c0 8-6 14-14 14z" />
+        <path d="M7.5 16.5C10 13.7 13 10.6 16.5 8.2" />
+      </g>
+    </svg>
+  );
+}
