@@ -4,6 +4,7 @@ import Image from "next/image";
 import { occasions } from "@/data/occasions";
 import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
+import { TiltCard } from "./TiltCard";
 import { HeartDoodle } from "./Decorations";
 
 /** "For Every Little Moment" — warm editorial occasion cards. */
@@ -24,6 +25,7 @@ export function OccasionSection() {
         <div className="mt-14 grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-3">
           {occasions.map((o, i) => (
             <Reveal key={o.id} delay={(i % 3) * 0.08}>
+              <TiltCard max={5}>
               <article className="group relative aspect-[4/5] overflow-hidden rounded-[1.75rem] shadow-card transition-all duration-500 hover:-translate-y-1.5 hover:shadow-lift">
                 <Image
                   src={o.image}
@@ -44,6 +46,7 @@ export function OccasionSection() {
                   <p className="mt-1 text-xs leading-snug text-white/85 md:text-sm">{o.line}</p>
                 </div>
               </article>
+              </TiltCard>
             </Reveal>
           ))}
         </div>

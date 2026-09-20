@@ -19,8 +19,6 @@ export const waMessages = {
   custom: "Hi Whimlet! I would like to discuss a custom crochet order.",
   product: (name: string) =>
     `Hi Whimlet! I'm interested in ${name}. Could you please share more details?`,
-  colourCustom: (colour: string) =>
-    `Hi Whimlet! I'd love a custom crochet piece in ${colour}. Could you share more details?`,
 };
 
 /** Shape of the custom-order wizard state (src/components/CustomOrderExperience). */

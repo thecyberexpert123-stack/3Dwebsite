@@ -62,3 +62,56 @@ Framer Motion.
 - A few planned photos (yarn basket, sketchbook, wrapped parcel, desk still
   life) were not generated due to tool limits — current build uses tasteful
   reuse and SVG doodles; slots are ready for real photography.
+
+## [0.2.0] — 2026-09-20
+
+The "more 3D, more motion" release: a real 3D Design Studio, an interactive
+gift scene, and richer animation across the page.
+
+### Added — 3D Design Studio (`#studio`, replaces the colour demo)
+- Full product configurator: flower/bouquet · rounded/pointed petals · petal
+  count 4–8 · petal, centre & ribbon colours with custom hex pickers ·
+  mix-pastel mode · stem length · leaves · bouquet size 3/5/7 · wrap toggle.
+- Live animated 3D preview: colour lerps, petal/stem pop-ins with a soft
+  overshoot, framing glide between flower and bouquet, gentle idle turn.
+- **Drag-to-spin** implemented manually with `touch-action: pan-y`, so
+  horizontal drags rotate the design while vertical swipes still scroll the
+  page on mobile (OrbitControls was rejected — it traps page scroll).
+- Presets (Blush Rose · Sunny Day · Lavender Cloud · Sage Garden), Surprise Me
+  randomizer, Reset.
+- **Shareable design links** (`?design=…` base64url, strictly sanitized on
+  read) with clipboard copy + manual-copy fallback.
+- Live plain-language design summary (aria-live) reused as the WhatsApp
+  enquiry message — the design the customer built is exactly what the business
+  receives.
+- Domain logic isolated in `src/lib/design.ts`; verified with 16 passing
+  unit checks (round-trips, tamper rejection, business rules, 5,000 random
+  configs).
+
+### Added — more 3D & animation
+- Interactive **3D gift box** in the closing CTA: tap to swing the lid open
+  and release five little hearts (canvas click + accessible HTML toggle).
+- Hero scene: two more floating hearts, three twinkling sparkles, slowly
+  spinning yarn balls, subtle idle drift; word-by-word staggered headline;
+  annotations now float with staggered timing.
+- **Viewport gating**: the hero canvas flips to frameloop "never" when
+  off-screen; accent scenes mount only near the viewport — more canvases
+  without more cost.
+- Pointer-tracked **3D tilt** on product and occasion cards (direct DOM
+  writes, no re-renders; disabled for touch/reduced-motion).
+- Soft **stitch marquee** band between the shop and custom-order sections.
+- **Scroll-progress stitch bar** at the top of the page.
+- Cross-links: the custom-order wizard ↔ the 3D design studio.
+
+### Fixed / hardened
+- Bouquet flowers now lean inward (real bouquet geometry) so stems stay
+  inside the wrap cone — previously vertical stems would pierce it.
+- Design link state is computed post-mount, eliminating an input-value
+  hydration mismatch.
+- Gift scene resets the pointer cursor on unmount (no stuck cursor).
+- Removed the now-unused `colourCustom` WhatsApp helper.
+
+### Performance
+- First-load JS grew only 176 kB → 181 kB; all 3D remains in lazy chunks.
+- Three of four canvases are viewport-gated; the desk scene is still
+  frameloop-on-demand.

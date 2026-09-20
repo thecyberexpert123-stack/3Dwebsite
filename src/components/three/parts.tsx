@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import { Float, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import { makeHeartGeometry, makePetalGeometry, makeThreadGeometry, rnd } from "./geometry";
@@ -14,6 +15,8 @@ type YarnBallProps = {
   color?: string;
   rings?: number;
   seed?: number;
+  /** radians/sec — slow spin makes the wound rings feel alive (0 = still). */
+  spin?: number;
 };
 
 /** A yarn ball: matte core + randomly-oriented wrap rings that read as wound yarn. */
@@ -23,7 +26,9 @@ export function YarnBall({
   color = PALETTE.blush,
   rings = 14,
   seed = 2,
+  spin = 0,
 }: YarnBallProps) {
+  const ball = useRef<THREE.Group>(null!);
   const ringData = useMemo(
     () =>
       Array.from({ length: rings }, (_, i) => ({
@@ -38,8 +43,12 @@ export function YarnBall({
     [rings, radius, seed]
   );
 
+  useFrame((_, dt) => {
+    if (spin !== 0 && ball.current) ball.current.rotation.y += dt * spin;
+  });
+
   return (
-    <group position={position}>
+    <group ref={ball} position={position}>
       <mesh>
         <sphereGeometry args={[radius * 0.965, 18, 18]} />
         <meshStandardMaterial color={color} roughness={1} />
@@ -206,6 +215,40 @@ export function GroundDisk({ radius = 3.6, color = "#FAF1E5" }: { radius?: numbe
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]}>
       <circleGeometry args={[radius, 48]} />
       <meshStandardMaterial color={color} roughness={1} />
+    </mesh>
+  );
+}
+
+/* ---------------- sparkle ---------------- */
+
+type Sparkle3DProps = {
+  position: [number, number, number];
+  color?: string;
+  phase?: number;
+  size?: number;
+  reduced?: boolean;
+};
+
+/** A tiny twinkling star — gentle scale pulse + slow spin. */
+export function Sparkle3D({
+  position,
+  color = "#F6E0C2",
+  phase = 0,
+  size = 0.05,
+  reduced = false,
+}: Sparkle3DProps) {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    if (reduced) return;
+    const t = clock.elapsedTime;
+    ref.current.scale.setScalar(0.55 + 0.45 * Math.sin(t * 1.8 + phase));
+    ref.current.rotation.y = t * 0.6 + phase;
+  });
+  return (
+    <mesh ref={ref} position={position}>
+      <octahedronGeometry args={[size, 0]} />
+      <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
     </mesh>
   );
 }

@@ -7,6 +7,7 @@ import { PRODUCT_CATEGORIES, productCategoryLabel, products, type Product } from
 import { waLink, waMessages } from "@/lib/whatsapp";
 import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
+import { TiltCard } from "./TiltCard";
 import { ProductModal } from "./ProductModal";
 import { HeartDoodle } from "./Decorations";
 
@@ -95,6 +96,7 @@ function ProductCard({
 }) {
   return (
     <Reveal delay={Math.min(index * 0.06, 0.3)} className="h-full">
+      <TiltCard className="h-full">
       <article className="group flex h-full flex-col">
         <button
           type="button"
@@ -143,6 +145,7 @@ function ProductCard({
           </div>
         </div>
       </article>
+      </TiltCard>
     </Reveal>
   );
 }

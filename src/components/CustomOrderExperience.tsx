@@ -232,6 +232,15 @@ export function CustomOrderExperience() {
                       );
                     })}
                   </div>
+                  <p className="mt-4 text-sm text-cocoa-soft">
+                    Prefer to see it first?{" "}
+                    <a
+                      href="#studio"
+                      className="font-semibold text-rose underline decoration-blush-deep decoration-2 underline-offset-4 transition-colors hover:text-cocoa"
+                    >
+                      design it in the 3D studio →
+                    </a>
+                  </p>
                 </fieldset>
               )}
 

@@ -100,3 +100,60 @@ scenes, adding dependencies or touching the build.
   socials rendered as explicit "coming soon" chips, and no prices/policies
   anywhere. The custom-order wizard intentionally says reference photos are
   shared in WhatsApp rather than faking an upload pipeline.
+
+## v0.2.0 additions — configurators, canvases and cursors
+
+### OrbitControls traps page scroll on touch devices
+- **Condition:** drei `<OrbitControls>` sets `touch-action: none` on the canvas.
+  A canvas embedded mid-page therefore swallows vertical swipes — the user
+  cannot scroll past the studio. Unacceptable for a marketing page.
+- **Mechanism:** the browser hands the whole gesture to the canvas instead of
+  scrolling the document.
+- **Strategy that worked:** hand-rolled drag on the canvas element with
+  `touch-action: pan-y`: horizontal drags rotate (pointer events), vertical
+  swipes scroll the page; inertia via exponential velocity decay; idle
+  auto-spin resumes ~2.6s after the last interaction. ~40 lines, no
+  dependency, mobile-perfect. Prefer this pattern for embedded decorative 3D.
+
+### Scaling the number of canvases: gate, don't just mount
+- **Pattern:** two levels of gating.
+  1) *Mount gating* — accent scenes render `null` until an IntersectionObserver
+     says the wrapper is within ~300px (they unmount when far away; replaying
+     their entrance animations on return reads as charm, not a bug).
+  2) *Frameloop gating* — the always-mounted hero canvas flips
+     `frameloop="never"` while off-screen (R3F supports dynamic switching).
+- **Watch:** with `frameloop="never"` nothing renders until invalidated; that's
+  fine because the canvas is off-screen. Also keep IO `rootMargin` generous so
+  scenes are warm before they scroll into view.
+
+### Configurator state that survives remounts
+- **Problem:** in React Three Fiber, remounting a component (e.g. petals after
+  a count change) recreates its materials — killing smooth colour transitions.
+- **Strategy:** materials live in the *stable* parent (flower) and are passed
+  down; only the petal rings remount (with a scale-in "pop"), so colours lerp
+  continuously while structure changes pop. Deterministic `rnd(seed)` keeps the
+  handmade jitter identical across remounts.
+
+### URL-param state must be sanitized, not trusted
+- Design links (`?design=…`) decode to JSON anyone can edit. `sanitizeDesign`
+  whitelists enums, clamps counts to exact allowed values, validates hex via
+  regex, normalizes case, and enforces business rules (bouquet ⇒ stems
+  required). Verified with compiled-run unit checks (16/16) including 5,000
+  random configs and tampered payloads. Rule: pure domain logic in a framework
+  -free module (`src/lib/design.ts`) is cheap to test without a browser.
+
+### Small traps worth remembering
+- **Hydration mismatch via `window`:** computing a URL string in `useMemo`
+  differs between server ("" fallback) and first client render → move it to
+  `useState` + `useEffect`.
+- **Escaped apostrophes break grep assertions:** React emits `&#x27;` — check
+  SSR output for phrases containing apostrophes with the escaped form.
+- **Cursor leaks:** `document.body.style.cursor` set in R3F hover handlers must
+  be reset in an unmount effect, or the cursor sticks when the scene unmounts
+  mid-hover (viewport-gated scenes unmount often!).
+- **Direct-DOM animation beats state for pointermove:** TiltCard writes
+  `style.transform` on a ref — zero re-renders; setState-per-move in a grid
+  would jank.
+- **Word-staggered headlines split SSR strings:** "Little Stitches." no longer
+  appears contiguously in HTML once words are wrapped in motion spans —
+  expected, not a regression (SEO-safe: text still present in spans).

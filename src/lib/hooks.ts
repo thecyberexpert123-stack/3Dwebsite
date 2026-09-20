@@ -63,3 +63,27 @@ export function useSectionScrollProgress(
     return () => window.removeEventListener("scroll", onScroll);
   }, [id, ref]);
 }
+
+/**
+ * Tracks whether an element is (near) the viewport.
+ * - Acccent 3D scenes mount only when `near`, so off-screen canvases cost nothing.
+ * - Always-on scenes (hero) can flip R3F's frameloop to "never" while off-screen.
+ */
+export function useInViewport<T extends Element>(
+  ref: React.RefObject<T | null>,
+  margin = "300px"
+): boolean {
+  const [inView, setInView] = useState(ref.current === null ? false : true);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
+      rootMargin: margin,
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, margin]);
+
+  return inView;
+}

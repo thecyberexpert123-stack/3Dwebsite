@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import dynamic from "next/dynamic";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { useInViewport } from "@/lib/hooks";
 import { HeroStatic } from "./HeroStatic";
 import { HeartDoodle, SquiggleDoodle, YarnDoodle } from "./Decorations";
 
@@ -17,8 +19,25 @@ const ANNOTATIONS = [
   { text: "tiny things, happy things", className: "right-[3%] bottom-[12%] -rotate-3" },
 ] as const;
 
+const wordContainer: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.25 } },
+};
+
+const word: Variants = {
+  hidden: { opacity: 0, y: 26, rotate: 2 },
+  show: {
+    opacity: 1,
+    y: 0,
+    rotate: 0,
+    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
 export function Hero() {
   const reduce = useReducedMotion();
+  const sectionRef = useRef<HTMLElement>(null);
+  const heroActive = useInViewport(sectionRef, "120px");
 
   const fadeUp = (delay: number) =>
     reduce
@@ -30,7 +49,7 @@ export function Hero() {
         };
 
   return (
-    <section id="home" className="gingham relative overflow-hidden">
+    <section id="home" ref={sectionRef} className="gingham relative overflow-hidden">
       {/* decorative doodles — kept few, with breathing room */}
       <FlowerDoodleBg />
       <LeafBg />
@@ -47,13 +66,29 @@ export function Hero() {
           </motion.p>
 
           <motion.h1
-            {...fadeUp(0.15)}
+            initial={reduce ? false : "hidden"}
+            animate="show"
+            variants={reduce ? undefined : wordContainer}
             className="text-balance text-[2.6rem] font-bold leading-[1.05] tracking-tight text-cocoa md:text-6xl"
           >
-            Little Stitches.
-            <span className="mt-1 block font-script text-[3rem] font-normal leading-[1.15] text-rose md:text-[4.2rem]">
-              Big Feelings.
+            <span className="block">
+              {"Little Stitches.".split(" ").map((w, i) => (
+                <motion.span
+                  key={w}
+                  variants={reduce ? undefined : word}
+                  className="inline-block will-change-transform"
+                >
+                  {w}
+                  {i === 0 ? "\u00A0" : ""}
+                </motion.span>
+              ))}
             </span>
+            <motion.span
+              variants={reduce ? undefined : word}
+              className="mt-1 block font-script text-[3rem] font-normal leading-[1.15] text-rose md:text-[4.2rem]"
+            >
+              Big Feelings.
+            </motion.span>
           </motion.h1>
 
           <motion.p {...fadeUp(0.25)} className="text-pretty text-lg font-medium leading-relaxed text-cocoa md:text-xl">
@@ -101,14 +136,15 @@ export function Hero() {
               })}
           className="relative h-[420px] w-full sm:h-[480px] md:h-[560px] lg:h-[620px]"
         >
-          <HeroScene3D />
+          <HeroScene3D active={heroActive} />
 
           {/* floating handmade annotations */}
-          {ANNOTATIONS.map((a) => (
+          {ANNOTATIONS.map((a, i) => (
             <span
               key={a.text}
               aria-hidden="true"
-              className={`pointer-events-none absolute z-10 hidden font-hand text-xl text-rose/85 sm:block ${a.className}`}
+              style={{ animationDelay: `${i * 1.1}s` }}
+              className={`pointer-events-none absolute z-10 hidden animate-float font-hand text-xl text-rose/85 sm:block ${a.className}`}
             >
               {a.text}
               <SquiggleDoodle className="mt-0.5 h-2 w-full text-blush-deep/70" />

@@ -3,7 +3,8 @@ import { StorySection } from "@/components/StorySection";
 import { CategoryShowcase } from "@/components/CategoryShowcase";
 import { ProductGrid } from "@/components/ProductGrid";
 import { CustomOrderExperience } from "@/components/CustomOrderExperience";
-import { ColorCustomizer } from "@/components/ColorCustomizer";
+import { DesignStudio } from "@/components/DesignStudio";
+import { Marquee } from "@/components/Marquee";
 import { OccasionSection } from "@/components/OccasionSection";
 import { WhyHandmade } from "@/components/WhyHandmade";
 import { OurStory } from "@/components/OurStory";
@@ -25,8 +26,9 @@ export default function HomePage() {
       <StorySection />
       <CategoryShowcase />
       <ProductGrid />
+      <Marquee />
       <CustomOrderExperience />
-      <ColorCustomizer />
+      <DesignStudio />
       <OccasionSection />
       <WhyHandmade />
       <OurStory />

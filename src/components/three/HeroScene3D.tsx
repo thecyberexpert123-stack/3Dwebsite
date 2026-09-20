@@ -13,6 +13,7 @@ import {
   GiftBox,
   GroundDisk,
   Hook,
+  Sparkle3D,
   ThreadTube,
   TinyDaisy,
   YarnBall,
@@ -58,12 +59,13 @@ function Scene({ simple, reduced }: { simple: boolean; reduced: boolean }) {
   useFrame((state, dt) => {
     const g = world.current;
     if (!g) return;
-    // gentle cursor parallax + a slow scroll-driven turn — cinematic, never dizzy
+    // gentle cursor parallax + scroll drift + a barely-there idle sway
     const motion = reduced ? 0 : 1;
     const px = state.pointer.x * motion;
     const py = state.pointer.y * motion;
     const scrollMotion = scroll.current * 0.42 * motion;
-    g.rotation.y = damp(g.rotation.y, px * 0.13 + scrollMotion, 2.5, dt);
+    const idleDrift = Math.sin(state.clock.elapsedTime * 0.09) * 0.05 * motion;
+    g.rotation.y = damp(g.rotation.y, px * 0.13 + scrollMotion + idleDrift, 2.5, dt);
     g.rotation.x = damp(g.rotation.x, -py * 0.045, 2.5, dt);
     state.camera.position.y = damp(state.camera.position.y, 1.85 + scrollMotion * 1.2, 2.5, dt);
     state.camera.lookAt(0, 0.9, 0);
@@ -102,9 +104,23 @@ function Scene({ simple, reduced }: { simple: boolean; reduced: boolean }) {
           </mesh>
         </group>
 
-        <YarnBall position={[1.55, 0.3, 0.55]} radius={0.3} color={PALETTE.blush} rings={simple ? 9 : 15} seed={2} />
+        <YarnBall
+          position={[1.55, 0.3, 0.55]}
+          radius={0.3}
+          color={PALETTE.blush}
+          rings={simple ? 9 : 15}
+          seed={2}
+          spin={reduced ? 0 : 0.22}
+        />
         {!simple && (
-          <YarnBall position={[2.05, 0.19, -0.85]} radius={0.19} color={PALETTE.sage} rings={8} seed={6} />
+          <YarnBall
+            position={[2.05, 0.19, -0.85]}
+            radius={0.19}
+            color={PALETTE.sage}
+            rings={8}
+            seed={6}
+            spin={reduced ? 0 : 0.3}
+          />
         )}
 
         <Hook position={[1.1, 0.03, 1.4]} />
@@ -115,6 +131,11 @@ function Scene({ simple, reduced }: { simple: boolean; reduced: boolean }) {
 
         {!simple && (
           <>
+            <FloatingHeart position={[-1.45, 0.78, 0.95]} scale={0.2} color={PALETTE.rose} />
+            <FloatingHeart position={[1.2, 1.42, -0.55]} scale={0.16} color={PALETTE.lavender} />
+            <Sparkle3D position={[-0.95, 1.75, 0.55]} phase={0} reduced={reduced} />
+            <Sparkle3D position={[0.45, 2.05, -0.35]} phase={2.1} size={0.04} reduced={reduced} />
+            <Sparkle3D position={[1.85, 1.15, 0.35]} phase={4.2} size={0.045} color="#F5DCE4" reduced={reduced} />
             <TinyDaisy position={[-1.15, 0.03, 1.5]} seed={11} />
             <TinyDaisy position={[2.3, 0.03, 1.2]} seed={12} petalColor={PALETTE.blush} />
           </>
@@ -136,10 +157,11 @@ function Scene({ simple, reduced }: { simple: boolean; reduced: boolean }) {
 
 /**
  * The signature hero scene: a crochet bouquet at rest on a cream surface with
- * yarn, hook, thread, heart and a little gift box. Falls back to a static
+ * yarn, hook, thread, hearts and a little gift box. Falls back to a static
  * composition when WebGL is unavailable; simplifies on mobile.
+ * `active` flips the frameloop off while the hero is off-screen.
  */
-export default function HeroScene3D() {
+export default function HeroScene3D({ active = true }: { active?: boolean }) {
   const webgl = useWebGL();
   const isMobile = useIsMobile();
   const reduced = useReducedMotion();
@@ -152,6 +174,7 @@ export default function HeroScene3D() {
       dpr={[1, isMobile ? 1.5 : 1.75]}
       camera={{ position: [0.35, 1.85, 7.1], fov: 35 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+      frameloop={active ? "always" : "never"}
       aria-hidden="true"
     >
       <Scene simple={isMobile} reduced={!!reduced} />

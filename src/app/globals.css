@@ -37,6 +37,11 @@
   --animate-sway: sway 9s ease-in-out infinite;
   --animate-heartbeat: heartbeat 2.6s ease-in-out infinite;
   --animate-bounce-soft: bounce-soft 2.2s ease-in-out infinite;
+  --animate-marquee: marquee 38s linear infinite;
+
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
 
   @keyframes float {
     0%, 100% { transform: translateY(0); }

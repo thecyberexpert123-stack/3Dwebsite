@@ -9,9 +9,10 @@ primary conversion channel.
 
 - **Next.js 15** (App Router, static export of `/`) + **React 19** + **TypeScript**
 - **Tailwind CSS v4** (CSS-first design tokens in `src/app/globals.css`)
-- **Three.js + React Three Fiber + Drei** — hero crochet-studio scene, custom-order
-  desk still life, and the colour-customizer blossom (all lazy-loaded, with
-  beautiful static fallbacks)
+- **Three.js + React Three Fiber + Drei** — the hero crochet-studio scene, the
+  interactive **3D Design Studio** (a real product configurator), the
+  opening-gift scene in the closing CTA, and the custom-order desk still life
+  (all lazy-loaded, viewport-gated, with beautiful static fallbacks)
 - **Framer Motion** — reveals, parallax, modals, carousel
 - Self-hosted fonts (Parisienne · Caveat · Quicksand) — no external font CDN
 
@@ -51,6 +52,7 @@ public/images/        product & scene imagery
 | Process timeline steps | `src/data/process.ts` |
 | Nav links, tagline, socials | `src/data/site.ts` |
 | WhatsApp number & prefilled messages | `src/lib/whatsapp.ts` |
+| 3D Design Studio options, presets & message | `src/lib/design.ts` |
 
 > **Honest-content policy (important):**
 > - Product/gallery images are **AI-generated placeholders** — replace the files
@@ -64,6 +66,23 @@ public/images/        product & scene imagery
 >   "coming soon" placeholders until real accounts exist.
 > - The custom-order wizard composes a WhatsApp message — reference photos are
 >   intentionally shared in the chat afterwards (no fake upload pipeline).
+
+## The 3D Design Studio
+
+A working product configurator at `#studio` (replaces the simple colour demo):
+
+- **Controls:** flower vs bouquet · rounded/pointed petals · petal count (4–8) ·
+  petal, centre & ribbon colours (palette + custom hex) · mix-pastel mode ·
+  stem length · leaf count · bouquet size (3/5/7) · wrap on/off
+- **Live 3D:** every change animates (colours lerp, petals pop, framing glides);
+  drag to spin — horizontal drag only, so vertical swipes still scroll on mobile
+- **Shareable:** "Copy design link" produces a `?design=…` URL that reopens the
+  studio with the exact design (param is strictly sanitized — never trusted)
+- **Conversion:** "Send This Design to Whimlet" opens WhatsApp with a
+  plain-language description of the design, and a live `aria-live` summary
+  mirrors it for screen readers
+- **Graceful degradation:** without WebGL the preview falls back to imagery,
+  but every control, the summary and the WhatsApp handoff still work
 
 ## Images
 

@@ -71,3 +71,10 @@ export function makeThreadGeometry(
   const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)));
   return new THREE.TubeGeometry(curve, 72, radius, 8, false);
 }
+
+/** A pointed petal (daisy/sunflower feel) pointing +Y, base at origin. */
+export function makePointedPetalGeometry(width = 0.2, seed = 1): THREE.BufferGeometry {
+  const geo = new THREE.ConeGeometry(width, 1, 9, 3);
+  geo.translate(0, 0.5, 0);
+  return wobbleGeometry(geo, 0.03, seed);
+}
