@@ -13,6 +13,7 @@
   --color-blush-soft: #fde1e8;
   --color-blush-deep: #f3a8bf;
   --color-rose: #e07a9a;
+  --color-rose-ink: #b8456f; /* text-safe rose: 4.8:1 on ivory, 4.15:1 on blush-soft */
   --color-dusty: #d16a7c;
   --color-strawberry: #f07c8c;
   --color-sage: #b7d8c4;
@@ -117,7 +118,7 @@
   }
 
   :focus-visible {
-    outline: 2px dashed var(--color-rose);
+    outline: 2px dashed var(--color-rose-ink);
     outline-offset: 3px;
     border-radius: 4px;
   }
@@ -224,8 +225,8 @@
   }
 
   .btn-outline {
-    border: 1.5px solid var(--color-rose);
-    color: var(--color-rose);
+    border: 1.5px solid var(--color-rose-ink);
+    color: var(--color-rose-ink);
     background: rgb(255 253 249 / 0.65);
   }
   .btn-outline:hover {

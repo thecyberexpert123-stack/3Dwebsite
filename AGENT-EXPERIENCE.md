@@ -233,3 +233,73 @@ scenes, adding dependencies or touching the build.
   accepted counter-clockwise loops and mixed array/object access (NaNs).
   When a validator fails everything, suspect the validator — test it on
   known-good data (a circle) first.
+
+## v0.5.0 — the girly/cute overhaul
+
+### The sandbox resets harder than expected
+- **Problem:** at turn start the repo had no history, `node_modules` and
+  `.next` were gone and the previous work only existed on another arena
+  branch. **Fix:** `git fetch origin +refs/heads/<branch>:refs/remotes/origin/<branch>`
+  with explicit refspecs, `git reset -q <remote head>`, `npm ci`. Trust the
+  pushed branch, never the local tree.
+- **Network:** npm registry, PyPI and github.com work; Chrome-for-Testing
+  CDNs, apt, unpkg and jsdelivr do not. For headless screenshots,
+  `@sparticuz/chromium` works if you set
+  `AWS_EXECUTION_ENV=AWS_Lambda_nodejs22.x` before the first
+  `executablePath()` and launch with `LD_LIBRARY_PATH=/tmp/al2023/lib`.
+
+### Stale `next start` after a rebuild ⇒ 400s on `_next/static`
+- `stop_process` leaves the `next-server` child alive; the old server then
+  serves the new HTML with old chunk hashes. Always `pkill -f next-server`
+  before `next start` (that is what `/tmp/pw/restart.sh` does). Symptom to
+  recognise: page loads, every chunk 400s, no client JS.
+
+### SwiftShader realities (for interpreting screenshots)
+- `THREE.WebGLRenderer: Context Lost.` in the console is a teardown artifact,
+  not a bug. Screenshots take 4–7 s each so any timed shot lands late. The
+  hero at `quality=high` needs ~15–20 s to fully compose; use
+  `?intro=skip&quality=high` and long waits when judging composition, and
+  do not read SwiftShader frame rates as user frame rates — only compare
+  relative numbers (draw calls/frame before vs after).
+
+### Pastels and ACES do not mix
+- **Problem:** every scene had a grey cast even though materials were pink.
+  **Root cause:** R3F's default ACESFilmic tone mapping compresses bright
+  low-saturation colours towards grey. **Fix:** `<Canvas flat>` (linear tone
+  mapping) plus a hemisphere fill. Also the standard-material ground read
+  darker than the page → use an unlit `meshBasicMaterial` for the floor when
+  the floor is supposed to *be* the page colour. Confidence: high (verified in
+  before/after shots).
+
+### Cute ≠ noisy — how the "girly" direction stayed directed
+- Research (claymorphism guides, coquette-aesthetic roundups) converged on:
+  tinted (never white) surfaces, one light source, hue-tinted shadows,
+  bows/pearls/ribbons as the signature motif, soft-bounce easing. We applied
+  that as a *system* (tokens + `.btn-primary`/`.card-clay`/`.sticker`)
+  instead of per-component decoration, so the page reads cohesively.
+- The single entrance surprise hooks into the existing intro clock
+  (`startIntro()`) rather than adding a second loader — the door is a
+  wrapper around the hero's first frame, not a competing animation.
+- Decorative motion is budgeted: the heart trail is pooled DOM + CSS
+  animation with distance/rate gating; no per-frame JS, no canvas.
+
+### Text colour vs brand colour are different tokens
+- Brand rose `#e07a9a` is 2.7:1 on ivory — fine for fills, doodles and 3D,
+  failing for text. Adding `--color-rose-ink` (`#b8456f`, 4.8:1 on ivory)
+  and moving every `text-rose` to it fixed 21 files with a regex. Lesson:
+  compute the contrast table from the tokens *before* the palette is used in
+  50 places; a text-safe variant of each accent should exist from day one.
+
+### Python bulk edits: replace-all then replace-once lies
+- A replace-all earlier in the script can consume an occurrence a later
+  `replace(a, b, 1)` expects, so the helper reports MISSING although the
+  file is already correct. Grep-verify the end state instead of trusting
+  the MISSING message.
+
+### Draw-call hygiene for "many small props" scenes
+- A yarn ball made of 14 torus meshes is 15 draw calls; merging the rings
+  with `BufferGeometryUtils.mergeGeometries` (same material) makes it 2.
+  Same for strawberry seeds/leaves. Dispose the merged geometry in an
+  effect cleanup. Measured hero: 190 → 175 calls/frame; the remaining cost
+  is the flowers (one mesh per petal) — the next merge candidate if a real
+  low-tier device struggles.

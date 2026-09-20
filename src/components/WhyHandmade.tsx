@@ -9,7 +9,7 @@ const PRINCIPLES = [
     icon: HookDoodle,
     title: "Made by Hand",
     line: "No machines, no moulds — just hooks, yarn and hours of happy stitching.",
-    tint: "bg-blush-soft text-rose",
+    tint: "bg-blush-soft text-rose-ink",
   },
   {
     icon: PencilDoodle,

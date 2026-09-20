@@ -46,20 +46,20 @@ export function StorySection() {
               />
             </motion.div>
           </motion.div>
-          <p className="sticker absolute -bottom-5 left-6 text-rose" style={{ "--tilt": "-3deg" } as React.CSSProperties}>
+          <p className="sticker absolute -bottom-5 left-6 text-rose-ink" style={{ "--tilt": "-3deg" } as React.CSSProperties}>
             one stitch at a time ♡
           </p>
-          <HeartDoodle className="absolute -right-3 -top-4 h-10 w-10 rotate-12 text-rose/70 animate-float" />
+          <HeartDoodle className="absolute -right-3 -top-4 h-10 w-10 rotate-12 text-rose-ink animate-float" />
         </motion.div>
 
         {/* copy */}
         <Reveal className="flex flex-col items-start gap-5">
-          <p className="inline-flex items-center gap-2 rounded-full bg-whitish/90 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-rose shadow-clay-sm">
+          <p className="inline-flex items-center gap-2 rounded-full bg-whitish/90 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-rose-ink shadow-clay-sm">
             <HeartDoodle className="h-3.5 w-3.5" /> the whimbles &amp; wonders
           </p>
           <h2 className="text-balance text-3xl font-bold leading-tight tracking-tight text-cocoa md:text-5xl">
             <TextReveal text="Made Slowly." />
-            <TextReveal text="Made Specially." className="block font-script font-normal text-rose" stagger={0.1} />
+            <TextReveal text="Made Specially." className="block font-script font-normal text-rose-ink" stagger={0.1} />
           </h2>
           <p className="text-pretty text-lg leading-relaxed text-cocoa-soft">
             At Whimlet, every piece begins with yarn, imagination and a lot of
@@ -69,7 +69,7 @@ export function StorySection() {
           <ul className="mt-2 flex flex-col gap-3">
             {VALUES.map((v) => (
               <li key={v.label} className="flex items-center gap-3 font-semibold text-cocoa">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-rose shadow-clay-sm">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-rose-ink shadow-clay-sm">
                   <v.icon className="h-4.5 w-4.5" />
                 </span>
                 {v.label}

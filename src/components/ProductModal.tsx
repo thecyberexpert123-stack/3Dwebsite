@@ -95,7 +95,7 @@ export function ProductModal({
             {/* details */}
             <div className="flex flex-col gap-4 p-6 sm:p-8 md:justify-center">
               <div>
-                <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-rose">
+                <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-rose-ink">
                   {productCategoryLabel(product.category)}
                 </p>
                 <h3 id="product-modal-title" className="mt-1.5 text-2xl font-bold text-cocoa md:text-3xl">
@@ -107,7 +107,7 @@ export function ProductModal({
 
               {product.customizable && (
                 <p className="flex items-start gap-2.5 rounded-2xl bg-blush-soft/50 p-3.5 text-sm font-medium text-cocoa">
-                  <SparkleDoodle className="mt-0.5 h-4 w-4 shrink-0 text-rose" />
+                  <SparkleDoodle className="mt-0.5 h-4 w-4 shrink-0 text-rose-ink" />
                   Customisable — colours, sizes and little details can be
                   tailored to you. Just ask!
                 </p>

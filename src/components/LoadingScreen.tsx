@@ -196,13 +196,13 @@ export function LoadingScreen() {
                       type="button"
                       onClick={unwrap}
                       aria-label="Unwrap the gift"
-                      className="relative text-rose"
+                      className="relative text-rose-ink"
                       animate={opened ? { scale: [1, 1.12, 0], rotate: [0, -6, 8] } : { y: [0, -8, 0] }}
                       transition={opened ? { duration: 0.6 } : { duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
                     >
                       <GiftDoodle className="h-36 w-36 md:h-44 md:w-44" strokeWidth={1.1} />
                       <SparkleDoodle className="absolute -right-4 -top-3 h-7 w-7 animate-twinkle text-lavender-deep" />
-                      <SparkleDoodle className="absolute -left-5 bottom-8 h-5 w-5 animate-twinkle text-rose [animation-delay:0.9s]" />
+                      <SparkleDoodle className="absolute -left-5 bottom-8 h-5 w-5 animate-twinkle text-rose-ink [animation-delay:0.9s]" />
                     </motion.button>
                   </div>
                 )}
@@ -223,14 +223,14 @@ export function LoadingScreen() {
                 <button
                   type="button"
                   onClick={lift}
-                  className="text-xs font-semibold uppercase tracking-[0.25em] text-cocoa-soft/70 underline-offset-4 transition-colors hover:text-rose hover:underline"
+                  className="text-xs font-semibold uppercase tracking-[0.25em] text-cocoa-soft/70 underline-offset-4 transition-colors hover:text-rose-ink hover:underline"
                 >
                   skip
                 </button>
               </motion.div>
             </>
           ) : (
-            <svg viewBox="0 0 24 24" className="relative z-10 mt-6 h-14 w-14 text-rose" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="relative z-10 mt-6 h-14 w-14 text-rose-ink" aria-hidden="true">
               <path
                 d="M12 20.2C7.6 17.4 3.4 13.9 3.4 9.6 3.4 6.9 5.5 5 8 5c1.6 0 3 .8 4 2.1C13 5.8 14.4 5 16 5c2.5 0 4.6 1.9 4.6 4.6 0 4.3-4.2 7.8-8.6 10.6z"
                 fill="none"

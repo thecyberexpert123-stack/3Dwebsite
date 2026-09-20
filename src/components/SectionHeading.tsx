@@ -26,7 +26,7 @@ export function SectionHeading({
 
   return (
     <Reveal className={`flex max-w-2xl flex-col gap-4 ${alignCls} ${className}`}>
-      <p className="inline-flex items-center gap-2 rounded-full bg-whitish/90 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-rose shadow-clay-sm">
+      <p className="inline-flex items-center gap-2 rounded-full bg-whitish/90 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-rose-ink shadow-clay-sm">
         <BowDoodle className="h-3.5 w-3.5" />
         {eyebrow}
         <SparkleDoodle className="h-3 w-3 animate-twinkle" />
@@ -36,7 +36,7 @@ export function SectionHeading({
         {accent ? (
           <>
             {" "}
-            <TextReveal text={accent} className="font-script font-normal text-rose" stagger={0.09} />
+            <TextReveal text={accent} className="font-script font-normal text-rose-ink" stagger={0.09} />
           </>
         ) : null}
       </h2>

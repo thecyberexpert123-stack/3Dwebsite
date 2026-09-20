@@ -46,7 +46,7 @@ export function ProductGrid() {
                 className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-300 ${
                   active
                     ? "border-transparent bg-blush text-cocoa shadow-clay-sm"
-                    : "border-white bg-white/80 text-cocoa-soft shadow-card hover:-translate-y-0.5 hover:text-rose"
+                    : "border-white bg-white/80 text-cocoa-soft shadow-card hover:-translate-y-0.5 hover:text-rose-ink"
                 }`}
               >
                 {c.label}
@@ -69,10 +69,10 @@ export function ProductGrid() {
         </motion.div>
 
         <Reveal className="mt-12 text-center">
-          <p className="font-hand text-xl text-rose/90">
+          <p className="font-hand text-xl text-rose-ink">
             looking for something you don't see here?
           </p>
-          <a href="#custom" className="mt-1 inline-block font-semibold text-cocoa underline decoration-blush-deep decoration-2 underline-offset-4 transition-colors hover:text-rose">
+          <a href="#custom" className="mt-1 inline-block font-semibold text-cocoa underline decoration-blush-deep decoration-2 underline-offset-4 transition-colors hover:text-rose-ink">
             We'd love to make it custom →
           </a>
         </Reveal>
@@ -119,7 +119,7 @@ function ProductCard({
             />
           </motion.span>
           {/* tiny heart appears on hover */}
-          <span className="absolute right-3.5 top-3.5 flex h-9 w-9 scale-50 items-center justify-center rounded-full bg-white/85 text-rose opacity-0 shadow-card transition-all duration-300 group-hover:scale-100 group-hover:opacity-100">
+          <span className="absolute right-3.5 top-3.5 flex h-9 w-9 scale-50 items-center justify-center rounded-full bg-white/85 text-rose-ink opacity-0 shadow-card transition-all duration-300 group-hover:scale-100 group-hover:opacity-100">
             <HeartDoodle className="h-5 w-5 animate-heartbeat" />
           </span>
           {product.customizable && (
@@ -128,7 +128,7 @@ function ProductCard({
         </button>
 
         <div className="flex flex-1 flex-col px-1.5 pt-4">
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-rose">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-rose-ink">
             {productCategoryLabel(product.category)}
           </p>
           <h3 className="mt-1 text-lg font-bold text-cocoa">{product.name}</h3>

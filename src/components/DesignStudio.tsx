@@ -43,7 +43,7 @@ function SceneFallback() {
         aria-hidden="true"
         className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-bark/35 to-transparent p-4"
       >
-        <span className="rounded-full bg-white/85 px-4 py-1.5 font-hand text-lg text-rose">
+        <span className="rounded-full bg-white/85 px-4 py-1.5 font-hand text-lg text-rose-ink">
           warming up the hooks…
         </span>
       </div>
@@ -129,7 +129,7 @@ export function DesignStudio() {
 
         {/* presets */}
         <Reveal delay={0.08} className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
-          <span className="font-hand text-lg text-rose/80">start from:</span>
+          <span className="font-hand text-lg text-rose-ink">start from:</span>
           {DESIGN_PRESETS.map((p) => (
             <button
               key={p.id}
@@ -139,7 +139,7 @@ export function DesignStudio() {
               className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-300 ${
                 activePreset === p.id
                   ? "border-transparent bg-blush text-cocoa shadow-clay-sm"
-                  : "border-white bg-white/80 text-cocoa-soft shadow-card hover:-translate-y-0.5 hover:text-rose"
+                  : "border-white bg-white/80 text-cocoa-soft shadow-card hover:-translate-y-0.5 hover:text-rose-ink"
               }`}
             >
               {p.label}
@@ -166,7 +166,7 @@ export function DesignStudio() {
               ) : null}
               <p
                 aria-hidden="true"
-                className="sticker pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-rose"
+                className="sticker pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-rose-ink"
                 style={{ "--tilt": "-2deg" } as React.CSSProperties}
               >
                 {webgl === false ? "3D preview unavailable — your choices still work below ✿" : "drag to spin ✿"}
@@ -220,7 +220,7 @@ export function DesignStudio() {
                   onChange={(v) => update("petalCount", v)}
                 />
                 {config.petalShape === "custom" && config.customPetal && (
-                  <p className="text-xs font-semibold text-rose">
+                  <p className="text-xs font-semibold text-rose-ink">
                     ✏️ blooming from your hand-drawn petal —{" "}
                     <button
                       type="button"
@@ -322,7 +322,7 @@ export function DesignStudio() {
           {/* ---------- summary + actions ---------- */}
           <div className="mt-6 border-t-2 border-dashed border-blush-deep/40 pt-5">
             <p aria-live="polite" className="text-pretty font-hand text-xl leading-snug text-cocoa md:text-2xl">
-              <span className="text-rose">your design:</span> {summary}
+              <span className="text-rose-ink">your design:</span> {summary}
             </p>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -332,7 +332,7 @@ export function DesignStudio() {
               <button
                 type="button"
                 onClick={() => { setConfig(DEFAULT_DESIGN); setActivePreset("blush-rose"); }}
-                className="btn btn-sm rounded-full px-5 py-2.5 text-cocoa-soft transition-colors hover:text-rose"
+                className="btn btn-sm rounded-full px-5 py-2.5 text-cocoa-soft transition-colors hover:text-rose-ink"
               >
                 ↺ Reset
               </button>
@@ -362,7 +362,7 @@ export function DesignStudio() {
             <p className="mt-2 text-xs text-cocoa-soft">
               Share this link with someone you love — it opens the studio with your exact design.
               Want to add more details?{" "}
-              <a href="#custom" className="font-semibold text-rose underline decoration-blush-deep decoration-2 underline-offset-4">
+              <a href="#custom" className="font-semibold text-rose-ink underline decoration-blush-deep decoration-2 underline-offset-4">
                 use the custom order form →
               </a>
             </p>
@@ -378,7 +378,7 @@ export function DesignStudio() {
 function ControlGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="font-hand text-xl text-rose">{label}</p>
+      <p className="font-hand text-xl text-rose-ink">{label}</p>
       {children}
     </div>
   );
@@ -408,7 +408,7 @@ function Segmented<T extends string | number>({
             className={`rounded-full px-3.5 py-1.5 text-sm transition-all duration-300 ${
               active
                 ? "bg-blush font-bold text-cocoa shadow-card"
-                : "font-semibold text-cocoa-soft hover:text-rose"
+                : "font-semibold text-cocoa-soft hover:text-rose-ink"
             }`}
           >
             {o.label}

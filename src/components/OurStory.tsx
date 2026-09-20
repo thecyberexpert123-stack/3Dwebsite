@@ -15,11 +15,11 @@ export function OurStory() {
       <div className="wrap grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
         {/* copy */}
         <Reveal className="flex flex-col items-start gap-5">
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-rose">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-rose-ink">
             <HeartDoodle className="h-3.5 w-3.5" /> our story
           </p>
           <h2 className="text-balance text-3xl font-bold leading-tight tracking-tight text-cocoa md:text-5xl">
-            <TextReveal text="The Whimlet" /> <TextReveal text="Story" className="font-script font-normal text-rose" />
+            <TextReveal text="The Whimlet" /> <TextReveal text="Story" className="font-script font-normal text-rose-ink" />
           </h2>
 
           <p className="text-pretty leading-relaxed text-cocoa-soft md:text-lg">
@@ -35,7 +35,7 @@ export function OurStory() {
           </p>
 
           <blockquote className="relative mt-2 rounded-[2rem] bg-white/70 p-6 shadow-card md:p-8">
-            <p className="font-script text-3xl leading-snug text-rose md:text-4xl">
+            <p className="font-script text-3xl leading-snug text-rose-ink md:text-4xl">
               “Every piece begins with a single loop of yarn.”
             </p>
             <SquiggleDoodle className="mt-3 h-2.5 w-28 text-blush-deep" />
@@ -58,7 +58,7 @@ export function OurStory() {
               className="object-cover"
             />
           </div>
-          <p className="absolute -bottom-4 right-6 rotate-2 font-hand text-xl text-rose md:text-2xl">
+          <p className="absolute -bottom-4 right-6 rotate-2 font-hand text-xl text-rose-ink md:text-2xl">
             the little studio
           </p>
           <LadybugDoodle className="absolute -left-3 top-8 h-9 w-9 -rotate-12 text-dusty/70 animate-float-slow" />

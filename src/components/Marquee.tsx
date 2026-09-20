@@ -29,7 +29,7 @@ export function Marquee() {
                   {phrase}
                 </span>
                 {i % 3 === 0 ? (
-                  <BowDoodle className="h-5 w-5 shrink-0 text-rose" />
+                  <BowDoodle className="h-5 w-5 shrink-0 text-rose-ink" />
                 ) : i % 3 === 1 ? (
                   <HeartDoodle className="h-4 w-4 shrink-0 text-strawberry" />
                 ) : (

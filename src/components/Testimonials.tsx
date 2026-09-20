@@ -69,7 +69,7 @@ export function Testimonials() {
                   </p>
                   <p className="mt-4 flex items-center justify-center gap-1.5" aria-hidden="true">
                     {[0, 1, 2].map((i) => (
-                      <HeartDoodle key={i} className="h-4 w-4 text-rose" />
+                      <HeartDoodle key={i} className="h-4 w-4 text-rose-ink" />
                     ))}
                   </p>
                 </motion.blockquote>
@@ -83,7 +83,7 @@ export function Testimonials() {
               type="button"
               onClick={() => setIndex((i) => (i - 1 + testimonials.length) % testimonials.length)}
               aria-label="Previous kind word"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-rose/40 bg-white/70 text-rose transition-all hover:bg-blush-soft"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-rose/40 bg-white/70 text-rose-ink transition-all hover:bg-blush-soft"
             >
               <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -109,7 +109,7 @@ export function Testimonials() {
               type="button"
               onClick={() => setIndex((i) => (i + 1) % testimonials.length)}
               aria-label="Next kind word"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-rose/40 bg-white/70 text-rose transition-all hover:bg-blush-soft"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-rose/40 bg-white/70 text-rose-ink transition-all hover:bg-blush-soft"
             >
               <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden="true">
                 <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

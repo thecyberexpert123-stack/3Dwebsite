@@ -29,20 +29,20 @@ export function FAQ() {
                   <h3>
                     <button
                       type="button"
-                      className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left font-bold text-cocoa transition-colors hover:text-rose md:px-7"
+                      className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left font-bold text-cocoa transition-colors hover:text-rose-ink md:px-7"
                       aria-expanded={isOpen}
                       aria-controls={`faq-panel-${i}`}
                       id={`faq-button-${i}`}
                       onClick={() => setOpen(isOpen ? null : i)}
                     >
                       <span className="flex items-center gap-3">
-                        <FlowerDoodle className={`hidden h-5 w-5 shrink-0 transition-colors sm:block ${isOpen ? "text-rose" : "text-blush-deep"}`} />
+                        <FlowerDoodle className={`hidden h-5 w-5 shrink-0 transition-colors sm:block ${isOpen ? "text-rose-ink" : "text-blush-deep"}`} />
                         {faq.q}
                       </span>
                       <span
                         aria-hidden="true"
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-lg font-bold transition-all duration-400 ${
-                          isOpen ? "rotate-45 border-rose bg-blush text-cocoa" : "border-blush-deep/40 text-rose"
+                          isOpen ? "rotate-45 border-rose bg-blush text-cocoa" : "border-blush-deep/40 text-rose-ink"
                         }`}
                       >
                         +

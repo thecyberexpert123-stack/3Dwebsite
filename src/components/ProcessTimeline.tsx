@@ -102,7 +102,7 @@ export function ProcessTimeline() {
                   <span className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-cocoa-soft">
                     step {active + 1} of {processSteps.length}
                   </span>
-                  <span className="ml-3 font-script text-2xl leading-none text-rose">
+                  <span className="ml-3 font-script text-2xl leading-none text-rose-ink">
                     {processSteps[active].title}
                   </span>
                 </div>
@@ -160,7 +160,7 @@ export function ProcessTimeline() {
                           isActive ? "-translate-y-1 shadow-soft ring-1 ring-blush-deep/50" : "opacity-80"
                         }`}
                       >
-                        <span className="flex items-center gap-3 text-rose">
+                        <span className="flex items-center gap-3 text-rose-ink">
                           <Icon className="h-6 w-6" />
                           <span className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-cocoa-soft">
                             step {i + 1}

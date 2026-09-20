@@ -174,6 +174,65 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.5.0] — 2026-09-20
+
+The "girly & cute" release — a strawberry-milk palette, clay UI chrome, a
+gift-unwrap entrance and coquette details (bows, pearls, hearts) everywhere
+that the eye rests. Every scene keeps its purpose; only its wardrobe changed.
+
+### Added
+- **Entrance surprise — the gift door** (`LoadingScreen.tsx`,
+  `three/GiftIntroScene.tsx`): the page arrives wrapped. A 3D gift box with a
+  satin bow sits on a candy-gradient curtain; the bow wiggles, tapping it (or
+  the "Unwrap" button / Enter) pops the lid, confetti hearts burst, and the
+  curtain irises open in a circular wipe straight into the hero's intro clock
+  (`startIntro()` — no second intro system). Auto-unwraps after ~5 s if the
+  visitor doesn't; repeat visits in the same tab get a 1 s curtain instead;
+  reduced-motion gets the short curtain; no-WebGL gets a drawn SVG gift with
+  the same button. Body scroll is locked only while the door is up.
+- **Heart trail** (`HeartTrail.tsx`): tiny pastel hearts drift off the cursor.
+  Pooled DOM nodes (18), distance + rate gated, compositor-only CSS animation,
+  fine-pointer only, off for `prefers-reduced-motion`.
+- **Clay UI system** (`globals.css`): `--shadow-clay`/`clay-sm` (hue-tinted
+  outer shadow + inset top-left highlight + inset bottom-right shade),
+  `.btn-primary` is now a pressable pink clay pill (`translateY(2px)
+  scale(.98)` on active), `.card-clay`, `.sticker` (tilted white label with
+  `--tilt`), `.gingham`, `.gingham-pink`, `.polka`, `.candy` backgrounds and
+  `.scallop-bottom` edges (`--scallop` colour var). Section rhythm alternates
+  candy / gingham / polka / ivory so no two neighbours share a texture.
+- New 3D props (`three/parts.tsx`): `SatinBow` (round filled loops + tails —
+  used on the intro gift, the contact gift and the process pack box),
+  `StrawberryCharm`, `PuffyCloud`, `Sparkle3D`; hero gets pearls + bows +
+  strawberry charm; `CategoryShowcase` cards became pastel polaroids with a
+  bow pinned at the top (wiggles on hover).
+- Palette token `--color-strawberry`, `--color-rose-ink` (text-safe rose).
+
+### Changed
+- Palette: ivory `#fff6f8`, blush/blush-soft/blush-deep, lavender, mint,
+  butter, sky, cocoa text. Footer is rose-ink with near-white text (the old
+  dark bark footer clashed with the pastel page).
+- Rendering: `flat` (no ACES tone mapping — it greyed the pastels), hemisphere
+  fill light, unlit `SoftGround` so the 3D floor matches the page colour.
+- `YarnBall` wrap rings and `StrawberryCharm` seeds/leaves are merged into
+  single geometries (hero draw calls 190 → 175 per frame at the high tier).
+- ProcessScene "design" beat: camera pulled back so the sketch and yarn share
+  the frame; sketch line is rose instead of grey-brown.
+- Design-studio / product / gallery filter chips share one clay chip style.
+- All rose *text* moved to `text-rose-ink` (`#b8456f`, 4.8:1 on ivory, 4.15:1
+  on blush-soft); `#e07a9a` stays for fills, doodles and 3D. Footer text
+  opacities raised to keep ≥4.5:1 on rose-ink.
+
+### Verified
+- `npm run build` green (`/` 35.8 kB, 189 kB first load); `tsc --noEmit`
+  clean; `npm run test:design` 46/46.
+- Headless Chrome (SwiftShader) passes: full-page 1440×900 and 390×844 shot
+  grids; door flows for default / reduced-motion / no-WebGL / repeat-visit /
+  auto-unwrap (overlay up at 3.6 s, gone at 12.3 s incl. hero settle);
+  first Tab lands on the skip link; canvases mounted while scrolled to
+  `#process`: 3 (gating still works).
+- Contrast table for every new text/background pairing computed from the
+  tokens (see AGENT-EXPERIENCE).
+
 ## [0.4.0] — 2026-09-20
 
 The "directed" release — one shared intro clock, adaptive quality and a

@@ -40,10 +40,10 @@ export function ContactSection() {
         {/* ---------- copy + CTAs ---------- */}
         <div className="flex flex-col items-start gap-7 text-left">
           <Reveal className="flex flex-col items-start gap-5">
-            <p className="inline-flex items-center gap-2 rounded-full bg-whitish/90 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-rose shadow-clay-sm">
+            <p className="inline-flex items-center gap-2 rounded-full bg-whitish/90 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-rose-ink shadow-clay-sm">
               <HeartDoodle className="h-3.5 w-3.5" /> say hello
             </p>
-            <h2 className="max-w-xl text-balance font-script text-5xl leading-tight text-rose md:text-7xl">
+            <h2 className="max-w-xl text-balance font-script text-5xl leading-tight text-rose-ink md:text-7xl">
               <TextReveal text="Let's Make Something Lovely." stagger={0.12} />
             </h2>
             <p className="max-w-md text-pretty text-lg leading-relaxed text-cocoa-soft md:text-xl">
@@ -76,7 +76,7 @@ export function ContactSection() {
               href={`tel:${PHONE_TEL}`}
               className="group flex items-center gap-2.5 rounded-full bg-white/60 px-5 py-2.5 font-semibold text-cocoa shadow-card transition-all hover:-translate-y-0.5 hover:shadow-soft"
             >
-              <PhoneDoodle className="h-4.5 w-4.5 text-rose transition-transform group-hover:rotate-12" />
+              <PhoneDoodle className="h-4.5 w-4.5 text-rose-ink transition-transform group-hover:rotate-12" />
               {PHONE_DISPLAY}
             </a>
             <p className="text-xs font-semibold text-cocoa-soft">
@@ -119,7 +119,7 @@ export function ContactSection() {
             </button>
           )}
           {!has3D && (
-            <p className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap font-hand text-lg text-rose">
+            <p className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap font-hand text-lg text-rose-ink">
               a little gift, whenever you're ready
             </p>
           )}

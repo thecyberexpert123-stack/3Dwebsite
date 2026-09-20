@@ -14,11 +14,11 @@ export function SocialStrip() {
     <section id="follow" className="gingham-pink relative py-16 md:py-20">
       <div className="wrap flex flex-col items-center gap-6 text-center">
         <Reveal className="flex flex-col items-center gap-3">
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-rose">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-rose-ink">
             <SparkleDoodle className="h-4 w-4" /> come say hi
           </p>
           <h2 className="text-balance text-2xl font-bold tracking-tight text-cocoa md:text-4xl">
-            More Little Things <span className="font-script font-normal text-rose">From Whimlet</span>
+            More Little Things <span className="font-script font-normal text-rose-ink">From Whimlet</span>
           </h2>
           <p className="max-w-md text-pretty leading-relaxed text-cocoa-soft">
             New pieces, works-in-progress and behind-the-stitches moments —
@@ -35,9 +35,9 @@ export function SocialStrip() {
                   title="Coming soon"
                   aria-label={`${s.label} — coming soon`}
                 >
-                  <HeartDoodle className="h-4 w-4 text-rose" />
+                  <HeartDoodle className="h-4 w-4 text-rose-ink" />
                   {s.label}
-                  <span className="font-hand text-base text-rose/80">soon</span>
+                  <span className="font-hand text-base text-rose-ink">soon</span>
                 </span>
               </li>
             ))}

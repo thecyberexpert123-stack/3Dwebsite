@@ -76,7 +76,7 @@ export function Gallery() {
                 className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-300 ${
                   active
                     ? "border-transparent bg-blush text-cocoa shadow-clay-sm"
-                    : "border-white bg-white/80 text-cocoa-soft shadow-card hover:-translate-y-0.5 hover:text-rose"
+                    : "border-white bg-white/80 text-cocoa-soft shadow-card hover:-translate-y-0.5 hover:text-rose-ink"
                 }`}
               >
                 {f.label}

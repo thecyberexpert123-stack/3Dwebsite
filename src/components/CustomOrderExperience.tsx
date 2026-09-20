@@ -128,12 +128,12 @@ export function CustomOrderExperience() {
       <div className="wrap grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14">
         {/* ---------- left: pitch + desk visual ---------- */}
         <Reveal className="flex flex-col items-start gap-6">
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-rose">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-rose-ink">
             <SparkleDoodle className="h-4 w-4" /> custom orders, the heart of it all
           </p>
           <h2 className="text-balance text-3xl font-bold leading-tight tracking-tight text-cocoa md:text-5xl">
             Dream It.
-            <span className="block font-script font-normal text-rose">We'll Crochet It.</span>
+            <span className="block font-script font-normal text-rose-ink">We'll Crochet It.</span>
           </h2>
           <p className="max-w-md text-pretty text-lg leading-relaxed text-cocoa-soft">
             Have something specific in mind? Tell us what you're imagining and
@@ -168,7 +168,7 @@ export function CustomOrderExperience() {
               href={waLink(waMessages.custom)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-rose underline decoration-blush-deep decoration-2 underline-offset-4 transition-colors hover:text-cocoa"
+              className="inline-flex items-center gap-1.5 text-rose-ink underline decoration-blush-deep decoration-2 underline-offset-4 transition-colors hover:text-cocoa"
             >
               <WhatsAppGlyph className="h-4 w-4" /> Chat With Whimlet
             </a>
@@ -193,7 +193,7 @@ export function CustomOrderExperience() {
                 />
                 <span
                   className={`text-[0.6rem] font-bold uppercase tracking-wider transition-colors ${
-                    i === step ? "text-rose" : "text-cocoa-soft/60"
+                    i === step ? "text-rose-ink" : "text-cocoa-soft/60"
                   }`}
                 >
                   {label}
@@ -214,7 +214,7 @@ export function CustomOrderExperience() {
               {/* STEP 1 — type */}
               {step === 0 && (
                 <fieldset>
-                  <legend className="font-hand text-2xl text-rose">What are you looking for?</legend>
+                  <legend className="font-hand text-2xl text-rose-ink">What are you looking for?</legend>
                   <p className="mt-1 text-sm text-cocoa-soft">Pick one to get us started.</p>
                   <div className="mt-5 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
                     {TYPES.map((t) => {
@@ -231,7 +231,7 @@ export function CustomOrderExperience() {
                               : "border-blush-deep/30 bg-white/60 hover:border-rose/60 hover:bg-blush-soft/40"
                           }`}
                         >
-                          <t.icon className={`h-6 w-6 ${active ? "text-rose" : "text-cocoa-soft"}`} />
+                          <t.icon className={`h-6 w-6 ${active ? "text-rose-ink" : "text-cocoa-soft"}`} />
                           <span className="text-xs font-bold text-cocoa">{t.label}</span>
                         </button>
                       );
@@ -241,7 +241,7 @@ export function CustomOrderExperience() {
                     Prefer to see it first?{" "}
                     <a
                       href="#studio"
-                      className="font-semibold text-rose underline decoration-blush-deep decoration-2 underline-offset-4 transition-colors hover:text-cocoa"
+                      className="font-semibold text-rose-ink underline decoration-blush-deep decoration-2 underline-offset-4 transition-colors hover:text-cocoa"
                     >
                       design it in the 3D studio →
                     </a>
@@ -252,7 +252,7 @@ export function CustomOrderExperience() {
               {/* STEP 2 — vibe */}
               {step === 1 && (
                 <fieldset>
-                  <legend className="font-hand text-2xl text-rose">Pick your vibe.</legend>
+                  <legend className="font-hand text-2xl text-rose-ink">Pick your vibe.</legend>
                   <p className="mt-1 text-sm text-cocoa-soft">Choose as many as you like.</p>
                   <div className="mt-5 flex flex-wrap gap-2.5">
                     {VIBES.map((vibe) => {
@@ -280,7 +280,7 @@ export function CustomOrderExperience() {
               {/* STEP 3 — idea */}
               {step === 2 && (
                 <div>
-                  <label htmlFor="custom-idea" className="font-hand block text-2xl text-rose">
+                  <label htmlFor="custom-idea" className="font-hand block text-2xl text-rose-ink">
                     Tell us your idea.
                   </label>
                   <p className="mt-1 text-sm text-cocoa-soft">
@@ -300,7 +300,7 @@ export function CustomOrderExperience() {
               {/* STEP 4 — extra */}
               {step === 3 && (
                 <div>
-                  <label htmlFor="custom-extra" className="font-hand block text-2xl text-rose">
+                  <label htmlFor="custom-extra" className="font-hand block text-2xl text-rose-ink">
                     Anything else?
                   </label>
                   <p className="mt-1 text-sm text-cocoa-soft">
@@ -315,7 +315,7 @@ export function CustomOrderExperience() {
                     className="mt-4 w-full resize-none rounded-2xl border-2 border-blush-deep/30 bg-white/70 p-4 text-cocoa placeholder:text-cocoa-soft/50 focus:border-rose focus:outline-none"
                   />
                   <p className="mt-4 flex items-start gap-2.5 rounded-2xl bg-blush-soft/50 p-3.5 text-sm font-medium text-cocoa">
-                    <GiftDoodle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-rose" />
+                    <GiftDoodle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-rose-ink" />
                     Have reference photos or inspiration? You can share them
                     right in the WhatsApp chat after sending this — we'd love to
                     see them.
@@ -326,14 +326,14 @@ export function CustomOrderExperience() {
               {/* STEP 5 — contact */}
               {step === 4 && (
                 <div>
-                  <p className="font-hand text-2xl text-rose">Almost there — who are you?</p>
+                  <p className="font-hand text-2xl text-rose-ink">Almost there — who are you?</p>
                   <p className="mt-1 text-sm text-cocoa-soft">
                     Just a name is needed; phone or email help us reply even faster.
                   </p>
                   <div className="mt-5 flex flex-col gap-4">
                     <div>
                       <label htmlFor="custom-name" className="text-sm font-bold text-cocoa">
-                        Your name <span className="text-rose" aria-hidden="true">*</span>
+                        Your name <span className="text-rose-ink" aria-hidden="true">*</span>
                       </label>
                       <input
                         id="custom-name"
@@ -382,7 +382,7 @@ export function CustomOrderExperience() {
               {/* STEP 6 — review & send */}
               {step === 5 && !form.sent && (
                 <div>
-                  <p className="font-hand text-2xl text-rose">All ready — take a peek!</p>
+                  <p className="font-hand text-2xl text-rose-ink">All ready — take a peek!</p>
                   <dl className="mt-4 flex flex-col gap-2.5 rounded-2xl bg-blush-soft/40 p-5 text-sm">
                     <ReviewRow label="Looking for" value={form.type} />
                     <ReviewRow label="Vibe" value={form.vibes.join(", ") || "—"} />
@@ -401,10 +401,10 @@ export function CustomOrderExperience() {
               {/* sent confirmation */}
               {step === 5 && form.sent && (
                 <div className="flex min-h-[21rem] flex-col items-center justify-center gap-4 text-center" role="status">
-                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-blush-soft text-rose">
+                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-blush-soft text-rose-ink">
                     <HeartDoodle className="h-8 w-8 animate-heartbeat" />
                   </span>
-                  <p className="font-hand text-3xl text-rose">Off it goes!</p>
+                  <p className="font-hand text-3xl text-rose-ink">Off it goes!</p>
                   <p className="max-w-xs text-sm leading-relaxed text-cocoa-soft">
                     Your WhatsApp chat should have opened with your enquiry
                     prefilled — press send there and we'll take it from there.
@@ -437,7 +437,7 @@ export function CustomOrderExperience() {
                 type="button"
                 onClick={back}
                 disabled={step === 0}
-                className="btn btn-sm rounded-full px-5 py-2.5 text-cocoa-soft transition-colors hover:text-rose disabled:cursor-not-allowed disabled:opacity-35"
+                className="btn btn-sm rounded-full px-5 py-2.5 text-cocoa-soft transition-colors hover:text-rose-ink disabled:cursor-not-allowed disabled:opacity-35"
               >
                 ← Back
               </button>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Float, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { makeHeartGeometry, makePetalGeometry, makeThreadGeometry, rnd } from "./geometry";
 import { PALETTE } from "./CrochetFlower";
 
@@ -19,7 +20,9 @@ type YarnBallProps = {
   spin?: number;
 };
 
-/** A yarn ball: matte core + randomly-oriented wrap rings that read as wound yarn. */
+/** A yarn ball: matte core + randomly-oriented wrap rings that read as wound
+ *  yarn. All rings are merged into ONE geometry (they share a material), so a
+ *  ball costs 2 draw calls instead of `rings + 1`. */
 export function YarnBall({
   position,
   radius = 0.28,
@@ -29,19 +32,20 @@ export function YarnBall({
   spin = 0,
 }: YarnBallProps) {
   const ball = useRef<THREE.Group>(null!);
-  const ringData = useMemo(
-    () =>
-      Array.from({ length: rings }, (_, i) => ({
-        key: i,
-        rotation: [
-          rnd(seed + i * 5.3) * Math.PI,
-          rnd(seed + i * 8.1 + 2) * Math.PI,
-          rnd(seed + i * 3.2 + 5) * Math.PI,
-        ] as [number, number, number],
-        radius: radius * (0.99 + rnd(seed + i) * 0.06),
-      })),
-    [rings, radius, seed]
-  );
+  const ringGeo = useMemo(() => {
+    const parts: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < rings; i++) {
+      const g = new THREE.TorusGeometry(radius * (0.99 + rnd(seed + i) * 0.06), radius * 0.055, 6, 40);
+      g.rotateX(rnd(seed + i * 5.3) * Math.PI);
+      g.rotateY(rnd(seed + i * 8.1 + 2) * Math.PI);
+      g.rotateZ(rnd(seed + i * 3.2 + 5) * Math.PI);
+      parts.push(g);
+    }
+    const merged = mergeGeometries(parts, false)!;
+    parts.forEach((g) => g.dispose());
+    return merged;
+  }, [rings, radius, seed]);
+  useEffect(() => () => ringGeo.dispose(), [ringGeo]);
 
   useFrame((_, dt) => {
     if (spin !== 0 && ball.current) ball.current.rotation.y += dt * spin;
@@ -53,12 +57,9 @@ export function YarnBall({
         <sphereGeometry args={[radius * 0.965, 18, 18]} />
         <meshStandardMaterial color={color} roughness={0.7} />
       </mesh>
-      {ringData.map((r) => (
-        <mesh key={r.key} rotation={r.rotation}>
-          <torusGeometry args={[r.radius, radius * 0.055, 6, 40]} />
-          <meshStandardMaterial color={color} roughness={0.7} />
-        </mesh>
-      ))}
+      <mesh geometry={ringGeo}>
+        <meshStandardMaterial color={color} roughness={0.7} />
+      </mesh>
     </group>
   );
 }
@@ -288,7 +289,8 @@ export function SatinBow({
 
 /* ---------------- strawberry charm ---------------- */
 
-/** A crochet strawberry — the classic little keychain charm. */
+/** A crochet strawberry — the classic little keychain charm.
+ *  Seeds are merged into one geometry, leaves into another (4 draw calls total). */
 export function StrawberryCharm({
   position,
   rotation = [0, 0, 0],
@@ -300,15 +302,35 @@ export function StrawberryCharm({
   scale?: number;
   seed?: number;
 }) {
-  const seeds = useMemo(
-    () =>
-      Array.from({ length: 10 }, (_, i) => {
-        const a = rnd(seed + i * 2.1) * Math.PI * 2;
-        const y = -0.45 + rnd(seed + i * 4.3) * 0.7;
-        const r = Math.sqrt(Math.max(0, 1 - (y / 0.62) ** 2)) * 0.42;
-        return { pos: [Math.cos(a) * r, y * 0.9, Math.sin(a) * r] as [number, number, number], key: i };
-      }),
-    [seed]
+  const { seedGeo, leafGeo } = useMemo(() => {
+    const seeds: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 12; i++) {
+      const a = rnd(seed + i * 2.1) * Math.PI * 2;
+      const y = -0.45 + rnd(seed + i * 4.3) * 0.7;
+      const r = Math.sqrt(Math.max(0, 1 - (y / 0.62) ** 2)) * 0.42;
+      const g = new THREE.SphereGeometry(0.028, 6, 6);
+      g.translate(Math.cos(a) * r, y * 0.9 + 0.5, Math.sin(a) * r);
+      seeds.push(g);
+    }
+    const leaves: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 5; i++) {
+      const g = new THREE.ConeGeometry(0.11, 0.3, 5);
+      g.rotateX(0.55);
+      g.rotateY((i / 5) * Math.PI * 2);
+      g.translate(0, 1.0, 0);
+      leaves.push(g);
+    }
+    const seedGeo = mergeGeometries(seeds, false)!;
+    const leafGeo = mergeGeometries(leaves, false)!;
+    [...seeds, ...leaves].forEach((g) => g.dispose());
+    return { seedGeo, leafGeo };
+  }, [seed]);
+  useEffect(
+    () => () => {
+      seedGeo.dispose();
+      leafGeo.dispose();
+    },
+    [seedGeo, leafGeo]
   );
   return (
     <group position={position} rotation={rotation} scale={scale}>
@@ -317,21 +339,14 @@ export function StrawberryCharm({
         <sphereGeometry args={[1, 18, 16]} />
         <meshStandardMaterial color={PALETTE.strawberry} roughness={0.6} />
       </mesh>
-      {seeds.map((sd) => (
-        <mesh key={sd.key} position={[sd.pos[0], sd.pos[1] + 0.5, sd.pos[2]]}>
-          <sphereGeometry args={[0.028, 6, 6]} />
-          <meshStandardMaterial color={PALETTE.butter} roughness={0.6} />
-        </mesh>
-      ))}
-      {/* leafy cap */}
-      {[0, 1, 2, 3, 4].map((i) => (
-        <mesh key={i} position={[0, 1.0, 0]} rotation={[0.55, (i / 5) * Math.PI * 2, 0]}>
-          <coneGeometry args={[0.11, 0.3, 5]} />
-          <meshStandardMaterial color={PALETTE.sageDeep} roughness={0.7} />
-        </mesh>
-      ))}
+      <mesh geometry={seedGeo}>
+        <meshStandardMaterial color={PALETTE.butter} roughness={0.6} />
+      </mesh>
+      <mesh geometry={leafGeo}>
+        <meshStandardMaterial color={PALETTE.sageDeep} roughness={0.7} />
+      </mesh>
       {/* keyring */}
-      <mesh position={[0, 1.2, 0]} rotation={[0, 0, 0]}>
+      <mesh position={[0, 1.2, 0]}>
         <torusGeometry args={[0.08, 0.016, 8, 18]} />
         <meshStandardMaterial color="#E8D9B0" roughness={0.35} metalness={0.5} />
       </mesh>

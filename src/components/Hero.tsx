@@ -85,7 +85,7 @@ export function Hero() {
         >
           <motion.p
             {...fadeUp(0.05)}
-            className="flex items-center gap-2.5 text-[0.7rem] font-bold uppercase tracking-[0.3em] text-rose md:text-xs"
+            className="flex items-center gap-2.5 text-[0.7rem] font-bold uppercase tracking-[0.3em] text-rose-ink md:text-xs"
           >
             <HeartDoodle className="h-4 w-4" strokeWidth={1.8} />
             Handmade crochet&nbsp;•&nbsp;made with love
@@ -111,7 +111,7 @@ export function Hero() {
             </span>
             <motion.span
               variants={!animate ? undefined : word}
-              className="mt-1 block font-script text-[3rem] font-normal leading-[1.15] text-rose md:text-[4.2rem]"
+              className="mt-1 block font-script text-[3rem] font-normal leading-[1.15] text-rose-ink md:text-[4.2rem]"
             >
               Big Feelings.
             </motion.span>
@@ -146,11 +146,11 @@ export function Hero() {
             className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold text-cocoa-soft"
           >
             <span className="flex items-center gap-1.5">
-              <HeartDoodle className="h-3.5 w-3.5 text-rose" /> Custom orders available
+              <HeartDoodle className="h-3.5 w-3.5 text-rose-ink" /> Custom orders available
             </span>
             <span aria-hidden="true" className="text-blush-deep">•</span>
             <span className="flex items-center gap-1.5">
-              <HeartDoodle className="h-3.5 w-3.5 text-rose" /> WhatsApp enquiries
+              <HeartDoodle className="h-3.5 w-3.5 text-rose-ink" /> WhatsApp enquiries
             </span>
           </motion.p>
         </motion.div>
@@ -178,7 +178,7 @@ export function Hero() {
                     animate: show ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 },
                     transition: { duration: 0.7, delay: 3.0 + i * 0.16, ease: [0.22, 1, 0.36, 1] as const },
                   })}
-              className={`pointer-events-none absolute z-10 hidden font-hand text-xl text-rose/85 sm:block ${a.className}`}
+              className={`pointer-events-none absolute z-10 hidden font-hand text-xl text-rose-ink sm:block ${a.className}`}
             >
               <span className="block animate-float" style={{ animationDelay: `${i * 1.1}s` }}>
                 {a.text}
@@ -208,7 +208,7 @@ export function Hero() {
       {/* scroll cue */}
       <a
         href="#story"
-        className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 text-cocoa-soft transition-colors hover:text-rose md:flex"
+        className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 text-cocoa-soft transition-colors hover:text-rose-ink md:flex"
         aria-label="Scroll to the next section"
       >
         <span className="text-[0.65rem] font-bold uppercase tracking-[0.3em]">scroll</span>

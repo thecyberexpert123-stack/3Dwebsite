@@ -236,7 +236,7 @@ export function PetalSketch({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <p className="font-hand text-xl text-rose">the sketch pad ✏️</p>
+        <p className="font-hand text-xl text-rose-ink">the sketch pad ✏️</p>
         <p className="mt-1 text-sm leading-relaxed text-cocoa-soft">
           Draw <span className="font-semibold text-cocoa">one petal</span> — any shape you like,
           one continuous stroke. We smooth the wobbles, mirror it evenly and bloom it into 3D.
@@ -288,7 +288,7 @@ export function PetalSketch({
               </div>
             )}
             <div>
-              <p className="font-hand text-lg text-rose">your flower will bloom like this</p>
+              <p className="font-hand text-lg text-rose-ink">your flower will bloom like this</p>
               <p className="text-xs text-cocoa-soft">
                 {smoothed
                   ? `${petalCount} of your petals around a ${centerColor === "#F0D5A8" ? "butter yellow" : "chosen"} centre`
@@ -322,7 +322,7 @@ export function PetalSketch({
             Mirror it evenly
           </button>
 
-          <p aria-live="polite" className="min-h-5 text-sm font-semibold text-rose">
+          <p aria-live="polite" className="min-h-5 text-sm font-semibold text-rose-ink">
             {hint}
           </p>
 
@@ -338,7 +338,7 @@ export function PetalSketch({
             </button>
             <button
               type="button"
-              className="btn btn-sm rounded-full px-5 py-2.5 text-cocoa-soft transition-colors hover:text-rose"
+              className="btn btn-sm rounded-full px-5 py-2.5 text-cocoa-soft transition-colors hover:text-rose-ink"
               onClick={() => {
                 setRawPts(null);
                 setSmoothed(null);
@@ -349,7 +349,7 @@ export function PetalSketch({
             </button>
             <button
               type="button"
-              className="btn btn-sm rounded-full px-5 py-2.5 text-cocoa-soft transition-colors hover:text-rose"
+              className="btn btn-sm rounded-full px-5 py-2.5 text-cocoa-soft transition-colors hover:text-rose-ink"
               onClick={onCancel}
             >
               ← Back to options

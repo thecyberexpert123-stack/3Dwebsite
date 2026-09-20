@@ -8,11 +8,11 @@ import { ArrowDoodle, BowDoodle } from "./Decorations";
 
 /** Per-card organic radii + tilt so nothing feels like a template grid. */
 const SHAPES = [
-  { radius: "3rem 2rem 3.25rem 2rem", rotate: "-rotate-2", lift: "md:translate-y-6", frame: "bg-blush-soft", bow: "text-rose" },
+  { radius: "3rem 2rem 3.25rem 2rem", rotate: "-rotate-2", lift: "md:translate-y-6", frame: "bg-blush-soft", bow: "text-rose-ink" },
   { radius: "2rem 3rem 2rem 3.25rem", rotate: "rotate-1", lift: "md:-translate-y-2", frame: "bg-lavender/70", bow: "text-lavender-deep" },
   { radius: "3.25rem 2rem 2.75rem 2.25rem", rotate: "-rotate-1", lift: "md:translate-y-8", frame: "bg-mint", bow: "text-sage-deep" },
   { radius: "2.25rem 2.75rem 2rem 3rem", rotate: "rotate-2", lift: "md:translate-y-0", frame: "bg-butter", bow: "text-dusty" },
-  { radius: "3rem 2.25rem 3rem 2.75rem", rotate: "-rotate-[1.5deg]", lift: "md:translate-y-5", frame: "bg-sky", bow: "text-rose" },
+  { radius: "3rem 2.25rem 3rem 2.75rem", rotate: "-rotate-[1.5deg]", lift: "md:translate-y-5", frame: "bg-sky", bow: "text-rose-ink" },
 ] as const;
 
 /** Editorial floating category cards — "Find Your Little Something". */

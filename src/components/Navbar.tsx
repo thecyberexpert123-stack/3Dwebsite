@@ -67,7 +67,7 @@ export function Navbar() {
             <span className="font-script text-[1.7rem] leading-none text-cocoa md:text-3xl">
               Whimlet
             </span>
-            <HeartDoodle className="h-3.5 w-3.5 text-rose animate-heartbeat" />
+            <HeartDoodle className="h-3.5 w-3.5 text-rose-ink animate-heartbeat" />
           </a>
 
           {/* desktop links */}
@@ -148,7 +148,7 @@ export function Navbar() {
                 <motion.a
                   key={item.href}
                   href={item.href}
-                  className="rounded-2xl px-6 py-2.5 text-2xl font-bold text-cocoa transition-colors hover:text-rose"
+                  className="rounded-2xl px-6 py-2.5 text-2xl font-bold text-cocoa transition-colors hover:text-rose-ink"
                   onClick={() => setOpen(false)}
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -174,9 +174,9 @@ export function Navbar() {
                   Order Now
                 </a>
                 <a href={`tel:${PHONE_TEL}`} className="flex items-center gap-2 text-sm font-semibold text-cocoa-soft">
-                  <PhoneDoodle className="h-4 w-4 text-rose" /> {PHONE_DISPLAY}
+                  <PhoneDoodle className="h-4 w-4 text-rose-ink" /> {PHONE_DISPLAY}
                 </a>
-                <p className="font-hand text-lg text-rose/80">{site.closingPhrase}</p>
+                <p className="font-hand text-lg text-rose-ink">{site.closingPhrase}</p>
               </motion.div>
             </nav>
           </motion.div>
