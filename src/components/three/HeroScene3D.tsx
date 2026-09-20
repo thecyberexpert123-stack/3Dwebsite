@@ -18,6 +18,7 @@ import {
   TinyDaisy,
   YarnBall,
 } from "./parts";
+import { BreathingLight, DustMotes, FallingPetals } from "./anim";
 
 const damp = THREE.MathUtils.damp;
 
@@ -87,6 +88,11 @@ function Scene({ simple, reduced }: { simple: boolean; reduced: boolean }) {
 
       <group ref={world}>
         <GroundDisk />
+
+        {/* cozy ambient life: warm drifting dust + falling petals (desktop) */}
+        {!simple && <DustMotes count={40} area={[4.6, 2.6, 3]} reduced={reduced} />}
+        {!simple && <FallingPetals count={7} reduced={reduced} />}
+        <BreathingLight position={[-1.6, 1.3, 1.4]} intensity={0.5} reduced={reduced} />
 
         {/* the bouquet */}
         <group position={[-0.25, 0, 0.05]}>

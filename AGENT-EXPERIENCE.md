@@ -197,3 +197,39 @@ scenes, adding dependencies or touching the build.
 - Pipe truncation lies: `ls … | head -12` made `src/` look empty. When
   verifying directory integrity, list each directory separately without
   truncation.
+
+## v0.3.0 — sketch pad + cozy motion
+
+### Edits can report success without persisting — verify every edit
+- **Event:** during a large multi-file change, several `edit_file` calls
+  returned "success" but the target files were later missing exactly those
+  changes (an import line here, a JSX block there, a state declaration).
+  The build kept failing on "cannot find name X" for names whose edits had
+  reportedly landed.
+- **Detection pattern:** after a batch of edits, grep for a distinctive token
+  from EACH edit before building — don't trust the tool response alone.
+- **Repair:** re-apply missing hunks with small python scripts that `assert`
+  the anchor text exists and print what they applied, then grep-verify again.
+  Prefer few-but-verified patches over many-but-hopeful ones.
+
+### Ship the geometry pipeline as a library, not as UI code
+- `src/lib/sketch.ts` is pure (no THREE, no DOM), so the same code runs in
+  the browser, in Node, and in CI. That made it possible to numerically
+  verify properties the eye can't: mirror symmetry tolerance, normalization
+  bounds, quantization error, and — most importantly — that outputs are
+  always SIMPLE polygons (self-intersecting outlines break ExtrudeGeometry).
+  The 100-stroke extrusion-safety sweep in the test suite came from finding
+  a real bug this way (mirror-averaging could swap adjacent points in
+  angular order; fixed by re-running polar resampling after symmetrizing).
+
+### Geometry lessons
+- `mirrorSymmetrize` must mirror about the loop's **centroid**, not the
+  origin — mirroring about x=0 silently doubles the outline's width and the
+  normalizer's aspect clamp then squashes the height.
+- A polar (angle-based) resample of a loop around its centroid always yields
+  an angularly-ordered, hence simple, outline — a reliable "heal" step after
+  any operation that can disorder points.
+- Verification code has its own bugs: my first star-shape checker only
+  accepted counter-clockwise loops and mixed array/object access (NaNs).
+  When a validator fails everything, suspect the validator — test it on
+  known-good data (a circle) first.

@@ -5,8 +5,9 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Environment, Lightformer } from "@react-three/drei";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
-import { makePetalGeometry, makePointedPetalGeometry, rnd } from "./geometry";
+import { makePetalGeometry, makePointedPetalGeometry, makeCustomPetalGeometry, rnd } from "./geometry";
 import { MIX_PALETTE, type DesignConfig } from "@/lib/design";
+import { DustMotes } from "./anim";
 
 const damp = THREE.MathUtils.damp;
 
@@ -102,7 +103,8 @@ type StudioFlowerProps = {
   /** world Y of the blossom head (0 → floating bloom with tucked leaves) */
   headY: number;
   petalCount: number;
-  petalShape: "rounded" | "pointed";
+  petalShape: "rounded" | "pointed" | "custom";
+  customPetal?: number[] | null;
   petalColor: string;
   centerColor: string;
   leaves: number;
@@ -115,6 +117,7 @@ function StudioFlower({
   headY,
   petalCount,
   petalShape,
+  customPetal,
   petalColor,
   centerColor,
   leaves,
@@ -122,29 +125,55 @@ function StudioFlower({
   reduced,
 }: StudioFlowerProps) {
   const head = useRef<THREE.Group>(null!);
+  const flutterOuter = useRef<(THREE.Mesh | null)[]>([]);
+  const flutterInner = useRef<(THREE.Mesh | null)[]>([]);
   const mats = useLerpedFlowerMaterials(petalColor, centerColor);
 
   const roundedGeo = useMemo(() => makePetalGeometry(0.36, 0.95, 0.17, seed), [seed]);
   const pointedGeo = useMemo(() => makePointedPetalGeometry(0.2, seed + 3), [seed]);
+  const customGeo = useMemo(
+    () => (petalShape === "custom" && customPetal ? makeCustomPetalGeometry(customPetal, seed + 11) : null),
+    [petalShape, customPetal, seed]
+  );
   const leafGeo = useMemo(() => makePetalGeometry(0.4, 1, 0.12, seed + 7), [seed]);
-  const geo = petalShape === "pointed" ? pointedGeo : roundedGeo;
+  const geo = customGeo ?? (petalShape === "pointed" ? pointedGeo : roundedGeo);
+
+  const outerBase = useMemo(
+    () => Array.from({ length: petalCount }, (_, i) => 1.05 + rnd(seed + i * 3.7) * 0.12),
+    [petalCount, seed]
+  );
+  const innerCount = Math.max(3, petalCount - 1);
+  const innerBase = useMemo(
+    () => Array.from({ length: innerCount }, (_, i) => 0.5 + rnd(seed + 20 + i * 2.9) * 0.1),
+    [innerCount, seed]
+  );
 
   useEffect(
     () => () => {
       roundedGeo.dispose();
       pointedGeo.dispose();
+      customGeo?.dispose();
       leafGeo.dispose();
     },
-    [roundedGeo, pointedGeo, leafGeo]
+    [roundedGeo, pointedGeo, customGeo, leafGeo]
   );
 
   useFrame(({ clock }) => {
     if (reduced || !head.current) return;
-    head.current.rotation.z = Math.sin(clock.elapsedTime * 0.6 + seed * 2.1) * 0.035;
+    const t = clock.elapsedTime;
+    head.current.rotation.z = Math.sin(t * 0.6 + seed * 2.1) * 0.035;
+    head.current.rotation.x = Math.sin(t * 0.42 + seed * 1.3) * 0.02;
+    for (let i = 0; i < flutterOuter.current.length; i++) {
+      const m = flutterOuter.current[i];
+      if (m) m.rotation.x = outerBase[i] + Math.sin(t * 0.9 + i * 1.3 + seed) * 0.05;
+    }
+    for (let i = 0; i < flutterInner.current.length; i++) {
+      const m = flutterInner.current[i];
+      if (m) m.rotation.x = innerBase[i] + Math.sin(t * 1.05 + i * 1.1 + seed) * 0.04;
+    }
   });
 
   const ringKey = `${petalShape}-${petalCount}`;
-  const innerCount = Math.max(3, petalCount - 1);
 
   return (
     <group position={position}>
@@ -195,6 +224,9 @@ function StudioFlower({
             return (
               <group key={i} rotation={[0, (i / petalCount) * Math.PI * 2 + j * 0.4, 0]}>
                 <mesh
+                  ref={(el) => {
+                    flutterOuter.current[i] = el;
+                  }}
                   geometry={geo}
                   material={mats.outer}
                   rotation={[1.05 + j * 0.12, 0, 0]}
@@ -211,6 +243,9 @@ function StudioFlower({
             return (
               <group key={i} rotation={[0, (i / innerCount) * Math.PI * 2 + 0.5 + j * 0.4, 0]}>
                 <mesh
+                  ref={(el) => {
+                    flutterInner.current[i] = el;
+                  }}
                   geometry={geo}
                   material={mats.inner}
                   rotation={[0.5 + j * 0.1, 0, 0]}
@@ -412,6 +447,7 @@ function Scene({ config, reduced }: { config: DesignConfig; reduced: boolean }) 
                 headY={f.headY}
                 petalCount={config.petalCount}
                 petalShape={config.petalShape}
+                customPetal={config.customPetal}
                 petalColor={
                   isBouquet && config.mixColors
                     ? MIX_PALETTE[i % MIX_PALETTE.length]
@@ -437,10 +473,17 @@ function Scene({ config, reduced }: { config: DesignConfig; reduced: boolean }) 
   );
 }
 
-/** Camera nudge so every framing looks at the composition. */
-function Rig() {
-  const { camera } = useThree();
-  useFrame(() => camera.lookAt(0, 0.85, 0));
+/** Camera nudge so every framing looks at the composition — with a
+ *  barely-there drift toward the pointer so the scene feels alive. */
+function Rig({ reduced }: { reduced: boolean }) {
+  const { camera, pointer } = useThree();
+  useFrame((_, dt) => {
+    if (!reduced) {
+      camera.position.x = damp(camera.position.x, 0.7 + pointer.x * 0.35, 2, dt);
+      camera.position.y = damp(camera.position.y, 1.9 + pointer.y * 0.18, 2, dt);
+    }
+    camera.lookAt(0, 0.85, 0);
+  });
   return null;
 }
 
@@ -469,7 +512,8 @@ export default function DesignScene({ config }: { config: DesignConfig }) {
       </Environment>
 
       <Scene config={config} reduced={!!reduce} />
-      <Rig />
+      <DustMotes count={16} area={[4.5, 2.6, 2.5]} size={0.035} reduced={!!reduce} />
+      <Rig reduced={!!reduce} />
       <ContactShadows
         position={[0, -0.15, 0]}
         opacity={0.28}

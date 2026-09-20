@@ -22,6 +22,7 @@ import { useInViewport, useWebGL } from "@/lib/hooks";
 import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
 import { HeartDoodle, SparkleDoodle, WhatsAppGlyph } from "./Decorations";
+import { PetalSketch } from "./PetalSketch";
 
 const DesignScene = dynamic(() => import("./three/DesignScene"), {
   ssr: false,
@@ -53,6 +54,7 @@ function SceneFallback() {
 export function DesignStudio() {
   const [config, setConfig] = useState<DesignConfig>(DEFAULT_DESIGN);
   const [activePreset, setActivePreset] = useState<string | null>("blush-rose");
+  const [mode, setMode] = useState<"customize" | "draw">("customize");
   const [copied, setCopied] = useState(false);
   const webgl = useWebGL();
 
@@ -125,7 +127,7 @@ export function DesignStudio() {
               Design Your <span className="font-script font-normal text-rose">Own.</span>
             </>
           }
-          lead="A little crochet sketch pad — pick petals, colours and wrap, watch it bloom in 3D, then send your design straight to Whimlet."
+          lead="A little crochet sketch pad — pick petals and colours, or draw your very own petal, watch it bloom in 3D, then send your design straight to Whimlet."
         />
 
         {/* presets */}
@@ -172,8 +174,23 @@ export function DesignStudio() {
               </p>
             </div>
 
-            {/* ---------- controls ---------- */}
+            {/* ---------- controls / sketch pad ---------- */}
             <div className="flex flex-col gap-6">
+              {mode === "draw" ? (
+                <PetalSketch
+                  color={config.petalColor}
+                  centerColor={config.centerColor}
+                  petalCount={config.petalCount}
+                  initial={config.customPetal}
+                  onApply={(data) => {
+                    setConfig(sanitizeDesign({ ...config, petalShape: "custom", customPetal: data }));
+                    setActivePreset(null);
+                    setMode("customize");
+                  }}
+                  onCancel={() => setMode("customize")}
+                />
+              ) : (
+              <>
               <ControlGroup label="What are we making?">
                 <Segmented
                   ariaLabel="Piece type"
@@ -192,9 +209,10 @@ export function DesignStudio() {
                   options={[
                     { value: "rounded", label: "Rounded" },
                     { value: "pointed", label: "Pointed" },
+                    { value: "custom", label: config.petalShape === "custom" ? "✏️ Mine" : "✏️ Draw" },
                   ]}
                   value={config.petalShape}
-                  onChange={(v) => update("petalShape", v)}
+                  onChange={(v) => (v === "custom" ? setMode("draw") : update("petalShape", v))}
                 />
                 <Segmented
                   ariaLabel="Petal count"
@@ -202,6 +220,18 @@ export function DesignStudio() {
                   value={config.petalCount}
                   onChange={(v) => update("petalCount", v)}
                 />
+                {config.petalShape === "custom" && config.customPetal && (
+                  <p className="text-xs font-semibold text-rose">
+                    ✏️ blooming from your hand-drawn petal —{" "}
+                    <button
+                      type="button"
+                      className="underline decoration-blush-deep decoration-2 underline-offset-2"
+                      onClick={() => setMode("draw")}
+                    >
+                      refine the sketch
+                    </button>
+                  </p>
+                )}
               </ControlGroup>
 
               <ControlGroup label="Colours">
@@ -284,6 +314,8 @@ export function DesignStudio() {
                     onChange={(v) => update("wrap", v)}
                   />
                 </ControlGroup>
+              )}
+              </>
               )}
             </div>
           </div>

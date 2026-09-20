@@ -6,8 +6,16 @@
  * both for the live summary and the WhatsApp enquiry message.
  */
 
+import {
+  isValidPetalData,
+  quantizePetal,
+  randomPetalOutline,
+  tulipPetalOutline,
+  wildPetalOutline,
+} from "./sketch";
+
 export type DesignType = "flower" | "bouquet";
-export type PetalShape = "rounded" | "pointed";
+export type PetalShape = "rounded" | "pointed" | "custom";
 export type StemLength = "none" | "short" | "tall";
 
 export type DesignConfig = {
@@ -22,6 +30,12 @@ export type DesignConfig = {
   bouquetCount: number; // 3 | 5 | 7
   wrap: boolean;
   ribbonColor: string; // hex
+  /**
+   * Hand-drawn petal outline from the sketch pad — flat int array
+   * (0..255 per coordinate, see lib/sketch.ts). Used when petalShape
+   * is "custom"; kept around otherwise so users can switch back to it.
+   */
+  customPetal?: number[] | null;
 };
 
 export type Swatch = { name: string; hex: string };
@@ -71,6 +85,7 @@ export const DEFAULT_DESIGN: DesignConfig = {
   bouquetCount: 5,
   wrap: true,
   ribbonColor: "#D8849C",
+  customPetal: null,
 };
 
 export type DesignPreset = { id: string; label: string; config: DesignConfig };
@@ -130,6 +145,39 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       ribbonColor: "#7C977A",
     },
   },
+  {
+    id: "tulip-sketch",
+    label: "Tulip Sketch",
+    config: {
+      ...DEFAULT_DESIGN,
+      petalShape: "custom",
+      customPetal: quantizePetal(tulipPetalOutline()),
+      petalCount: 6,
+      petalColor: "#F6E9D8",
+      centerColor: "#F0D5A8",
+      stem: "tall",
+      leaves: 1,
+    },
+  },
+  {
+    id: "wildflower-mix",
+    label: "Wildflower Mix",
+    config: {
+      ...DEFAULT_DESIGN,
+      type: "bouquet",
+      petalShape: "custom",
+      customPetal: quantizePetal(wildPetalOutline()),
+      petalCount: 5,
+      petalColor: "#D96A6A",
+      centerColor: "#F0D5A8",
+      mixColors: true,
+      stem: "short",
+      leaves: 2,
+      bouquetCount: 7,
+      wrap: true,
+      ribbonColor: "#7C977A",
+    },
+  },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -167,9 +215,17 @@ export function sanitizeDesign(raw: unknown): DesignConfig {
   const stemRaw = safeEnum<StemLength>(d.stem, ["none", "short", "tall"], DEFAULT_DESIGN.stem);
   // a bouquet needs visible stems — "none" only makes sense for a single bloom
   const stem: StemLength = type === "bouquet" && stemRaw === "none" ? "short" : stemRaw;
+  const customValid = isValidPetalData(d.customPetal);
+  const petalShapeRaw = safeEnum<PetalShape>(
+    d.petalShape,
+    ["rounded", "pointed", "custom"],
+    DEFAULT_DESIGN.petalShape
+  );
+  // "custom" without a usable outline would render nothing — fall back
+  const petalShape: PetalShape = petalShapeRaw === "custom" && !customValid ? "rounded" : petalShapeRaw;
   return {
     type,
-    petalShape: safeEnum<PetalShape>(d.petalShape, ["rounded", "pointed"], DEFAULT_DESIGN.petalShape),
+    petalShape,
     petalCount: safeNumber(d.petalCount, [4, 5, 6, 7, 8], DEFAULT_DESIGN.petalCount),
     petalColor: safeHex(d.petalColor, DEFAULT_DESIGN.petalColor),
     centerColor: safeHex(d.centerColor, DEFAULT_DESIGN.centerColor),
@@ -179,6 +235,7 @@ export function sanitizeDesign(raw: unknown): DesignConfig {
     bouquetCount: safeNumber(d.bouquetCount, [3, 5, 7], DEFAULT_DESIGN.bouquetCount),
     wrap: safeBool(d.wrap, DEFAULT_DESIGN.wrap),
     ribbonColor: safeHex(d.ribbonColor, DEFAULT_DESIGN.ribbonColor),
+    customPetal: customValid ? (d.customPetal as number[]) : null,
   };
 }
 
@@ -223,9 +280,12 @@ export function decodeDesign(code: string): DesignConfig | null {
 
 export function randomDesign(): DesignConfig {
   const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
+  // every so often, "Surprise me" cuts a fresh hand-drawn-style petal
+  const custom = Math.random() < 0.15;
   return sanitizeDesign({
     type: pick(["flower", "bouquet"] as const),
-    petalShape: pick(["rounded", "pointed"] as const),
+    petalShape: custom ? "custom" : pick(["rounded", "pointed"] as const),
+    customPetal: custom ? quantizePetal(randomPetalOutline()) : null,
     petalCount: pick([4, 5, 6, 7, 8]),
     petalColor: pick(PETAL_SWATCHES).hex,
     centerColor: pick(CENTER_SWATCHES).hex,
@@ -249,7 +309,10 @@ export function describeDesign(c: DesignConfig): string {
   const leafWord = c.leaves === 1 ? "leaf" : "leaves";
   const petalColour =
     c.type === "bouquet" && c.mixColors ? "a mix of pastel colours" : colourName(c.petalColor);
-  const petals = `${c.petalCount} ${c.petalShape} petals`;
+  const petals =
+    c.petalShape === "custom" && c.customPetal
+      ? `${c.petalCount} hand-drawn petals`
+      : `${c.petalCount} ${c.petalShape} petals`;
   const centre = colourName(c.centerColor);
 
   if (c.type === "bouquet") {
@@ -280,11 +343,14 @@ export function describeDesign(c: DesignConfig): string {
 }
 
 export function buildDesignMessage(c: DesignConfig): string {
-  return [
+  const lines = [
     "Hi Whimlet! I designed my own piece in your 3D studio.",
     "",
     `It's ${describeDesign(c)}.`,
-    "",
-    "Could you please make this for me?",
-  ].join("\n");
+  ];
+  if (c.petalShape === "custom" && c.customPetal) {
+    lines.push("", "The petal shape is my own sketch — I drew it in your sketch pad!");
+  }
+  lines.push("", "Could you please make this for me?");
+  return lines.join("\n");
 }

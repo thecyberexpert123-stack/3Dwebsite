@@ -133,3 +133,43 @@ gift scene, and richer animation across the page.
 - Restored the local clone after the sandbox reset `.git` to its initial
   state between sessions (work was safe on GitHub; branch pointer re-fetched
   and verified byte-identical via tree-SHA comparison before resetting).
+
+## [0.3.0] — 2026-09-20
+
+### Added — the sketch pad (draw your own petal, for real)
+- New studio control: "✏️ Draw". Draw one petal in one stroke and a geometry
+  pipeline cleans it into a bloomable outline: arc-length resampling →
+  Laplacian smoothing → polar resampling (closes gaps, removes double-backs,
+  guarantees a simple polygon) → mirror symmetrization → normalization.
+- The smoothed outline is extruded into real 3D crochet-petal geometry
+  (beveled, gently cupped, hand-wobbled like the built-in petals) and used by
+  every flower in the studio — single blooms and bouquets alike.
+- Live feedback: smoothing runs while you draw; a radial SVG preview shows
+  exactly how the petals will arrange; a "mirror it evenly" toggle re-smooths
+  instantly; existing sketches can be re-opened and refined.
+- Hand-drawn designs are first-class: the outline rides in the `?design=`
+  share link (strictly validated — tampered data falls back safely) and the
+  WhatsApp message says the petal shape is your own sketch.
+- Two new presets built on sketched outlines: **Tulip Sketch** and
+  **Wildflower Mix**. "Surprise me" now occasionally cuts a fresh organic
+  petal (15%).
+
+### Added — cozy ambient motion everywhere
+- New `three/anim.tsx` toolkit: `Sway` (multi-axis breeze), `DustMotes`
+  (warm fibres drifting through the light, one draw call), `FallingPetals`
+  (little crochet petals tumbling like snow), `BreathingLight` (soft
+  candle-like pulse).
+- Flowers now sway in layers — whole plant, head, and individual petal
+  flutter — in the hero, the desk, the gift scene and the studio.
+- The customization desk (custom-order section) went from render-on-demand
+  static to a living scene: spinning yarn, swaying flower, drifting dust,
+  twinkle stars — viewport-gated so it still costs nothing off-screen.
+- The gift box breathes gently while closed; the studio camera drifts
+  softly toward the pointer.
+- All new motion respects `prefers-reduced-motion` (verified per scene).
+
+### Changed
+- Domain tests extended 16 → 46 checks: the full sketch pipeline is now
+  covered in CI (resampling, smoothing, symmetry, quantization round-trips,
+  URL round-trips with petal data, tamper rejection, and a 100-stroke
+  extrusion-safety sweep proving outputs are always simple polygons).

@@ -71,10 +71,20 @@ public/images/        product & scene imagery
 
 A working product configurator at `#studio` (replaces the simple colour demo):
 
-- **Controls:** flower vs bouquet · rounded/pointed petals · petal count (4–8) ·
-  petal, centre & ribbon colours (palette + custom hex) · mix-pastel mode ·
-  stem length · leaf count · bouquet size (3/5/7) · wrap on/off
+- **Controls:** flower vs bouquet · rounded/pointed/**hand-drawn** petals ·
+  petal count (4–8) · petal, centre & ribbon colours (palette + custom hex) ·
+  mix-pastel mode · stem length · leaf count · bouquet size (3/5/7) · wrap on/off
+- **Sketch pad:** pick "✏️ Draw" and draw one petal — any shape, one stroke.
+  A geometry pipeline (`src/lib/sketch.ts`: arc-length resampling → Laplacian
+  smoothing → polar closing → mirror symmetrization → normalization) cleans
+  the wobbles, shows a live preview while you draw, and extrudes your outline
+  into real 3D crochet geometry. The outline travels with the design — it's
+  in the share link and the WhatsApp message. (It's honest signal processing,
+  not a neural network.)
+- **Presets:** six starting points, including two built on sketched petals
+  (Tulip Sketch, Wildflower Mix)
 - **Live 3D:** every change animates (colours lerp, petals pop, framing glides);
+  petals flutter in a breeze and warm dust drifts through the light;
   drag to spin — horizontal drag only, so vertical swipes still scroll on mobile
 - **Shareable:** "Copy design link" produces a `?design=…` URL that reopens the
   studio with the exact design (param is strictly sanitized — never trusted)
@@ -82,7 +92,8 @@ A working product configurator at `#studio` (replaces the simple colour demo):
   plain-language description of the design, and a live `aria-live` summary
   mirrors it for screen readers
 - **Graceful degradation:** without WebGL the preview falls back to imagery,
-  but every control, the summary and the WhatsApp handoff still work
+  but every control, the sketch pad, the summary and the WhatsApp handoff
+  still work
 
 ## Images
 

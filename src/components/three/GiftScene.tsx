@@ -6,6 +6,7 @@ import { ContactShadows, Environment, Float, Lightformer, RoundedBox } from "@re
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { makeHeartGeometry } from "./geometry";
+import { BreathingLight, DustMotes, Sway } from "./anim";
 
 const damp = THREE.MathUtils.damp;
 
@@ -80,6 +81,7 @@ function OpenableGift({
   };
 
   return (
+    <Sway amp={0.02} bob={0.014} speed={0.8} phase={0.4} reduced={reduced}>
     <group position={[0, -0.35, 0]}>
       {/* body */}
       <RoundedBox args={[0.62, 0.42, 0.52]} radius={0.05} smoothness={4} position={[0, 0.21, 0]} {...hover}>
@@ -134,6 +136,7 @@ function OpenableGift({
       <GiftHeart position={[-0.08, 0.68, 0.22]} color="#C96A5E" open={open} reduced={reduced} />
       <GiftHeart position={[0.18, 1.12, 0.15]} color="#FFF3E2" open={open} reduced={reduced} />
     </group>
+    </Sway>
   );
 }
 
@@ -171,6 +174,8 @@ export default function GiftScene({
         <Lightformer form="rect" intensity={0.45} color="#FFDEE7" position={[-4, 1.5, -3]} scale={[5, 2, 1]} target={[0, 0.4, 0]} />
       </Environment>
       <OpenableGift open={open} onToggle={onToggle} reduced={!!reduce} />
+      <DustMotes count={14} area={[2.4, 1.9, 1.6]} size={0.035} reduced={!!reduce} />
+      <BreathingLight position={[0.9, 1.0, 0.9]} intensity={0.42} reduced={!!reduce} />
       <ContactShadows
         position={[0, -0.45, 0]}
         opacity={0.3}

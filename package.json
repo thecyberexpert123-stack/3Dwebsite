@@ -1,13 +1,13 @@
 {
   "name": "whimlet",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "Whimlet — handmade crochet products & custom crochet orders. Boutique 3D marketing site.",
+  "description": "Whimlet \u2014 handmade crochet products & custom crochet orders. Boutique 3D marketing site.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test:design": "tsc --module commonjs --target es2020 --skipLibCheck --outDir node_modules/.design-test src/lib/design.ts && node scripts/design-tests.mjs node_modules/.design-test/design.js",
+    "test:design": "tsc --module commonjs --target es2020 --skipLibCheck --outDir node_modules/.design-test src/lib/design.ts src/lib/sketch.ts && node scripts/design-tests.mjs node_modules/.design-test",
     "optimize:images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {

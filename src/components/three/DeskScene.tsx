@@ -1,20 +1,22 @@
 "use client";
 
 import { useRef } from "react";
-import { Canvas, useFrame, invalidate } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, Environment, Lightformer, RoundedBox } from "@react-three/drei";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { PALETTE } from "./CrochetFlower";
 import { CrochetFlower } from "./CrochetFlower";
-import { GiftBox, GroundDisk, Hook, YarnBall } from "./parts";
+import { FloatingHeart, GiftBox, GroundDisk, Hook, Sparkle3D, YarnBall } from "./parts";
+import { BreathingLight, DustMotes } from "./anim";
 
 const damp = THREE.MathUtils.damp;
 
 /**
- * The "customization desk" — a quiet still life of yarn balls, colour
- * swatches, a hook, a flower, ribbon and a gift box. Uses frameloop="demand":
- * it renders only when the pointer moves, so it costs almost nothing.
+ * The "customization desk" — a cozy still life that never quite sits
+ * still: the flower sways, yarn balls slowly turn, warm dust drifts
+ * through the light and a little heart bobs. `active` flips the render
+ * loop off while the desk is off-screen, so it costs nothing unseen.
  */
 function Desk({ reduced }: { reduced: boolean }) {
   const world = useRef<THREE.Group>(null!);
@@ -31,18 +33,42 @@ function Desk({ reduced }: { reduced: boolean }) {
     <group ref={world}>
       <GroundDisk radius={3.2} color="#FAF1E5" />
 
+      <DustMotes count={24} area={[3.4, 2.1, 2.4]} reduced={reduced} />
+      <BreathingLight position={[-1.2, 1.1, 0.9]} intensity={0.45} reduced={reduced} />
+
       <CrochetFlower
         position={[-0.55, 0, 0.25]}
         height={1.15}
         color={PALETTE.blush}
         seed={41}
         tilt={[0.04, 0.3, -0.05]}
-        sway={false}
+        sway={!reduced}
       />
 
-      <YarnBall position={[0.85, 0.24, 0.65]} radius={0.24} color={PALETTE.blush} rings={12} seed={12} />
-      <YarnBall position={[1.35, 0.17, -0.35]} radius={0.17} color={PALETTE.lavender} rings={8} seed={13} />
-      <YarnBall position={[0.55, 0.14, 1.15]} radius={0.14} color={PALETTE.cream} rings={7} seed={14} />
+      <YarnBall
+        position={[0.85, 0.24, 0.65]}
+        radius={0.24}
+        color={PALETTE.blush}
+        rings={12}
+        seed={12}
+        spin={reduced ? 0 : 0.16}
+      />
+      <YarnBall
+        position={[1.35, 0.17, -0.35]}
+        radius={0.17}
+        color={PALETTE.lavender}
+        rings={8}
+        seed={13}
+        spin={reduced ? 0 : 0.24}
+      />
+      <YarnBall
+        position={[0.55, 0.14, 1.15]}
+        radius={0.14}
+        color={PALETTE.cream}
+        rings={7}
+        seed={14}
+        spin={reduced ? 0 : 0.2}
+      />
 
       {/* colour swatch cards fanned on the desk */}
       {[
@@ -69,20 +95,23 @@ function Desk({ reduced }: { reduced: boolean }) {
           <meshStandardMaterial color={PALETTE.rose} roughness={0.8} />
         </mesh>
       </group>
+
+      <FloatingHeart position={[0.5, 0.85, 0.1]} scale={0.16} color={PALETTE.rose} />
+      <Sparkle3D position={[-0.85, 1.35, 0.8]} phase={1.2} size={0.04} reduced={reduced} />
+      <Sparkle3D position={[1.55, 1.05, -0.2]} phase={3.4} size={0.035} color="#F5DCE4" reduced={reduced} />
     </group>
   );
 }
 
-export default function DeskScene() {
+export default function DeskScene({ active = true }: { active?: boolean }) {
   const reduce = useReducedMotion();
   return (
     <Canvas
       className="!absolute inset-0"
-      frameloop="demand"
+      frameloop={active ? "always" : "never"}
       dpr={[1, 1.5]}
       camera={{ position: [0.3, 1.9, 4.4], fov: 34 }}
       gl={{ antialias: true, alpha: true }}
-      onPointerMove={() => invalidate()}
       aria-hidden="true"
     >
       <ambientLight intensity={0.95} color="#FFF6EC" />

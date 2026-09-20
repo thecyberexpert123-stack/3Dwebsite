@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { dequantizePetal } from "@/lib/sketch";
 
 /** Deterministic pseudo-random in [0,1) from a seed — stable across renders,
  *  so "handmade imperfection" never flickers between frames. */
@@ -77,4 +79,45 @@ export function makePointedPetalGeometry(width = 0.2, seed = 1): THREE.BufferGeo
   const geo = new THREE.ConeGeometry(width, 1, 9, 3);
   geo.translate(0, 0.5, 0);
   return wobbleGeometry(geo, 0.03, seed);
+}
+
+/**
+ * A petal from the sketch pad: the user's smoothed outline (quantized,
+ * see lib/sketch.ts) becomes an extruded, gently cupped piece of crochet.
+ * Same conventions as the other petals — pointing +Y, base at origin,
+ * length ≈ 0.95.
+ */
+export function makeCustomPetalGeometry(data: number[], seed = 1): THREE.BufferGeometry {
+  const pts = dequantizePetal(data);
+  const L = 0.95; // petal length (matches the built-in petals)
+  const W = 0.9; // normalized outlines are height 1, half-width ≤ 0.5
+
+  const shape = new THREE.Shape();
+  shape.moveTo(pts[0].x * W, pts[0].y * L);
+  for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i].x * W, pts[i].y * L);
+  shape.closePath();
+
+  let geo: THREE.BufferGeometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.1,
+    bevelEnabled: true,
+    bevelThickness: 0.045,
+    bevelSize: 0.04,
+    bevelSegments: 3,
+    curveSegments: 3,
+  });
+  geo.translate(0, 0, -0.05); // centre the thickness on the outline plane
+
+  // weld duplicated vertices so the surface shades smoothly
+  geo = mergeVertices(geo, 1e-4);
+
+  // cup the petal so it isn't paper-flat (a soft bow along its length)
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const yNorm = THREE.MathUtils.clamp(pos.getY(i) / L, 0, 1);
+    pos.setZ(i, pos.getZ(i) + Math.sin(yNorm * Math.PI) * 0.07);
+  }
+  pos.needsUpdate = true;
+
+  geo.computeVertexNormals();
+  return wobbleGeometry(geo, 0.018, seed); // the handmade imperfection
 }

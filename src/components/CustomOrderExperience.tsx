@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   buildCustomMessage,
@@ -8,7 +8,7 @@ import {
   waMessages,
   type CustomEnquiry,
 } from "@/lib/whatsapp";
-import { useIsMobile, useWebGL } from "@/lib/hooks";
+import { useInViewport, useIsMobile, useWebGL } from "@/lib/hooks";
 import { Reveal } from "./Reveal";
 import {
   BowDoodle,
@@ -70,6 +70,8 @@ export function CustomOrderExperience() {
   const reduce = useReducedMotion();
   const isMobile = useIsMobile();
   const webgl = useWebGL();
+  const deskWrapRef = useRef<HTMLDivElement>(null);
+  const deskNear = useInViewport(deskWrapRef, "200px");
 
   const showDesk3D = webgl === true && !isMobile;
 
@@ -140,9 +142,12 @@ export function CustomOrderExperience() {
           </p>
 
           {/* the customization desk */}
-          <div className="relative mt-2 aspect-[4/3] w-full max-w-md self-center overflow-hidden rounded-[2.25rem] shadow-lift lg:self-start">
+          <div
+            ref={deskWrapRef}
+            className="relative mt-2 aspect-[4/3] w-full max-w-md self-center overflow-hidden rounded-[2.25rem] shadow-lift lg:self-start"
+          >
             {showDesk3D ? (
-              <DeskScene />
+              <DeskScene active={deskNear} />
             ) : (
               <Image
                 src="/images/hero-fallback.jpg"
