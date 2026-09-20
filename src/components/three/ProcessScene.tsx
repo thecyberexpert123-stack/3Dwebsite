@@ -9,7 +9,7 @@ import { useQuality } from "@/lib/quality";
 import { clamp01, easeOutBack, easeOutCubic, seg, smoothstep } from "@/lib/intro";
 import { makePetalGeometry, makeThreadGeometry, rnd } from "./geometry";
 import { PALETTE } from "./CrochetFlower";
-import { Hook, YarnBall } from "./parts";
+import { Hook, SatinBow, YarnBall } from "./parts";
 import { DustMotes } from "./anim";
 import { AdaptiveCanvas, SoftGround, StudioLights, StudioShadows } from "./Stage";
 
@@ -45,12 +45,12 @@ function useSketchCurve() {
     for (let i = 0; i <= n; i++) {
       const a = (i / n) * Math.PI * 2;
       // rose-curve petals (k = 5) plus a stem
-      const r = 0.42 + 0.22 * Math.cos(5 * a);
-      pts.push(new THREE.Vector3(Math.cos(a) * r, 1.35 + Math.sin(a) * r, 0));
+      const r = 0.34 + 0.18 * Math.cos(5 * a);
+      pts.push(new THREE.Vector3(Math.cos(a) * r, 1.3 + Math.sin(a) * r, 0));
     }
     // then the stem down to the ground
     for (let i = 1; i <= 24; i++) {
-      const y = 1.35 - 0.64 - (i / 24) * 0.7;
+      const y = 1.3 - 0.52 - (i / 24) * 0.78;
       pts.push(new THREE.Vector3(Math.sin(i * 0.9) * 0.01, y, 0));
     }
     return new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.1);
@@ -77,7 +77,7 @@ function Sketch({ p }: { p: P }) {
 
   return (
     <mesh ref={ref} geometry={geo} position={[0, 0, 0]}>
-      <meshStandardMaterial ref={mat} color="#8E7A72" roughness={0.7} transparent opacity={0} />
+      <meshStandardMaterial ref={mat} color="#B4607E" roughness={0.7} transparent opacity={0} />
     </mesh>
   );
 }
@@ -340,10 +340,10 @@ function PackBox({ p: pr }: { p: P }) {
     <group ref={box} visible={false}>
       {/* open box — four walls, no top */}
       <RoundedBox args={[1.0, 0.5, 0.7]} radius={0.04} smoothness={3} position={[0, 0.25, 0]}>
-        <meshStandardMaterial color="#FFF6EC" roughness={0.7} side={THREE.BackSide} />
+        <meshStandardMaterial color="#FFEDF2" roughness={0.7} side={THREE.BackSide} />
       </RoundedBox>
       <RoundedBox args={[1.04, 0.5, 0.74]} radius={0.04} smoothness={3} position={[0, 0.25, 0]}>
-        <meshStandardMaterial color="#FFF6EC" roughness={0.7} side={THREE.FrontSide} transparent opacity={0.92} />
+        <meshStandardMaterial color="#FFEDF2" roughness={0.7} side={THREE.FrontSide} transparent opacity={0.92} />
       </RoundedBox>
       {/* tissue paper peeking out */}
       <mesh position={[0, 0.5, 0]} rotation={[-Math.PI / 2, 0, 0.2]}>
@@ -356,25 +356,14 @@ function PackBox({ p: pr }: { p: P }) {
         </RoundedBox>
         <mesh position={[0, 0.075, 0]}>
           <boxGeometry args={[0.08, 0.15, 0.8]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
+          <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
         </mesh>
         <mesh position={[0, 0.075, 0]}>
           <boxGeometry args={[1.1, 0.15, 0.08]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
+          <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
         </mesh>
         <group ref={bow} position={[0, 0.17, 0]} visible={false}>
-          <mesh position={[-0.07, 0.01, 0]} rotation={[Math.PI / 2, 0, 0.5]}>
-            <torusGeometry args={[0.065, 0.02, 8, 16, Math.PI * 1.4]} />
-            <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
-          </mesh>
-          <mesh position={[0.07, 0.01, 0]} rotation={[Math.PI / 2, 0, Math.PI - 0.5]}>
-            <torusGeometry args={[0.065, 0.02, 8, 16, Math.PI * 1.4]} />
-            <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
-          </mesh>
-          <mesh>
-            <sphereGeometry args={[0.03, 8, 8]} />
-            <meshStandardMaterial color={PALETTE.dusty} roughness={0.62} />
-          </mesh>
+          <SatinBow position={[0, 0.02, 0]} scale={1.2} />
         </group>
       </group>
     </group>
@@ -385,7 +374,7 @@ function PackBox({ p: pr }: { p: P }) {
 
 const FRAMES: { pos: [number, number, number]; look: [number, number, number] }[] = [
   { pos: [1.6, 1.1, 3.4], look: [0.6, 0.3, 0.2] }, // yarn — close on the ball
-  { pos: [0.2, 1.6, 3.6], look: [0, 1.2, 0] }, // design — the sketch in the air
+  { pos: [0.3, 1.5, 4.4], look: [0.15, 1.05, 0] }, // design — the sketch in the air (yarn ball still in frame)
   { pos: [0.9, 1.3, 3.9], look: [0.3, 0.7, 0] }, // stitch — stem + thread
   { pos: [0.3, 1.9, 3.2], look: [0, 1.25, 0] }, // detail — petals close-up
   { pos: [1.2, 1.7, 4.6], look: [0, 0.5, 0] }, // pack — wider, box arrives

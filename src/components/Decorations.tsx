@@ -59,12 +59,22 @@ export function LeafDoodle(props: DoodleProps) {
 }
 
 export function BowDoodle(props: DoodleProps) {
+  // round satin loops + soft tails; filled with a translucent tint of currentColor
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <g {...stroke}>
-        <path d="M12 11.5 5.5 8v7.5L12 12zM12 11.5 18.5 8v7.5L12 12z" />
-        <path d="M12 12.5c-1.6 1.9-1.6 4.6 0 6.5 1.6-1.9 1.6-4.6 0-6.5z" />
-        <circle cx="12" cy="11.8" r="1.5" />
+      <g {...stroke} strokeWidth={1.4}>
+        <path
+          d="M12 11.2C10.4 8.6 6.4 6.6 4.6 8.4c-1.7 1.8-.2 5.6 2.9 6.2 2 .4 3.9-.8 4.5-3.4z"
+          fill="currentColor"
+          fillOpacity="0.28"
+        />
+        <path
+          d="M12 11.2c1.6-2.6 5.6-4.6 7.4-2.8 1.7 1.8.2 5.6-2.9 6.2-2 .4-3.9-.8-4.5-3.4z"
+          fill="currentColor"
+          fillOpacity="0.28"
+        />
+        <path d="M10.6 12.6c-1.4 2-2.2 4.3-2.4 6.6M13.4 12.6c1.4 2 2.2 4.3 2.4 6.6" />
+        <ellipse cx="12" cy="11.4" rx="1.7" ry="1.5" fill="currentColor" fillOpacity="0.5" />
       </g>
     </svg>
   );

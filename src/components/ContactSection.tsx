@@ -40,10 +40,10 @@ export function ContactSection() {
         {/* ---------- copy + CTAs ---------- */}
         <div className="flex flex-col items-start gap-7 text-left">
           <Reveal className="flex flex-col items-start gap-5">
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-rose">
+            <p className="inline-flex items-center gap-2 rounded-full bg-whitish/90 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-rose shadow-clay-sm">
               <HeartDoodle className="h-3.5 w-3.5" /> say hello
             </p>
-            <h2 className="max-w-xl text-balance font-script text-5xl leading-tight text-cocoa md:text-7xl">
+            <h2 className="max-w-xl text-balance font-script text-5xl leading-tight text-rose md:text-7xl">
               <TextReveal text="Let's Make Something Lovely." stagger={0.12} />
             </h2>
             <p className="max-w-md text-pretty text-lg leading-relaxed text-cocoa-soft md:text-xl">

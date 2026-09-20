@@ -387,6 +387,27 @@
     opacity: 0.6;
   }
 
+  /* --- heart trail (see components/HeartTrail.tsx) --- */
+  .heart-trail-dot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--size, 12px);
+    height: var(--size, 12px);
+    opacity: 0;
+    transform: translate(var(--x, -100px), var(--y, -100px)) scale(0.2);
+    will-change: transform, opacity;
+  }
+  .heart-trail-dot svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 1px rgb(224 122 154 / 0.3)); }
+  .heart-trail-dot.is-live {
+    animation: heart-drift 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes heart-drift {
+    0% { opacity: 0; transform: translate(var(--x), var(--y)) scale(0.2) rotate(0deg); }
+    18% { opacity: 0.95; transform: translate(var(--x), var(--y)) scale(1) rotate(calc(var(--rot) * 0.3)); }
+    100% { opacity: 0; transform: translate(calc(var(--x) + var(--dx)), calc(var(--y) - 46px)) scale(0.55) rotate(var(--rot)); }
+  }
+
   /* --- skip link --- */
   .skip-link {
     position: fixed;

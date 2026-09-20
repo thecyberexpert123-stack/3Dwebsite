@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { HeartTrail } from "@/components/HeartTrail";
 import { site } from "@/data/site";
 import { faqs } from "@/data/faqs";
 import { PHONE_DISPLAY } from "@/lib/whatsapp";
@@ -126,6 +127,7 @@ export default function RootLayout({
         <main id="main">{children}</main>
         <Footer />
         <FloatingWhatsApp />
+        <HeartTrail />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

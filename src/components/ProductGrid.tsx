@@ -45,8 +45,8 @@ export function ProductGrid() {
                 aria-pressed={active}
                 className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-300 ${
                   active
-                    ? "border-rose bg-blush text-cocoa shadow-soft"
-                    : "border-rose/30 bg-white/70 text-cocoa-soft hover:border-rose/60 hover:text-rose"
+                    ? "border-transparent bg-blush text-cocoa shadow-clay-sm"
+                    : "border-white bg-white/80 text-cocoa-soft shadow-card hover:-translate-y-0.5 hover:text-rose"
                 }`}
               >
                 {c.label}

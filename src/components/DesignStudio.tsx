@@ -138,8 +138,8 @@ export function DesignStudio() {
               aria-pressed={activePreset === p.id}
               className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-300 ${
                 activePreset === p.id
-                  ? "border-rose bg-blush text-cocoa shadow-soft"
-                  : "border-rose/30 bg-white/70 text-cocoa-soft hover:border-rose/60 hover:text-rose"
+                  ? "border-transparent bg-blush text-cocoa shadow-clay-sm"
+                  : "border-white bg-white/80 text-cocoa-soft shadow-card hover:-translate-y-0.5 hover:text-rose"
               }`}
             >
               {p.label}
@@ -152,12 +152,13 @@ export function DesignStudio() {
             {/* ---------- the living preview ---------- */}
             <div
               ref={canvasWrapRef}
-              className="relative aspect-square w-full self-center overflow-hidden rounded-[2rem] bg-blush-soft/40"
+              className="candy relative aspect-square w-full self-center overflow-hidden rounded-[2rem] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.8)]"
             >
-              <div
-                aria-hidden="true"
-                className="absolute inset-6 rounded-full bg-white/45 blur-2xl"
-              />
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+                <span className="absolute left-[10%] top-[16%] h-[58%] w-[80%] rounded-[46%_54%_52%_48%/58%_44%_56%_42%] bg-blush-soft/80 blur-2xl" />
+                <span className="absolute right-[4%] top-[6%] h-24 w-24 rounded-full bg-lavender/70 blur-2xl" />
+                <span className="absolute bottom-[6%] left-[4%] h-20 w-20 rounded-full bg-mint/80 blur-2xl" />
+              </div>
               {webgl === false ? (
                 <SceneFallback />
               ) : near ? (
@@ -165,7 +166,8 @@ export function DesignStudio() {
               ) : null}
               <p
                 aria-hidden="true"
-                className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 font-hand text-lg text-rose/85"
+                className="sticker pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-rose"
+                style={{ "--tilt": "-2deg" } as React.CSSProperties}
               >
                 {webgl === false ? "3D preview unavailable — your choices still work below ✿" : "drag to spin ✿"}
               </p>

@@ -6,6 +6,8 @@ import { Float, RoundedBox } from "@react-three/drei";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { makeHeartGeometry } from "./geometry";
+import { PALETTE } from "./CrochetFlower";
+import { SatinBow } from "./parts";
 import { BreathingLight, DustMotes, HeartBurst, Sway } from "./anim";
 import { AdaptiveCanvas, Breeze, StudioLights, StudioShadows } from "./Stage";
 import { useQuality } from "@/lib/quality";
@@ -87,46 +89,35 @@ function OpenableGift({
     <group position={[0, -0.35, 0]}>
       {/* body */}
       <RoundedBox args={[0.62, 0.42, 0.52]} radius={0.05} smoothness={4} position={[0, 0.21, 0]} {...hover}>
-        <meshStandardMaterial color="#FFF6EC" roughness={0.7} />
+        <meshStandardMaterial color={PALETTE.blush} roughness={0.55} />
       </RoundedBox>
       {/* body ribbons */}
       <mesh position={[0, 0.22, 0]} {...hover}>
         <boxGeometry args={[0.07, 0.44, 0.545]} />
-        <meshStandardMaterial color="#D8849C" roughness={0.62} />
+        <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
       </mesh>
       <mesh position={[0, 0.22, 0]} {...hover}>
         <boxGeometry args={[0.645, 0.44, 0.07]} />
-        <meshStandardMaterial color="#D8849C" roughness={0.62} />
+        <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
       </mesh>
 
       {/* lid — pivots on its back edge */}
       <group ref={lid} position={[0, 0.44, -0.26]}>
         <group position={[0, 0, 0.26]}>
           <RoundedBox args={[0.68, 0.14, 0.58]} radius={0.05} smoothness={4} {...hover}>
-            <meshStandardMaterial color="#F2C4CE" roughness={0.7} />
+            <meshStandardMaterial color={PALETTE.rose} roughness={0.55} />
           </RoundedBox>
           <mesh {...hover}>
             <boxGeometry args={[0.075, 0.15, 0.605]} />
-            <meshStandardMaterial color="#D8849C" roughness={0.62} />
+            <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
           </mesh>
           <mesh {...hover}>
             <boxGeometry args={[0.705, 0.15, 0.075]} />
-            <meshStandardMaterial color="#D8849C" roughness={0.62} />
+            <meshStandardMaterial color={PALETTE.strawberry} roughness={0.45} />
           </mesh>
           {/* bow */}
           <group position={[0, 0.1, 0]} {...hover}>
-            <mesh position={[-0.055, 0.01, 0]} rotation={[Math.PI / 2, 0, 0.5]}>
-              <torusGeometry args={[0.05, 0.015, 8, 16, Math.PI * 1.4]} />
-              <meshStandardMaterial color="#D8849C" roughness={0.62} />
-            </mesh>
-            <mesh position={[0.055, 0.01, 0]} rotation={[Math.PI / 2, 0, Math.PI - 0.5]}>
-              <torusGeometry args={[0.05, 0.015, 8, 16, Math.PI * 1.4]} />
-              <meshStandardMaterial color="#D8849C" roughness={0.62} />
-            </mesh>
-            <mesh>
-              <sphereGeometry args={[0.024, 8, 8]} />
-              <meshStandardMaterial color="#C96A5E" roughness={0.62} />
-            </mesh>
+            <SatinBow position={[0, 0.03, 0]} scale={1.15} />
           </group>
         </group>
       </group>

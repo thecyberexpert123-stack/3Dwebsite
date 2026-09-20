@@ -215,11 +215,11 @@ export function LoadingScreen() {
                 animate={{ opacity: opened ? 0 : 1, y: opened ? 10 : 0 }}
                 transition={{ duration: 0.5, delay: opened ? 0 : 0.7 }}
               >
-                <button type="button" onClick={unwrap} className="btn btn-primary btn-lg min-w-48" autoFocus>
+                <button type="button" onClick={unwrap} className="btn btn-primary btn-lg min-w-48">
                   Unwrap
                   <SparkleDoodle className="h-4 w-4" />
                 </button>
-                <p className="font-hand text-lg text-cocoa-soft">tap the bow, or press enter</p>
+                <p className="font-hand text-lg text-cocoa-soft">or tap the bow <span className="hidden md:inline">· or press enter</span></p>
                 <button
                   type="button"
                   onClick={lift}

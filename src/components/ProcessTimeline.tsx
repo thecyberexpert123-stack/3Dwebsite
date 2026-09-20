@@ -82,7 +82,7 @@ export function ProcessTimeline() {
           <div className="lg:sticky lg:top-24 lg:self-start">
             <div
               ref={stageRef}
-              className="relative aspect-[4/5] w-full overflow-hidden rounded-[2.5rem] bg-cream/60 shadow-soft sm:aspect-[5/4] lg:aspect-[4/5] lg:h-[calc(100vh-8rem)] lg:max-h-[46rem]"
+              className="candy relative aspect-[4/5] w-full overflow-hidden rounded-[2.5rem] shadow-clay sm:aspect-[5/4] lg:aspect-[4/5] lg:h-[calc(100vh-8rem)] lg:max-h-[46rem]"
             >
               {webgl === true && near ? (
                 <ProcessScene progress={progress} active={near} />
