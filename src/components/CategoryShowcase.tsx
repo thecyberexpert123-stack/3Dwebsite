@@ -18,7 +18,7 @@ const SHAPES = [
 /** Editorial floating category cards — "Find Your Little Something". */
 export function CategoryShowcase() {
   return (
-    <section id="collections" className="relative bg-ivory py-20 md:py-28">
+    <section id="collections" className="relative bg-ivory py-24 md:py-32">
       <div className="wrap">
         <SectionHeading
           eyebrow="browse the little shop"

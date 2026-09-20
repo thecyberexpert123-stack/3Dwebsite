@@ -117,7 +117,7 @@ export function DesignStudio() {
   const summary = describeDesign(config);
 
   return (
-    <section id="studio" className="gingham relative overflow-hidden py-20 md:py-28">
+    <section id="studio" className="gingham-pink scallop-bottom relative overflow-hidden py-20 md:py-28" style={{ "--scallop": "var(--color-blush-soft)" } as React.CSSProperties}>
       <YarnCorner />
       <div className="wrap">
         <SectionHeading

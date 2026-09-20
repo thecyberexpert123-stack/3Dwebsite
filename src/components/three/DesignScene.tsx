@@ -55,11 +55,11 @@ function Pop({
 function useLerpedFlowerMaterials(petalHex: string, centerHex: string) {
   const mats = useMemo(
     () => ({
-      outer: new THREE.MeshStandardMaterial({ color: petalHex, roughness: 0.9 }),
-      inner: new THREE.MeshStandardMaterial({ color: petalHex, roughness: 0.9 }),
-      center: new THREE.MeshStandardMaterial({ color: centerHex, roughness: 0.85 }),
-      stem: new THREE.MeshStandardMaterial({ color: "#7C977A", roughness: 0.95 }),
-      leaf: new THREE.MeshStandardMaterial({ color: "#A9BFA3", roughness: 0.95 }),
+      outer: new THREE.MeshStandardMaterial({ color: petalHex, roughness: 0.7 }),
+      inner: new THREE.MeshStandardMaterial({ color: petalHex, roughness: 0.7 }),
+      center: new THREE.MeshStandardMaterial({ color: centerHex, roughness: 0.62 }),
+      stem: new THREE.MeshStandardMaterial({ color: "#7C977A", roughness: 0.7 }),
+      leaf: new THREE.MeshStandardMaterial({ color: "#A9BFA3", roughness: 0.7 }),
     }),
     // created once per instance mount — targets update via refs below
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -270,7 +270,7 @@ function StudioFlower({
    ================================================================ */
 
 function BouquetWrap({ ribbonColor }: { ribbonColor: string }) {
-  const ribbon = useMemo(() => new THREE.MeshStandardMaterial({ color: ribbonColor, roughness: 0.85 }), []);
+  const ribbon = useMemo(() => new THREE.MeshStandardMaterial({ color: ribbonColor, roughness: 0.62 }), []);
   const cream = useMemo(
     () => new THREE.MeshStandardMaterial({ color: "#F6EBDA", roughness: 0.95, side: THREE.DoubleSide }),
     []

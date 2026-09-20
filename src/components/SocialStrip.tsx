@@ -11,7 +11,7 @@ import { HeartDoodle, SparkleDoodle } from "./Decorations";
  */
 export function SocialStrip() {
   return (
-    <section id="follow" className="relative bg-cream/70 py-16 md:py-20">
+    <section id="follow" className="gingham-pink relative py-16 md:py-20">
       <div className="wrap flex flex-col items-center gap-6 text-center">
         <Reveal className="flex flex-col items-center gap-3">
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-rose">

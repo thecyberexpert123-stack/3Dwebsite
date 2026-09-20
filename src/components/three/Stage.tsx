@@ -19,20 +19,28 @@ import type { Quality } from "@/lib/quality";
 
 export function StudioLights({
   target = [0, 0.8, 0],
-  keyIntensity = 1.1,
+  keyIntensity = 0.95,
 }: {
   target?: [number, number, number];
   keyIntensity?: number;
 }) {
   return (
     <>
-      <ambientLight intensity={0.95} color="#FFF6EC" />
-      <directionalLight position={[3, 5, 2.5]} intensity={keyIntensity} color="#FFFFFF" />
-      <directionalLight position={[-4, 2.5, -2]} intensity={0.35} color="#FFDCE4" />
+      <ambientLight intensity={0.5} color="#FFF4F7" />
+      {/* hemisphere: sky-white above, blush bounce from the table below —
+          undersides go pink instead of grey, the way pastel toys are lit */}
+      <hemisphereLight args={["#FFFBFD", "#F7C9D8", 0.55]} />
+      {/* key: warm window light, top-right */}
+      <directionalLight position={[3, 5, 2.5]} intensity={keyIntensity} color="#FFFDFB" />
+      {/* fill: cool lilac from the left/back so shadows go lavender, not grey */}
+      <directionalLight position={[-4, 2.5, -2]} intensity={0.42} color="#E4D6FF" />
+      {/* rim: candy-pink kicker from behind separates plump forms from the page */}
+      <directionalLight position={[0, 2.2, -4]} intensity={0.35} color="#FFC2D4" />
       <Environment resolution={64} frames={1}>
-        <Lightformer form="rect" intensity={1.0} color="#FFF3E4" position={[0, 3, 4]} scale={[7, 3, 1]} target={target} />
-        <Lightformer form="rect" intensity={0.5} color="#FFDEE7" position={[-5, 1.5, -3]} scale={[6, 2.5, 1]} target={target} />
-        <Lightformer form="rect" intensity={0.35} color="#EAF2E4" position={[5, 2, 2]} scale={[5, 2, 1]} target={target} />
+        <Lightformer form="rect" intensity={1.1} color="#FFF5F0" position={[0, 3, 4]} scale={[7, 3, 1]} target={target} />
+        <Lightformer form="rect" intensity={0.55} color="#FFD6E2" position={[-5, 1.5, -3]} scale={[6, 2.5, 1]} target={target} />
+        <Lightformer form="rect" intensity={0.4} color="#E6DAFF" position={[5, 2, 2]} scale={[5, 2, 1]} target={target} />
+        <Lightformer form="circle" intensity={0.3} color="#D8F3EA" position={[0, -2, 3]} scale={[4, 4, 1]} target={target} />
       </Environment>
     </>
   );
@@ -60,7 +68,7 @@ export function StudioShadows({
       blur={2.6}
       far={far}
       resolution={resolution}
-      color="#96566A"
+      color="#B4607E"
       frames={Infinity}
     />
   );
@@ -90,6 +98,10 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
   return (
     <Canvas
       dpr={dpr}
+      // `flat` = no tone mapping. ACES (the default) compresses and greys out
+      // light pastels — the exact colours this brand lives on. With flat
+      // output a #FFE3EA material really reads as #FFE3EA.
+      flat
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance", ...gl }}
       onCreated={(state) => {
         // Context loss (GPU reset, too many contexts, background tab on mobile):
@@ -188,14 +200,14 @@ function groundAlphaMap(): THREE.Texture {
 
 export function SoftGround({
   radius = 3.0,
-  color = "#FAF1E5",
+  color = "#FFE9F0",
   opacity = 1,
 }: {
   radius?: number;
   color?: string;
   opacity?: number;
 }) {
-  const mat = useRef<THREE.MeshStandardMaterial>(null!);
+  const mat = useRef<THREE.MeshBasicMaterial>(null!);
   const { t, reduced } = useIntroClock();
   useFrame(() => {
     if (!mat.current) return;
@@ -206,10 +218,9 @@ export function SoftGround({
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} renderOrder={-1}>
       <circleGeometry args={[radius, 56]} />
-      <meshStandardMaterial
+      <meshBasicMaterial
         ref={mat}
         color={color}
-        roughness={1}
         transparent
         opacity={0}
         alphaMap={groundAlphaMap()}

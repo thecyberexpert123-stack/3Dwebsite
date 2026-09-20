@@ -13,8 +13,10 @@ import {
   FloatingHeart,
   GiftBox,
   Hook,
+  PuffyCloud,
+  SatinBow,
   Sparkle3D,
-  ThreadTube,
+  StrawberryCharm,
   TinyDaisy,
   YarnBall,
 } from "./parts";
@@ -102,7 +104,7 @@ function UnspoolingThread({ points }: { points: [number, number, number][] }) {
 
   return (
     <mesh ref={ref} geometry={geo} visible={false}>
-      <meshStandardMaterial color={PALETTE.rose} roughness={0.9} />
+      <meshStandardMaterial color={PALETTE.rose} roughness={0.7} />
     </mesh>
   );
 }
@@ -253,11 +255,11 @@ function Bouquet({
       <Entrance at={BEAT.wrap} duration={0.7} kind="drop" height={0.6}>
         <mesh position={[0, 0.38, 0]}>
           <cylinderGeometry args={[0.4, 0.17, 0.75, 18, 1, true]} />
-          <meshStandardMaterial color="#F6EBDA" roughness={0.95} side={THREE.DoubleSide} />
+          <meshStandardMaterial color="#F6EBDA" roughness={0.7} side={THREE.DoubleSide} />
         </mesh>
         <mesh position={[0, 0.46, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.31, 0.035, 10, 28]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.85} />
+          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
         </mesh>
       </Entrance>
       {/* invisible tap target so clicks between petals still count */}
@@ -340,8 +342,21 @@ function Scene({
         )}
 
         <Entrance at={BEAT.charms + 0.3} duration={0.6} kind="pop">
-          <FloatingHeart position={[0.95, 0.42, 1.15]} scale={0.3} color={PALETTE.dusty} />
+          <FloatingHeart position={[0.95, 0.42, 1.15]} scale={0.3} color={PALETTE.strawberry} />
         </Entrance>
+
+        {/* the little strawberry keychain, leaning on the yarn */}
+        <Entrance at={BEAT.charms + 0.05} duration={0.7} kind="drop" height={0.5}>
+          <StrawberryCharm position={[1.05, 0.0, -0.45]} rotation={[0.15, -0.6, 0.35]} scale={0.34} />
+        </Entrance>
+
+        {/* pastel clouds drifting high in the studio air */}
+        {!simple && (
+          <Entrance at={BEAT.charms + 0.7} duration={0.9} kind="pop">
+            <PuffyCloud position={[-2.0, 2.35, -1.2]} scale={0.8} color="#FFFFFF" reduced={reduced} phase={0} />
+            <PuffyCloud position={[2.1, 2.7, -1.6]} scale={0.6} color="#FFF0F5" reduced={reduced} phase={2} />
+          </Entrance>
+        )}
 
         {!simple && (
           <>
@@ -352,9 +367,10 @@ function Scene({
               <FloatingHeart position={[1.2, 1.42, -0.55]} scale={0.16} color={PALETTE.lavender} />
             </Entrance>
             <Entrance at={BEAT.charms + 0.6} duration={0.5} kind="pop">
-              <Sparkle3D position={[-0.95, 1.75, 0.55]} phase={0} reduced={reduced} />
-              <Sparkle3D position={[0.45, 2.05, -0.35]} phase={2.1} size={0.04} reduced={reduced} />
-              <Sparkle3D position={[1.85, 1.15, 0.35]} phase={4.2} size={0.045} color="#F5DCE4" reduced={reduced} />
+              <Sparkle3D position={[-0.95, 1.75, 0.55]} phase={0} color="#FFF3C4" reduced={reduced} />
+              <Sparkle3D position={[0.45, 2.05, -0.35]} phase={2.1} size={0.04} color="#FFFFFF" reduced={reduced} />
+              <Sparkle3D position={[1.85, 1.15, 0.35]} phase={4.2} size={0.045} color="#FFD6E2" reduced={reduced} />
+              <Sparkle3D position={[-1.7, 1.25, -0.4]} phase={1.3} size={0.04} color="#E6DAFF" reduced={reduced} />
             </Entrance>
             <Entrance at={BEAT.charms + 0.2} duration={0.5} kind="pop">
               <TinyDaisy position={[-1.15, 0.03, 1.5]} seed={11} />

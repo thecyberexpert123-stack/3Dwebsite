@@ -11,7 +11,7 @@ import { HeartDoodle, LadybugDoodle, SquiggleDoodle } from "./Decorations";
  */
 export function OurStory() {
   return (
-    <section id="story" className="gingham relative overflow-hidden py-20 md:py-28">
+    <section id="story" className="candy relative overflow-hidden py-20 md:py-28">
       <div className="wrap grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
         {/* copy */}
         <Reveal className="flex flex-col items-start gap-5">

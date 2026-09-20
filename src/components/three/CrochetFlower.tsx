@@ -8,19 +8,28 @@ import { useWind } from "./Stage";
 
 /** Whimlet yarn palette — shared across all 3D scenes. */
 export const PALETTE = {
-  blush: "#F2C4CE",
-  blushDeep: "#E9A9BC",
-  cream: "#F6E9D8",
-  rose: "#D8849C",
-  dusty: "#C96A5E",
-  white: "#FFF7F0",
-  lavender: "#D9C7EE",
-  sage: "#A9BFA3",
-  sageDeep: "#7C977A",
-  butter: "#F0D5A8",
-  wood: "#A97E5B",
-  ivory: "#FBF3E7",
+  blush: "#F9C6D3",
+  blushDeep: "#F3A8BF",
+  cream: "#FFF1E6",
+  rose: "#E07A9A",
+  dusty: "#D16A7C",
+  white: "#FFFBFC",
+  lavender: "#DCCCF5",
+  lavenderDeep: "#B89BE6",
+  sage: "#B7D8C4",
+  sageDeep: "#7FAE92",
+  mint: "#D4F1EA",
+  sky: "#D8ECFB",
+  butter: "#FFE9A8",
+  peach: "#FFD4C2",
+  wood: "#C9A27E",
+  ivory: "#FFF6F8",
+  strawberry: "#F07C8C",
 } as const;
+
+/** The shared "soft clay" finish: matte but with a hint of sheen so pastel
+ *  forms read as plump toys rather than dusty plaster. */
+export const CLAY = { roughness: 0.62, metalness: 0 } as const;
 
 type CrochetFlowerProps = {
   position: [number, number, number];
@@ -72,11 +81,11 @@ export function CrochetFlower({
     const base = new THREE.Color(color);
     const inner = base.clone().lerp(new THREE.Color("#B98A93"), 0.22);
     return {
-      outer: new THREE.MeshStandardMaterial({ color: base, roughness: 0.9 }),
-      inner: new THREE.MeshStandardMaterial({ color: inner, roughness: 0.9 }),
-      center: new THREE.MeshStandardMaterial({ color: centerColor, roughness: 0.85 }),
-      stem: new THREE.MeshStandardMaterial({ color: PALETTE.sageDeep, roughness: 0.95 }),
-      leaf: new THREE.MeshStandardMaterial({ color: PALETTE.sage, roughness: 0.95 }),
+      outer: new THREE.MeshStandardMaterial({ color: base, roughness: 0.7 }),
+      inner: new THREE.MeshStandardMaterial({ color: inner, roughness: 0.7 }),
+      center: new THREE.MeshStandardMaterial({ color: centerColor, roughness: 0.62 }),
+      stem: new THREE.MeshStandardMaterial({ color: PALETTE.sageDeep, roughness: 0.7 }),
+      leaf: new THREE.MeshStandardMaterial({ color: PALETTE.sage, roughness: 0.7 }),
     };
   }, [color, centerColor]);
 

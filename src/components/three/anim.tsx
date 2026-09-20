@@ -227,7 +227,7 @@ export function FallingPetals({
           scale={d.s}
           position={[d.x, d.y, d.z]}
         >
-          <meshStandardMaterial color={d.color} roughness={0.9} />
+          <meshStandardMaterial color={d.color} roughness={0.7} />
         </mesh>
       ))}
     </group>
@@ -435,7 +435,7 @@ export function HeartBurst({
 
   return (
     <instancedMesh ref={mesh} args={[geo, undefined, count]} visible={false} frustumCulled={false}>
-      <meshStandardMaterial ref={mat} roughness={0.85} />
+      <meshStandardMaterial ref={mat} roughness={0.62} />
     </instancedMesh>
   );
 }

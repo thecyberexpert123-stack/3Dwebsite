@@ -37,7 +37,7 @@ function GiftHeart({
   const heart = (
     <group ref={ref} position={position} scale={0.0001}>
       <mesh geometry={geo} scale={0.24}>
-        <meshStandardMaterial color={color} roughness={0.85} />
+        <meshStandardMaterial color={color} roughness={0.62} />
       </mesh>
     </group>
   );
@@ -87,45 +87,45 @@ function OpenableGift({
     <group position={[0, -0.35, 0]}>
       {/* body */}
       <RoundedBox args={[0.62, 0.42, 0.52]} radius={0.05} smoothness={4} position={[0, 0.21, 0]} {...hover}>
-        <meshStandardMaterial color="#FFF6EC" roughness={0.9} />
+        <meshStandardMaterial color="#FFF6EC" roughness={0.7} />
       </RoundedBox>
       {/* body ribbons */}
       <mesh position={[0, 0.22, 0]} {...hover}>
         <boxGeometry args={[0.07, 0.44, 0.545]} />
-        <meshStandardMaterial color="#D8849C" roughness={0.8} />
+        <meshStandardMaterial color="#D8849C" roughness={0.62} />
       </mesh>
       <mesh position={[0, 0.22, 0]} {...hover}>
         <boxGeometry args={[0.645, 0.44, 0.07]} />
-        <meshStandardMaterial color="#D8849C" roughness={0.8} />
+        <meshStandardMaterial color="#D8849C" roughness={0.62} />
       </mesh>
 
       {/* lid — pivots on its back edge */}
       <group ref={lid} position={[0, 0.44, -0.26]}>
         <group position={[0, 0, 0.26]}>
           <RoundedBox args={[0.68, 0.14, 0.58]} radius={0.05} smoothness={4} {...hover}>
-            <meshStandardMaterial color="#F2C4CE" roughness={0.9} />
+            <meshStandardMaterial color="#F2C4CE" roughness={0.7} />
           </RoundedBox>
           <mesh {...hover}>
             <boxGeometry args={[0.075, 0.15, 0.605]} />
-            <meshStandardMaterial color="#D8849C" roughness={0.8} />
+            <meshStandardMaterial color="#D8849C" roughness={0.62} />
           </mesh>
           <mesh {...hover}>
             <boxGeometry args={[0.705, 0.15, 0.075]} />
-            <meshStandardMaterial color="#D8849C" roughness={0.8} />
+            <meshStandardMaterial color="#D8849C" roughness={0.62} />
           </mesh>
           {/* bow */}
           <group position={[0, 0.1, 0]} {...hover}>
             <mesh position={[-0.055, 0.01, 0]} rotation={[Math.PI / 2, 0, 0.5]}>
               <torusGeometry args={[0.05, 0.015, 8, 16, Math.PI * 1.4]} />
-              <meshStandardMaterial color="#D8849C" roughness={0.8} />
+              <meshStandardMaterial color="#D8849C" roughness={0.62} />
             </mesh>
             <mesh position={[0.055, 0.01, 0]} rotation={[Math.PI / 2, 0, Math.PI - 0.5]}>
               <torusGeometry args={[0.05, 0.015, 8, 16, Math.PI * 1.4]} />
-              <meshStandardMaterial color="#D8849C" roughness={0.8} />
+              <meshStandardMaterial color="#D8849C" roughness={0.62} />
             </mesh>
             <mesh>
               <sphereGeometry args={[0.024, 8, 8]} />
-              <meshStandardMaterial color="#C96A5E" roughness={0.8} />
+              <meshStandardMaterial color="#C96A5E" roughness={0.62} />
             </mesh>
           </group>
         </group>

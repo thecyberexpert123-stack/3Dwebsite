@@ -51,12 +51,12 @@ export function YarnBall({
     <group ref={ball} position={position}>
       <mesh>
         <sphereGeometry args={[radius * 0.965, 18, 18]} />
-        <meshStandardMaterial color={color} roughness={1} />
+        <meshStandardMaterial color={color} roughness={0.7} />
       </mesh>
       {ringData.map((r) => (
         <mesh key={r.key} rotation={r.rotation}>
           <torusGeometry args={[r.radius, radius * 0.055, 6, 40]} />
-          <meshStandardMaterial color={color} roughness={0.95} />
+          <meshStandardMaterial color={color} roughness={0.7} />
         </mesh>
       ))}
     </group>
@@ -103,33 +103,33 @@ export function GiftBox({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
       <RoundedBox args={[0.5, 0.34, 0.42]} radius={0.05} smoothness={4} position={[0, 0.17, 0]}>
-        <meshStandardMaterial color="#FFF6EC" roughness={0.9} />
+        <meshStandardMaterial color="#FFF6EC" roughness={0.7} />
       </RoundedBox>
       <RoundedBox args={[0.54, 0.12, 0.46]} radius={0.05} smoothness={4} position={[0, 0.38, 0]}>
-        <meshStandardMaterial color={PALETTE.blush} roughness={0.9} />
+        <meshStandardMaterial color={PALETTE.blush} roughness={0.7} />
       </RoundedBox>
       {/* ribbons wrapping the box */}
       <mesh position={[0, 0.2, 0]}>
         <boxGeometry args={[0.06, 0.52, 0.435]} />
-        <meshStandardMaterial color={PALETTE.rose} roughness={0.8} />
+        <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
       </mesh>
       <mesh position={[0, 0.2, 0]}>
         <boxGeometry args={[0.515, 0.52, 0.06]} />
-        <meshStandardMaterial color={PALETTE.rose} roughness={0.8} />
+        <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
       </mesh>
       {/* bow */}
       <group position={[0, 0.46, 0]}>
         <mesh position={[-0.055, 0.01, 0]} rotation={[Math.PI / 2, 0, 0.5]}>
           <torusGeometry args={[0.05, 0.015, 8, 16, Math.PI * 1.4]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.8} />
+          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
         </mesh>
         <mesh position={[0.055, 0.01, 0]} rotation={[Math.PI / 2, 0, Math.PI - 0.5]}>
           <torusGeometry args={[0.05, 0.015, 8, 16, Math.PI * 1.4]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.8} />
+          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
         </mesh>
         <mesh>
           <sphereGeometry args={[0.024, 8, 8]} />
-          <meshStandardMaterial color={PALETTE.dusty} roughness={0.8} />
+          <meshStandardMaterial color={PALETTE.dusty} roughness={0.62} />
         </mesh>
       </group>
     </group>
@@ -150,7 +150,7 @@ export function FloatingHeart({ position, scale = 0.3, color = PALETTE.dusty }: 
   return (
     <Float speed={1.5} rotationIntensity={0.22} floatIntensity={0.45} floatingRange={[0.02, 0.08]}>
       <mesh geometry={geo} position={position} scale={scale} rotation={[0.1, -0.35, 0.06]}>
-        <meshStandardMaterial color={color} roughness={0.85} />
+        <meshStandardMaterial color={color} roughness={0.62} />
       </mesh>
     </Float>
   );
@@ -169,7 +169,7 @@ export function ThreadTube({ points, radius = 0.016, color = PALETTE.rose }: Thr
   const geo = useMemo(() => makeThreadGeometry(points, radius), [points, radius]);
   return (
     <mesh geometry={geo}>
-      <meshStandardMaterial color={color} roughness={0.9} />
+      <meshStandardMaterial color={color} roughness={0.7} />
     </mesh>
   );
 }
@@ -195,13 +195,13 @@ export function TinyDaisy({ position, seed = 11, petalColor = PALETTE.white }: T
             position={[0, 0, 0.035]}
             scale={[1, 0.16, 1]}
           >
-            <meshStandardMaterial color={petalColor} roughness={0.9} />
+            <meshStandardMaterial color={petalColor} roughness={0.7} />
           </mesh>
         </group>
       ))}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <sphereGeometry args={[0.045, 10, 10]} />
-        <meshStandardMaterial color={PALETTE.butter} roughness={0.85} />
+        <meshStandardMaterial color={PALETTE.butter} roughness={0.62} />
       </mesh>
     </group>
   );
@@ -236,7 +236,150 @@ export function Sparkle3D({
   return (
     <mesh ref={ref} position={position}>
       <octahedronGeometry args={[size, 0]} />
-      <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
+      <meshBasicMaterial color={color} />
     </mesh>
+  );
+}
+
+/* ---------------- satin bow ---------------- */
+
+type BowProps = {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: number;
+  color?: string;
+  knotColor?: string;
+};
+
+/** A plump satin bow — two fat loops, a knot and two tails. The coquette
+ *  signature, reused on the wrap, the gift and as a loose charm. */
+export function SatinBow({
+  position,
+  rotation = [0, 0, 0],
+  scale = 1,
+  color = PALETTE.strawberry,
+  knotColor = PALETTE.dusty,
+}: BowProps) {
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      <mesh position={[-0.11, 0.02, 0]} rotation={[Math.PI / 2, 0, 0.5]} scale={[1, 0.62, 1]}>
+        <torusGeometry args={[0.09, 0.034, 10, 22]} />
+        <meshStandardMaterial color={color} roughness={0.45} />
+      </mesh>
+      <mesh position={[0.11, 0.02, 0]} rotation={[Math.PI / 2, 0, -0.5]} scale={[1, 0.62, 1]}>
+        <torusGeometry args={[0.09, 0.034, 10, 22]} />
+        <meshStandardMaterial color={color} roughness={0.45} />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[0.045, 12, 12]} />
+        <meshStandardMaterial color={knotColor} roughness={0.45} />
+      </mesh>
+      <mesh position={[-0.06, -0.12, 0.02]} rotation={[0.1, 0, 0.5]}>
+        <boxGeometry args={[0.05, 0.22, 0.012]} />
+        <meshStandardMaterial color={color} roughness={0.45} />
+      </mesh>
+      <mesh position={[0.06, -0.12, 0.02]} rotation={[0.1, 0, -0.5]}>
+        <boxGeometry args={[0.05, 0.22, 0.012]} />
+        <meshStandardMaterial color={color} roughness={0.45} />
+      </mesh>
+    </group>
+  );
+}
+
+/* ---------------- strawberry charm ---------------- */
+
+/** A crochet strawberry — the classic little keychain charm. */
+export function StrawberryCharm({
+  position,
+  rotation = [0, 0, 0],
+  scale = 1,
+  seed = 3,
+}: {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: number;
+  seed?: number;
+}) {
+  const seeds = useMemo(
+    () =>
+      Array.from({ length: 10 }, (_, i) => {
+        const a = rnd(seed + i * 2.1) * Math.PI * 2;
+        const y = -0.45 + rnd(seed + i * 4.3) * 0.7;
+        const r = Math.sqrt(Math.max(0, 1 - (y / 0.62) ** 2)) * 0.42;
+        return { pos: [Math.cos(a) * r, y * 0.9, Math.sin(a) * r] as [number, number, number], key: i };
+      }),
+    [seed]
+  );
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      {/* body: a squashed teardrop */}
+      <mesh scale={[0.42, 0.55, 0.42]} position={[0, 0.5, 0]}>
+        <sphereGeometry args={[1, 18, 16]} />
+        <meshStandardMaterial color={PALETTE.strawberry} roughness={0.6} />
+      </mesh>
+      {seeds.map((sd) => (
+        <mesh key={sd.key} position={[sd.pos[0], sd.pos[1] + 0.5, sd.pos[2]]}>
+          <sphereGeometry args={[0.028, 6, 6]} />
+          <meshStandardMaterial color={PALETTE.butter} roughness={0.6} />
+        </mesh>
+      ))}
+      {/* leafy cap */}
+      {[0, 1, 2, 3, 4].map((i) => (
+        <mesh key={i} position={[0, 1.0, 0]} rotation={[0.55, (i / 5) * Math.PI * 2, 0]}>
+          <coneGeometry args={[0.11, 0.3, 5]} />
+          <meshStandardMaterial color={PALETTE.sageDeep} roughness={0.7} />
+        </mesh>
+      ))}
+      {/* keyring */}
+      <mesh position={[0, 1.2, 0]} rotation={[0, 0, 0]}>
+        <torusGeometry args={[0.08, 0.016, 8, 18]} />
+        <meshStandardMaterial color="#E8D9B0" roughness={0.35} metalness={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+/* ---------------- puffy cloud ---------------- */
+
+/** Three-lobed pastel cloud — the girly-aesthetic sky prop. Floats slowly. */
+export function PuffyCloud({
+  position,
+  scale = 1,
+  color = PALETTE.white,
+  reduced = false,
+  phase = 0,
+}: {
+  position: [number, number, number];
+  scale?: number;
+  color?: string;
+  reduced?: boolean;
+  phase?: number;
+}) {
+  const ref = useRef<THREE.Group>(null!);
+  useFrame(({ clock }) => {
+    if (!ref.current || reduced) return;
+    const t = clock.elapsedTime;
+    ref.current.position.y = position[1] + Math.sin(t * 0.5 + phase) * 0.05;
+    ref.current.position.x = position[0] + Math.sin(t * 0.23 + phase) * 0.06;
+  });
+  return (
+    <group ref={ref} position={position} scale={scale}>
+      <mesh position={[0, 0, 0]}>
+        <sphereGeometry args={[0.22, 16, 14]} />
+        <meshStandardMaterial color={color} roughness={0.8} />
+      </mesh>
+      <mesh position={[-0.22, -0.05, 0.02]}>
+        <sphereGeometry args={[0.16, 14, 12]} />
+        <meshStandardMaterial color={color} roughness={0.8} />
+      </mesh>
+      <mesh position={[0.22, -0.04, 0]}>
+        <sphereGeometry args={[0.17, 14, 12]} />
+        <meshStandardMaterial color={color} roughness={0.8} />
+      </mesh>
+      <mesh position={[0.02, -0.1, 0.06]} scale={[1.6, 0.6, 1]}>
+        <sphereGeometry args={[0.2, 14, 12]} />
+        <meshStandardMaterial color={color} roughness={0.8} />
+      </mesh>
+    </group>
   );
 }

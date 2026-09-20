@@ -48,7 +48,7 @@ export function Navbar() {
       {/* stitch-progress — the page sewing itself as you scroll */}
       <motion.div
         aria-hidden="true"
-        className="fixed inset-x-0 top-0 z-[56] h-[3px] origin-left bg-gradient-to-r from-blush via-rose to-sage-deep"
+        className="fixed inset-x-0 top-0 z-[56] h-[3px] origin-left bg-gradient-to-r from-blush via-strawberry to-lavender-deep"
         style={{ scaleX: scrollYProgress }}
       />
       <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5 md:pt-4">

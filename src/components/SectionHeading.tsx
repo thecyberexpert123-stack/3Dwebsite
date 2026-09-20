@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { HeartDoodle } from "@/components/Decorations";
+import { BowDoodle, SparkleDoodle } from "@/components/Decorations";
 import { Reveal, TextReveal } from "@/components/Reveal";
 
 type SectionHeadingProps = {
@@ -26,10 +26,10 @@ export function SectionHeading({
 
   return (
     <Reveal className={`flex max-w-2xl flex-col gap-4 ${alignCls} ${className}`}>
-      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-rose">
-        <HeartDoodle className="h-3.5 w-3.5" strokeWidth={1.8} />
+      <p className="inline-flex items-center gap-2 rounded-full bg-whitish/90 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-rose shadow-clay-sm">
+        <BowDoodle className="h-3.5 w-3.5" />
         {eyebrow}
-        <HeartDoodle className="h-3.5 w-3.5" strokeWidth={1.8} />
+        <SparkleDoodle className="h-3 w-3 animate-twinkle" />
       </p>
       <h2 className="text-balance text-3xl font-bold leading-tight tracking-tight text-cocoa md:text-5xl">
         {typeof title === "string" ? <TextReveal text={title} /> : title}

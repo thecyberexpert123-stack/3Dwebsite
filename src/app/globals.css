@@ -5,21 +5,27 @@
    70/20/10: cream/ivory space · soft pink surfaces · accents
    ============================================================ */
 @theme {
-  /* palette */
-  --color-ivory: #fbf5ec;
-  --color-cream: #f6eee1;
-  --color-whitish: #fffdf9;
-  --color-blush: #f2c4ce;
-  --color-blush-soft: #f9dce3;
-  --color-blush-deep: #e9a9bc;
-  --color-rose: #d8849c;
-  --color-dusty: #c96a5e;
-  --color-sage: #a9bfa3;
-  --color-sage-deep: #7c977a;
-  --color-lavender: #d9c7ee;
-  --color-cocoa: #473833;
-  --color-cocoa-soft: #7a6a62;
-  --color-bark: #40332e;
+  /* palette — "strawberry milk": pinker base, candy accents, cocoa ink */
+  --color-ivory: #fff6f8;
+  --color-cream: #ffeef3;
+  --color-whitish: #fffbfc;
+  --color-blush: #f9c6d3;
+  --color-blush-soft: #fde1e8;
+  --color-blush-deep: #f3a8bf;
+  --color-rose: #e07a9a;
+  --color-dusty: #d16a7c;
+  --color-strawberry: #f07c8c;
+  --color-sage: #b7d8c4;
+  --color-sage-deep: #7fae92;
+  --color-lavender: #dcccf5;
+  --color-lavender-deep: #b89be6;
+  --color-mint: #d4f1ea;
+  --color-butter: #fff0c2;
+  --color-sky: #d8ecfb;
+  --color-pearl: #fbf3ee;
+  --color-cocoa: #4a3238;
+  --color-cocoa-soft: #7e6068;
+  --color-bark: #44303a;
 
   /* typography (variables provided by next/font in layout) */
   --font-body: var(--font-quicksand), ui-rounded, "Segoe UI", system-ui, sans-serif;
@@ -27,9 +33,18 @@
   --font-hand: var(--font-caveat), "Segoe Print", cursive;
 
   /* shadows */
-  --shadow-card: 0 10px 30px -14px rgb(71 56 51 / 0.16);
-  --shadow-soft: 0 20px 45px -22px rgb(216 132 156 / 0.32);
-  --shadow-lift: 0 30px 60px -24px rgb(216 132 156 / 0.45);
+  --shadow-card: 0 12px 32px -14px rgb(224 122 154 / 0.22), 0 2px 6px -2px rgb(224 122 154 / 0.1);
+  --shadow-soft: 0 20px 45px -22px rgb(224 122 154 / 0.38);
+  --shadow-lift: 0 32px 64px -24px rgb(224 122 154 / 0.5);
+  /* claymorphism: outer tinted drop + inset highlight (top) + inset shade (bottom) */
+  --shadow-clay:
+    0 18px 38px -16px rgb(224 122 154 / 0.42),
+    inset 0 -6px 12px rgb(209 106 124 / 0.16),
+    inset 0 6px 12px rgb(255 255 255 / 0.7);
+  --shadow-clay-sm:
+    0 10px 22px -12px rgb(224 122 154 / 0.4),
+    inset 0 -3px 6px rgb(209 106 124 / 0.14),
+    inset 0 3px 6px rgb(255 255 255 / 0.7);
 
   /* motion */
   --animate-float: float 7s ease-in-out infinite;
@@ -38,6 +53,8 @@
   --animate-heartbeat: heartbeat 2.6s ease-in-out infinite;
   --animate-bounce-soft: bounce-soft 2.2s ease-in-out infinite;
   --animate-marquee: marquee 38s linear infinite;
+  --animate-twinkle: twinkle 2.8s ease-in-out infinite;
+  --animate-wiggle: wiggle 3.6s ease-in-out infinite;
 
   @keyframes marquee {
     to { transform: translateX(-50%); }
@@ -57,6 +74,14 @@
     28% { transform: scale(1); }
     42% { transform: scale(1.08); }
     56% { transform: scale(1); }
+  }
+  @keyframes twinkle {
+    0%, 100% { transform: scale(0.6) rotate(0deg); opacity: 0.35; }
+    50% { transform: scale(1) rotate(25deg); opacity: 1; }
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(-4deg); }
+    50% { transform: rotate(4deg); }
   }
   @keyframes bounce-soft {
     0%, 100% { transform: translateY(0); opacity: 0.9; }
@@ -139,9 +164,23 @@
   .gingham {
     background-color: var(--color-ivory);
     background-image:
-      linear-gradient(90deg, rgb(233 169 188 / 0.09) 50%, transparent 50%),
-      linear-gradient(0deg, rgb(233 169 188 / 0.09) 50%, transparent 50%);
+      linear-gradient(90deg, rgb(243 168 191 / 0.1) 50%, transparent 50%),
+      linear-gradient(0deg, rgb(243 168 191 / 0.1) 50%, transparent 50%);
     background-size: 26px 26px;
+  }
+  /* --- polka dots: the "cute" surface for feature sections --- */
+  .polka {
+    background-color: var(--color-cream);
+    background-image: radial-gradient(rgb(243 168 191 / 0.28) 1.6px, transparent 1.7px);
+    background-size: 22px 22px;
+  }
+  /* --- candy gradient wash for the hero & closing CTA --- */
+  .candy {
+    background:
+      radial-gradient(60% 55% at 85% 15%, rgb(220 204 245 / 0.55), transparent 70%),
+      radial-gradient(50% 45% at 10% 80%, rgb(212 241 234 / 0.5), transparent 70%),
+      radial-gradient(70% 60% at 50% 100%, rgb(253 225 232 / 0.9), transparent 70%),
+      var(--color-ivory);
   }
   .gingham-pink {
     background-color: var(--color-blush-soft);
@@ -171,16 +210,17 @@
       border-color 0.3s ease;
   }
   .btn:hover { transform: translateY(-2px); }
-  .btn:active { transform: translateY(0); }
+  .btn:active { transform: translateY(1px) scale(0.985); }
 
+  /* primary = soft clay: inflated, pressable, hue-tinted shadow */
   .btn-primary {
-    background: var(--color-blush);
+    background: linear-gradient(180deg, #fcd3dd 0%, var(--color-blush) 55%, #f5b9c9 100%);
     color: var(--color-cocoa);
-    box-shadow: var(--shadow-soft);
+    box-shadow: var(--shadow-clay-sm);
   }
   .btn-primary:hover {
-    background: var(--color-blush-deep);
-    box-shadow: var(--shadow-lift);
+    background: linear-gradient(180deg, #fbc9d6 0%, var(--color-blush-deep) 60%, #efa2b8 100%);
+    box-shadow: var(--shadow-clay);
   }
 
   .btn-outline {
@@ -214,6 +254,44 @@
     border: 1px solid rgb(255 255 255 / 0.9);
     box-shadow: var(--shadow-card);
   }
+  /* soft clay card: pastel fill, inflated edges */
+  .card-clay {
+    border-radius: 2rem;
+    background: linear-gradient(180deg, #fffdfd 0%, var(--color-blush-soft) 100%);
+    box-shadow: var(--shadow-clay);
+  }
+  /* pastel sticker chips — for the fun micro-labels */
+  .sticker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 9999px;
+    font-family: var(--font-hand);
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--color-cocoa);
+    background: var(--color-whitish);
+    box-shadow: var(--shadow-clay-sm);
+    transform: rotate(var(--tilt, -3deg));
+  }
+  /* scalloped lace trim: semicircles of the section's own colour hang over
+     the next section. Set --scallop to the section background. */
+  .scallop-bottom { position: relative; }
+  .scallop-bottom::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -13px;
+    height: 14px;
+    z-index: 2;
+    pointer-events: none;
+    background-image: radial-gradient(circle at 14px 0, var(--scallop, var(--color-cream)) 12.5px, transparent 13.5px);
+    background-size: 28px 14px;
+    background-repeat: repeat-x;
+  }
+
   .chip {
     display: inline-flex;
     align-items: center;

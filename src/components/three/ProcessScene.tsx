@@ -77,7 +77,7 @@ function Sketch({ p }: { p: P }) {
 
   return (
     <mesh ref={ref} geometry={geo} position={[0, 0, 0]}>
-      <meshStandardMaterial ref={mat} color="#8E7A72" roughness={1} transparent opacity={0} />
+      <meshStandardMaterial ref={mat} color="#8E7A72" roughness={0.7} transparent opacity={0} />
     </mesh>
   );
 }
@@ -158,7 +158,7 @@ function GrowingFlower({ p: pr }: { p: P }) {
     <group ref={root}>
       <mesh ref={stem} position={[0, 0, 0]}>
         <cylinderGeometry args={[0.02, 0.028, H, 8]} />
-        <meshStandardMaterial color={PALETTE.sageDeep} roughness={0.95} />
+        <meshStandardMaterial color={PALETTE.sageDeep} roughness={0.7} />
       </mesh>
       {[0.42, 0.62].map((f, i) => (
         <group
@@ -170,7 +170,7 @@ function GrowingFlower({ p: pr }: { p: P }) {
           rotation={[0, rnd(i * 9 + 3) * Math.PI * 2, 0]}
         >
           <mesh geometry={leafGeo} rotation={[1.15, 0, 0.15]} scale={[0.55, 0.42, 0.55]} position={[0, 0.01, 0.03]}>
-            <meshStandardMaterial color={PALETTE.sage} roughness={0.95} />
+            <meshStandardMaterial color={PALETTE.sage} roughness={0.7} />
           </mesh>
         </group>
       ))}
@@ -186,14 +186,14 @@ function GrowingFlower({ p: pr }: { p: P }) {
               rotation={[0, (i / PETALS) * Math.PI * 2 + j * 0.4, 0]}
             >
               <mesh geometry={petalGeo} rotation={[1.05 + j * 0.12, 0, 0]} position={[0, 0.01, 0.05]} scale={[0.92 + j * 0.16, 0.19, 1]}>
-                <meshStandardMaterial color={PALETTE.blush} roughness={0.9} />
+                <meshStandardMaterial color={PALETTE.blush} roughness={0.7} />
               </mesh>
             </group>
           );
         })}
         <mesh ref={center}>
           <sphereGeometry args={[0.09, 12, 12]} />
-          <meshStandardMaterial color={PALETTE.butter} roughness={0.85} />
+          <meshStandardMaterial color={PALETTE.butter} roughness={0.62} />
         </mesh>
       </group>
     </group>
@@ -242,7 +242,7 @@ function FeedingYarn({ p: pr }: { p: P }) {
         <YarnBall position={[0, 0, 0]} radius={0.24} color={PALETTE.blush} rings={11} seed={4} />
       </group>
       <mesh ref={thread} geometry={geo} visible={false}>
-        <meshStandardMaterial color={PALETTE.rose} roughness={0.9} />
+        <meshStandardMaterial color={PALETTE.rose} roughness={0.7} />
       </mesh>
     </>
   );
@@ -289,15 +289,15 @@ function Tools({ p: pr }: { p: P }) {
         {/* a stubby pencil: body, tip, eraser */}
         <mesh>
           <cylinderGeometry args={[0.03, 0.03, 0.7, 6]} />
-          <meshStandardMaterial color={PALETTE.butter} roughness={0.8} />
+          <meshStandardMaterial color={PALETTE.butter} roughness={0.62} />
         </mesh>
         <mesh position={[0, -0.4, 0]}>
           <coneGeometry args={[0.03, 0.1, 6]} />
-          <meshStandardMaterial color="#5B4A44" roughness={0.9} />
+          <meshStandardMaterial color="#5B4A44" roughness={0.7} />
         </mesh>
         <mesh position={[0, 0.37, 0]}>
           <cylinderGeometry args={[0.031, 0.031, 0.06, 6]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.8} />
+          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
         </mesh>
       </group>
       <group ref={hook} visible={false}>
@@ -340,40 +340,40 @@ function PackBox({ p: pr }: { p: P }) {
     <group ref={box} visible={false}>
       {/* open box — four walls, no top */}
       <RoundedBox args={[1.0, 0.5, 0.7]} radius={0.04} smoothness={3} position={[0, 0.25, 0]}>
-        <meshStandardMaterial color="#FFF6EC" roughness={0.9} side={THREE.BackSide} />
+        <meshStandardMaterial color="#FFF6EC" roughness={0.7} side={THREE.BackSide} />
       </RoundedBox>
       <RoundedBox args={[1.04, 0.5, 0.74]} radius={0.04} smoothness={3} position={[0, 0.25, 0]}>
-        <meshStandardMaterial color="#FFF6EC" roughness={0.9} side={THREE.FrontSide} transparent opacity={0.92} />
+        <meshStandardMaterial color="#FFF6EC" roughness={0.7} side={THREE.FrontSide} transparent opacity={0.92} />
       </RoundedBox>
       {/* tissue paper peeking out */}
       <mesh position={[0, 0.5, 0]} rotation={[-Math.PI / 2, 0, 0.2]}>
         <planeGeometry args={[0.95, 0.65]} />
-        <meshStandardMaterial color={PALETTE.blushDeep} roughness={1} side={THREE.DoubleSide} transparent opacity={0.6} />
+        <meshStandardMaterial color={PALETTE.blushDeep} roughness={0.7} side={THREE.DoubleSide} transparent opacity={0.6} />
       </mesh>
       <group ref={lid} visible={false}>
         <RoundedBox args={[1.08, 0.14, 0.78]} radius={0.04} smoothness={3} position={[0, 0.07, 0]}>
-          <meshStandardMaterial color={PALETTE.blush} roughness={0.9} />
+          <meshStandardMaterial color={PALETTE.blush} roughness={0.7} />
         </RoundedBox>
         <mesh position={[0, 0.075, 0]}>
           <boxGeometry args={[0.08, 0.15, 0.8]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.8} />
+          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
         </mesh>
         <mesh position={[0, 0.075, 0]}>
           <boxGeometry args={[1.1, 0.15, 0.08]} />
-          <meshStandardMaterial color={PALETTE.rose} roughness={0.8} />
+          <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
         </mesh>
         <group ref={bow} position={[0, 0.17, 0]} visible={false}>
           <mesh position={[-0.07, 0.01, 0]} rotation={[Math.PI / 2, 0, 0.5]}>
             <torusGeometry args={[0.065, 0.02, 8, 16, Math.PI * 1.4]} />
-            <meshStandardMaterial color={PALETTE.rose} roughness={0.8} />
+            <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
           </mesh>
           <mesh position={[0.07, 0.01, 0]} rotation={[Math.PI / 2, 0, Math.PI - 0.5]}>
             <torusGeometry args={[0.065, 0.02, 8, 16, Math.PI * 1.4]} />
-            <meshStandardMaterial color={PALETTE.rose} roughness={0.8} />
+            <meshStandardMaterial color={PALETTE.rose} roughness={0.62} />
           </mesh>
           <mesh>
             <sphereGeometry args={[0.03, 8, 8]} />
-            <meshStandardMaterial color={PALETTE.dusty} roughness={0.8} />
+            <meshStandardMaterial color={PALETTE.dusty} roughness={0.62} />
           </mesh>
         </group>
       </group>

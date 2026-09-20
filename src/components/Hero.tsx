@@ -65,10 +65,13 @@ export function Hero() {
         };
 
   return (
-    <section id="home" ref={sectionRef} className="gingham relative overflow-hidden">
+    <section id="home" ref={sectionRef} className="candy relative overflow-hidden">
+      {/* subtle gingham over the candy wash */}
+      <div className="gingham pointer-events-none absolute inset-0 opacity-45 mix-blend-multiply" aria-hidden="true" />
       {/* decorative doodles — kept few, with breathing room */}
       <FlowerDoodleBg />
       <LeafBg />
+      <BowCorner />
 
       <div className="wrap grid min-h-[92vh] items-center gap-10 pb-16 pt-32 md:pb-24 md:pt-36 lg:grid-cols-[1.02fr_1fr] lg:gap-8">
         {/* ---------- left: editorial copy ----------
@@ -153,7 +156,13 @@ export function Hero() {
         </motion.div>
 
         {/* ---------- right: the 3D studio ---------- */}
-        <motion.div style={{ y: sceneY }} className="relative h-[420px] w-full sm:h-[480px] md:h-[560px] lg:h-[620px]">
+        <motion.div style={{ y: sceneY }} className="relative h-[440px] w-full sm:h-[500px] md:h-[580px] lg:h-[660px]">
+          {/* soft pastel blobs give the scene a "stage" without boxing it in */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+            <span className="absolute left-[8%] top-[12%] h-[62%] w-[78%] rounded-[46%_54%_52%_48%/58%_44%_56%_42%] bg-blush-soft/80 blur-2xl" />
+            <span className="absolute right-[2%] top-[4%] h-40 w-40 rounded-full bg-lavender/70 blur-2xl" />
+            <span className="absolute bottom-[8%] left-[2%] h-32 w-32 rounded-full bg-mint/80 blur-2xl" />
+          </div>
           {/* the canvas is always mounted so shaders compile behind the curtain */}
           <HeroScene3D active={heroActive} />
 
@@ -188,7 +197,8 @@ export function Hero() {
                   animate: show ? { opacity: 1 } : { opacity: 0 },
                   transition: { duration: 0.8, delay: 4.2 },
                 })}
-            className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap font-hand text-base text-cocoa-soft/80"
+            className="sticker pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap text-cocoa-soft"
+            style={{ "--tilt": "-2deg" } as React.CSSProperties}
           >
             tap the bouquet ✿
           </motion.span>
@@ -221,6 +231,24 @@ function FlowerDoodleBg() {
           <ellipse key={deg} cx="12" cy="7" rx="2.4" ry="3.6" transform={`rotate(${deg} 12 12)`} />
         ))}
         <circle cx="12" cy="12" r="2.1" />
+      </g>
+    </svg>
+  );
+}
+
+/* a satin bow in the top-right corner — the coquette signature */
+function BowCorner() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 120 80"
+      className="absolute -right-6 top-24 hidden h-24 w-36 -rotate-[18deg] text-rose/55 md:block lg:right-[3%] lg:top-28"
+    >
+      <g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M60 40c-12-16-38-22-46-10s6 30 22 26 24-10 24-16z" />
+        <path d="M60 40c12-16 38-22 46-10s-6 30-22 26-24-10-24-16z" />
+        <circle cx="60" cy="40" r="6" fill="currentColor" fillOpacity="0.25" />
+        <path d="M56 46c-8 10-12 18-14 30M64 46c8 10 12 18 14 30" />
       </g>
     </svg>
   );

@@ -51,7 +51,7 @@ export function Gallery() {
   const current = lightbox !== null ? shown[lightbox] : null;
 
   return (
-    <section id="gallery" className="relative bg-ivory py-20 md:py-28">
+    <section id="gallery" className="polka relative py-20 md:py-28">
       <div className="wrap">
         <SectionHeading
           eyebrow="a peek inside"

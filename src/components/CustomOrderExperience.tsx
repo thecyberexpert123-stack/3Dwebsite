@@ -123,7 +123,7 @@ export function CustomOrderExperience() {
   const message = useMemo(() => buildCustomMessage(form), [form]);
 
   return (
-    <section id="custom" className="gingham relative overflow-hidden py-20 md:py-28">
+    <section id="custom" className="candy relative overflow-hidden py-20 md:py-28">
       <YarnDoodle className="absolute -left-8 top-16 h-36 w-36 -rotate-12 text-blush/40" />
       <div className="wrap grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14">
         {/* ---------- left: pitch + desk visual ---------- */}

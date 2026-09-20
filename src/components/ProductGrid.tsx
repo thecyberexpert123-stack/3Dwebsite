@@ -24,7 +24,7 @@ export function ProductGrid() {
 
   return (
     <LayoutGroup id="shop">
-    <section id="shop" className="relative bg-cream/60 py-20 md:py-28">
+    <section id="shop" className="polka scallop-bottom relative py-20 md:py-28" style={{ "--scallop": "var(--color-cream)" } as React.CSSProperties}>
       <div className="wrap">
         <SectionHeading
           eyebrow="the current favourites"

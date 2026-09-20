@@ -31,7 +31,7 @@ export function StorySection() {
   const imgScale = useTransform(scrollYProgress, [0.05, 0.4], [reduce ? 1 : 1.16, 1]);
 
   return (
-    <section id="story-beat" className="gingham-pink relative overflow-hidden py-20 md:py-28" ref={ref}>
+    <section id="story-beat" className="gingham-pink scallop-bottom relative overflow-hidden py-20 md:py-28" style={{ "--scallop": "var(--color-blush-soft)" } as React.CSSProperties} ref={ref}>
       <div className="wrap grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
         {/* image with soft parallax */}
         <motion.div style={{ y }} className="relative mx-auto w-full max-w-lg">
@@ -46,15 +46,15 @@ export function StorySection() {
               />
             </motion.div>
           </motion.div>
-          <p className="absolute -bottom-5 left-6 -rotate-2 font-hand text-xl text-rose md:text-2xl">
-            one stitch at a time
+          <p className="sticker absolute -bottom-5 left-6 text-rose" style={{ "--tilt": "-3deg" } as React.CSSProperties}>
+            one stitch at a time ♡
           </p>
           <HeartDoodle className="absolute -right-3 -top-4 h-10 w-10 rotate-12 text-rose/70 animate-float" />
         </motion.div>
 
         {/* copy */}
         <Reveal className="flex flex-col items-start gap-5">
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-rose">
+          <p className="inline-flex items-center gap-2 rounded-full bg-whitish/90 px-4 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-rose shadow-clay-sm">
             <HeartDoodle className="h-3.5 w-3.5" /> the whimbles &amp; wonders
           </p>
           <h2 className="text-balance text-3xl font-bold leading-tight tracking-tight text-cocoa md:text-5xl">
@@ -69,7 +69,7 @@ export function StorySection() {
           <ul className="mt-2 flex flex-col gap-3">
             {VALUES.map((v) => (
               <li key={v.label} className="flex items-center gap-3 font-semibold text-cocoa">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-rose shadow-card">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-rose shadow-clay-sm">
                   <v.icon className="h-4.5 w-4.5" />
                 </span>
                 {v.label}

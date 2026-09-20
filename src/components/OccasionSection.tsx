@@ -10,7 +10,7 @@ import { HeartDoodle } from "./Decorations";
 /** "For Every Little Moment" — warm editorial occasion cards. */
 export function OccasionSection() {
   return (
-    <section id="occasions" className="relative bg-ivory py-20 md:py-28">
+    <section id="occasions" className="relative bg-ivory py-24 md:py-32">
       <div className="wrap">
         <SectionHeading
           eyebrow="why people order"
