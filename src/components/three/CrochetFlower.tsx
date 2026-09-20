@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { makePetalGeometry, rnd } from "./geometry";
@@ -43,10 +43,19 @@ type CrochetFlowerProps = {
   sway?: boolean;
 };
 
+const OUTER = 6;
+const INNER = 5;
+
 /**
  * A hand-crocheted flower: stem, leaves and a two-ring petal head.
  * Every petal gets a deterministic jitter so no two look identical —
  * the "handmade irregularity" the brand asks for.
+ *
+ * Draw-call budget: each petal ring is ONE InstancedMesh (6 + 5 instances)
+ * instead of eleven meshes, so a flower costs 5 draw calls (stem, two leaves
+ * share a geometry but not a transform → 2, outer ring, inner ring, centre)
+ * rather than 16. The per-petal flutter is kept by rewriting the instance
+ * matrices each frame — 11 tiny matrix updates, no extra programs.
  */
 export function CrochetFlower({
   position,
@@ -60,7 +69,8 @@ export function CrochetFlower({
 }: CrochetFlowerProps) {
   const head = useRef<THREE.Group>(null!);
   const plant = useRef<THREE.Group>(null!);
-  const flutterRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const outerRef = useRef<THREE.InstancedMesh>(null!);
+  const innerRef = useRef<THREE.InstancedMesh>(null!);
   const wind = useWind();
   // the bend responds to the wind with a little lag — stems are springy
   const bend = useRef(0);
@@ -73,10 +83,57 @@ export function CrochetFlower({
     [seed]
   );
   const leaf = useMemo(() => makePetalGeometry(0.4, 1, 0.12, seed + 7), [seed]);
-  const flutterBase = useMemo(
-    () => Array.from({ length: 6 }, (_, i) => 1.05 + rnd(seed + i * 3.7) * 0.12),
+  // per-petal layout (deterministic per seed): ring angle, tilt, width
+  const outerPetals = useMemo(
+    () =>
+      Array.from({ length: OUTER }, (_, i) => {
+        const j = rnd(seed + i * 3.7);
+        return { angle: (i / OUTER) * Math.PI * 2 + j * 0.4, tilt: 1.05 + j * 0.12, width: 0.92 + j * 0.16 };
+      }),
     [seed]
   );
+  const innerPetals = useMemo(
+    () =>
+      Array.from({ length: INNER }, (_, i) => {
+        const j = rnd(seed + 20 + i * 2.9);
+        return { angle: (i / INNER) * Math.PI * 2 + 0.5 + j * 0.4, tilt: 0.5 + j * 0.1, width: 0.8 + j * 0.1 };
+      }),
+    [seed]
+  );
+  const tmp = useMemo(() => ({ o: new THREE.Object3D(), rot: new THREE.Matrix4(), m: new THREE.Matrix4() }), []);
+
+  /** Write one ring's instance matrices. `flutter(i)` adds to the petal tilt. */
+  const writeRing = (
+    mesh: THREE.InstancedMesh | null,
+    petals: { angle: number; tilt: number; width: number }[],
+    ringScaleY: number,
+    ringScaleZ: number,
+    lift: number,
+    flutter: (i: number) => number
+  ) => {
+    if (!mesh) return;
+    const { o, rot, m } = tmp;
+    for (let i = 0; i < petals.length; i++) {
+      const p = petals[i];
+      o.position.set(0, lift, 0.05);
+      o.rotation.set(p.tilt + flutter(i), 0, 0);
+      o.scale.set(p.width, ringScaleY, ringScaleZ);
+      o.updateMatrix();
+      rot.makeRotationY(p.angle);
+      m.multiplyMatrices(rot, o.matrix);
+      mesh.setMatrixAt(i, m);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  };
+
+  // resting pose (also the only pose when sway is off / reduced motion)
+  useLayoutEffect(() => {
+    writeRing(outerRef.current, outerPetals, 0.19, 1, 0.01, () => 0);
+    writeRing(innerRef.current, innerPetals, 0.15, 0.9, 0.02, () => 0);
+    outerRef.current?.computeBoundingSphere();
+    innerRef.current?.computeBoundingSphere();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outerPetals, innerPetals]);
 
   const mats = useMemo(() => {
     const base = new THREE.Color(color);
@@ -119,10 +176,9 @@ export function CrochetFlower({
       head.current.rotation.x = Math.sin(t * 0.42 + seed * 1.3) * 0.02;
     }
     // each petal flutters individually, like fabric catching air
-    for (let i = 0; i < flutterRefs.current.length; i++) {
-      const m = flutterRefs.current[i];
-      if (m) m.rotation.x = flutterBase[i] + Math.sin(t * (0.9 + Math.abs(w) * 2) + i * 1.3 + seed) * 0.05 * flutterGain;
-    }
+    const f = 0.9 + Math.abs(w) * 2;
+    writeRing(outerRef.current, outerPetals, 0.19, 1, 0.01, (i) => Math.sin(t * f + i * 1.3 + seed) * 0.05 * flutterGain);
+    writeRing(innerRef.current, innerPetals, 0.15, 0.9, 0.02, (i) => Math.sin(t * (f + 0.15) + i * 1.1 + seed) * 0.04 * flutterGain);
   });
 
   return (
@@ -150,40 +206,8 @@ export function CrochetFlower({
       ))}
       {/* head */}
       <group ref={head} position={[0, height, 0]}>
-        {Array.from({ length: 6 }).map((_, i) => {
-          const j = rnd(seed + i * 3.7);
-          return (
-            <group key={`o${i}`} rotation={[0, (i / 6) * Math.PI * 2 + j * 0.4, 0]}>
-              <mesh
-                ref={(el) => {
-                  flutterRefs.current[i] = el;
-                }}
-                geometry={petals.outer}
-                material={mats.outer}
-                rotation={[1.05 + j * 0.12, 0, 0]}
-                position={[0, 0.01, 0.05]}
-                scale={[0.92 + j * 0.16, 0.19, 1]}
-              />
-            </group>
-          );
-        })}
-        {Array.from({ length: 5 }).map((_, i) => {
-          const j = rnd(seed + 20 + i * 2.9);
-          return (
-            <group
-              key={`i${i}`}
-              rotation={[0, (i / 5) * Math.PI * 2 + 0.5 + j * 0.4, 0]}
-            >
-              <mesh
-                geometry={petals.inner}
-                material={mats.inner}
-                rotation={[0.5 + j * 0.1, 0, 0]}
-                position={[0, 0.02, 0.03]}
-                scale={[0.8 + j * 0.1, 0.15, 0.9]}
-              />
-            </group>
-          );
-        })}
+        <instancedMesh ref={outerRef} args={[petals.outer, mats.outer, OUTER]} frustumCulled={false} />
+        <instancedMesh ref={innerRef} args={[petals.inner, mats.inner, INNER]} frustumCulled={false} />
         <mesh material={mats.center}>
           <sphereGeometry args={[0.09, 12, 12]} />
         </mesh>

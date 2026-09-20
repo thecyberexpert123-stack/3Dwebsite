@@ -169,12 +169,14 @@ type FallingPetalsProps = {
 
 const PETAL_COLORS = [PALETTE.blush, PALETTE.cream, PALETTE.rose, PALETTE.lavender, PALETTE.white];
 
+/** Tumbling crochet petals — ONE instanced draw call for the whole flurry. */
 export function FallingPetals({
   count = 7,
   area = [3.8, 2.9, 2.2],
   reduced = false,
 }: FallingPetalsProps) {
-  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  const mesh = useRef<THREE.InstancedMesh>(null!);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
   const wind = useWind();
   const geo = useMemo(() => makePetalGeometry(0.16, 0.34, 0.06, 99), []);
   useEffect(() => () => geo.dispose(), [geo]);
@@ -191,47 +193,59 @@ export function FallingPetals({
         sway: 0.5 + Math.random(),
         ph: Math.random() * Math.PI * 2,
         s: 0.55 + Math.random() * 0.5,
-        color: PETAL_COLORS[i % PETAL_COLORS.length],
+        rx: Math.random() * Math.PI * 2,
+        rz: Math.random() * Math.PI * 2,
+        color: new THREE.Color(PETAL_COLORS[i % PETAL_COLORS.length]),
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
+
+  const write = (t: number) => {
+    const m = mesh.current;
+    if (!m) return;
+    for (let i = 0; i < data.length; i++) {
+      const d = data[i];
+      dummy.position.set(d.x + Math.sin(t * 0.4 * d.sway + d.ph) * 0.22, d.y, d.z);
+      dummy.rotation.set(d.rx, 0, d.rz);
+      dummy.scale.setScalar(d.s);
+      dummy.updateMatrix();
+      m.setMatrixAt(i, dummy.matrix);
+    }
+    m.instanceMatrix.needsUpdate = true;
+  };
+
+  // per-instance colours once; initial pose (reduced motion keeps it)
+  useEffect(() => {
+    const m = mesh.current;
+    if (!m) return;
+    data.forEach((d, i) => m.setColorAt(i, d.color));
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    write(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   useFrame(({ clock }, dt) => {
     if (reduced) return;
     const t = clock.elapsedTime;
     const w = wind.current ?? 0;
     const half = area[0] / 2;
-    data.forEach((d, i) => {
-      const m = refs.current[i];
-      if (!m) return;
+    for (const d of data) {
       d.y -= dt * d.fall;
       if (d.y < 0.02) d.y = area[1];
       d.x += dt * w * 1.1 * d.sway;
       if (d.x > half) d.x -= area[0];
       else if (d.x < -half) d.x += area[0];
-      m.position.set(d.x + Math.sin(t * 0.4 * d.sway + d.ph) * 0.22, d.y, d.z);
-      m.rotation.x += dt * (d.spinX + w * 2);
-      m.rotation.z += dt * d.spinZ;
-    });
+      d.rx += dt * (d.spinX + w * 2);
+      d.rz += dt * d.spinZ;
+    }
+    write(t);
   });
 
   return (
-    <group>
-      {data.map((d, i) => (
-        <mesh
-          key={i}
-          ref={(el) => {
-            refs.current[i] = el;
-          }}
-          geometry={geo}
-          scale={d.s}
-          position={[d.x, d.y, d.z]}
-        >
-          <primitive object={finish("yarn", d.color)} attach="material" />
-        </mesh>
-      ))}
-    </group>
+    <instancedMesh ref={mesh} args={[geo, undefined, count]} frustumCulled={false}>
+      <primitive object={finish("yarn", "#FFFFFF")} attach="material" />
+    </instancedMesh>
   );
 }
 
