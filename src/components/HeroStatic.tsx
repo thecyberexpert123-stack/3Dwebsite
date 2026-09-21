@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 
 /**
@@ -10,7 +12,6 @@ export function HeroStatic() {
   return (
     <div className="candy relative h-full w-full overflow-hidden">
       <div className="gingham absolute inset-0 opacity-45 mix-blend-multiply" aria-hidden="true" />
-      {/* full-bleed, soft-focused at the edges so the copy sits comfortably on it */}
       <div className="absolute inset-y-0 right-0 w-full lg:w-[58%]">
         <Image
           src="/images/hero-fallback.jpg"

@@ -233,7 +233,6 @@ function fiberFuzzTexture(): THREE.CanvasTexture {
       ctx.stroke();
     }
   });
-  fiberFuzz = fiberFuzz;
   fiberFuzz.wrapS = fiberFuzz.wrapT = THREE.RepeatWrapping;
   fiberFuzz.repeat.set(3, 3);
   return fiberFuzz;
@@ -269,7 +268,12 @@ function satinWeaveTexture(): THREE.CanvasTexture {
    ------------------------------------------------------------------ */
 
 function isSimple(): boolean {
-  return typeof window !== "undefined" && detectTier() === "low";
+  if (typeof window === "undefined") return true;
+  try {
+    return detectTier() === "low";
+  } catch {
+    return false;
+  }
 }
 
 function sheenTint(color: THREE.Color): THREE.Color {

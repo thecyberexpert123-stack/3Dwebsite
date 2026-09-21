@@ -475,6 +475,8 @@ export function Breeze({ children, reduced, gust: gustScale = 1 }: { children: R
   const wind = useRef(0);
   const prev = useRef(new THREE.Vector2());
   const primed = useRef(false);
+  const gustRef = useRef(gustScale);
+  gustRef.current = gustScale;
 
   useFrame(({ pointer }, dt) => {
     if (reduced) {
@@ -490,7 +492,7 @@ export function Breeze({ children, reduced, gust: gustScale = 1 }: { children: R
     const dy = pointer.y - prev.current.y;
     prev.current.copy(pointer);
     const speed = Math.hypot(dx, dy) / Math.max(dt, 1e-3);
-    const gust = THREE.MathUtils.clamp(speed * 0.5, 0, 1.2) * Math.sign(dx || 1) * gustScale;
+    const gust = THREE.MathUtils.clamp(speed * 0.5, 0, 1.2) * Math.sign(dx || 1) * gustRef.current;
     const rising = Math.abs(gust) > Math.abs(wind.current);
     wind.current = THREE.MathUtils.damp(wind.current, gust, rising ? 11 : 1.5, dt);
   });

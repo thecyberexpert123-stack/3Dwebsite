@@ -4,7 +4,7 @@ import { Bloom, ChromaticAberration, DepthOfField, EffectComposer, N8AO, Noise, 
 import { BlendFunction, ToneMappingMode } from "postprocessing";
 import * as THREE from "three";
 import type { Quality } from "@/lib/quality";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 
 /**
@@ -156,17 +156,23 @@ export function Post({
  */
 export function HeroPost({
   quality,
-  bouquetPosition = new THREE.Vector3(0, 1.1, 0),
+  bouquetPosition,
 }: {
   quality: Quality;
   bouquetPosition?: THREE.Vector3;
 }) {
-  const targetRef = useRef(bouquetPosition);
+  const defaultPos = useMemo(() => new THREE.Vector3(0, 1.1, 0), []);
+  const pos = bouquetPosition ?? defaultPos;
+  const targetRef = useRef(pos.clone());
   const { camera } = useThree();
   
+  useEffect(() => {
+    targetRef.current.copy(pos);
+  }, [pos]);
+  
   useFrame(() => {
-    // Smoothly track bouquet for DOF
-    targetRef.current.lerp(bouquetPosition, 0.03);
+    // Smoothly track bouquet for DOF - only if pos changed significantly
+    targetRef.current.lerp(pos, 0.03);
   });
   
   if (quality.simple) return null;
