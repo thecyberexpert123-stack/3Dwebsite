@@ -871,6 +871,12 @@ export function colourName(hex: string): string {
 }
 
 /** Two or three words — file names, tab titles. */
+/** "a" / "an" for a phrase — colour names like "ivory" and "orange" need "an". */
+function an(phrase: string): string {
+  if (/^(a|an) /i.test(phrase)) return phrase; // "a custom colour (#…) centre" already has one
+  return `${/^[aeiou]/i.test(phrase) ? "an" : "a"} ${phrase}`;
+}
+
 export function describeShort(c: DesignConfig): string {
   const colour = c.type === "bouquet" && c.mixColors ? MIX_PALETTES[c.mixPalette].label.toLowerCase() : colourName(c.petalColor).replace(/^a custom colour.*$/, "custom");
   return c.type === "bouquet" ? `${colour} bouquet of ${c.bouquetCount}` : `${colour} ${c.petalShape === "custom" ? "sketched" : c.petalShape} flower`;
@@ -917,20 +923,20 @@ export function describeDesign(c: DesignConfig): string {
     if (c.fairyLights) bits.push("a string of fairy lights");
     bits.push(
       c.wrap
-        ? `wrapped in ${colourName(c.wrapColor)} ${c.wrapStyle === "sheer" ? "sheer" : c.wrapStyle === "fold" ? "folded" : ""} paper${c.wrapStyle !== "sheer" ? ` lined ${colourName(c.wrapInnerColor)}` : ""} with a ${colourName(c.ribbonColor)} ${c.ribbonStyle === "band" ? "band" : c.ribbonStyle === "double" ? "double bow" : "bow"}`
+        ? `wrapped in ${colourName(c.wrapColor)} ${c.wrapStyle === "sheer" ? "sheer" : c.wrapStyle === "fold" ? "folded" : ""} paper${c.wrapStyle !== "sheer" ? ` lined ${colourName(c.wrapInnerColor)}` : ""} with ${an(`${colourName(c.ribbonColor)} ${c.ribbonStyle === "band" ? "band" : c.ribbonStyle === "double" ? "double bow" : "bow"}`)}`
         : "unwrapped, stems showing"
     );
     out = bits.concat(extras).join(", ");
   } else {
     const bits = [
       `a ${c.size === "regular" ? "" : c.size + " "}single ${yarn}flower with ${petals}${pattern}${open} in ${petalColour}`,
-      `a ${centre}`,
+      an(centre),
     ];
     if (c.stem === "none") {
       bits.push(`${c.leaves} ${c.leafShape} ${leafWord} tucked underneath, no stem`);
     } else {
       bits.push(`a ${c.stem} ${c.stemCurve === "curvy" ? "curving " : ""}${colourName(c.stemColor)} stem with ${c.leaves} ${c.leafShape} ${leafWord}`);
-      if (c.base !== "none") bits.push(c.base === "jar" ? "standing in a little glass jar" : `in a ${colourName(c.baseColor)} ${c.base}`);
+      if (c.base !== "none") bits.push(c.base === "jar" ? "standing in a little glass jar" : `in ${an(`${colourName(c.baseColor)} ${c.base}`)}`);
     }
     out = bits.concat(extras).join(", ");
   }

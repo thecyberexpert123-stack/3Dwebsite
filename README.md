@@ -114,7 +114,7 @@ fairy lights · wrap styles · ribbon styles · gift tag with text · butterflie
 - **Graceful degradation:** without WebGL the preview falls back to imagery,
   but every control, the sketch pad, save/open, the summary and the WhatsApp
   handoff still work.
-- `npm run test:design` runs the 80 pure-logic tests (encode/decode, v1
+- `npm run test:design` runs the 82 pure-logic tests (encode/decode, v1
   compat, sanitiser, file round-trips, spec estimates, descriptions).
 
 ## Images
@@ -128,7 +128,11 @@ then run `npm run optimize:images`. Guidance for real photography:
 ## Deployment
 
 - Set `NEXT_PUBLIC_SITE_URL` (e.g. `https://whimlet.in`) so Open Graph/Twitter
-  metadata resolves to absolute URLs.
+  metadata, `sitemap.xml` and `robots.txt` resolve to absolute URLs.
+- `/studio` is server-rendered on demand (shared `?design=` links get their
+  own preview title/description); everything else is static. `/admin` is
+  `noindex` and disallowed in robots — but it is still a public URL, so don't
+  treat it as private.
 - `next.config.ts` disables runtime image optimization (`images.unoptimized`)
   because images are pre-optimized at authoring time. On platforms with
   built-in optimization (e.g. Vercel) you may remove that flag.

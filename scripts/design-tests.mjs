@@ -311,5 +311,12 @@ check("short description", d.describeShort(full) === "berry bouquet of 9");
   check("parseDesignFile: rejects oversized input", big.ok === false && /large/.test(big.error));
 }
 
+{
+  const ivory = d.describeDesign({ ...full, ribbonColor: "#FFF6EA", centerColor: "#F6C453", centerStyle: "dome" });
+  check("description: 'an' before vowel colours (ivory bow)", /an ivory double bow/.test(ivory) && !/ a ivory/.test(ivory));
+  const orange = d.describeDesign({ ...d.DEFAULT_DESIGN, centerColor: "#F4A261" });
+  check("description: custom-hex centre keeps a single article", /, a custom colour \(#F4A261\) centre/.test(orange) && !/an a |a a /.test(orange));
+}
+
 console.log(`\nDesign domain tests: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

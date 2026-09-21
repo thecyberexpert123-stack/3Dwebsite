@@ -231,10 +231,24 @@ touch).
   and hands the exact design over with **Open full studio**.
 - Route groups: `app/(site)` keeps the marketing chrome (loader, nav,
   footer, Lenis); `app/(app)` is a bare shell for `/studio` and `/admin`.
-- `npm run test:design` grew to **80 tests** (v1 compat, diff encoding,
+- `npm run test:design` grew to **82 tests** (v1 compat, diff encoding,
   sanitizer edge cases, file round-trips, spec estimates, descriptions).
 
+### Added — discoverability
+- `sitemap.xml` and `robots.txt` (`app/sitemap.ts`, `app/robots.ts`): the
+  homepage and `/studio` are listed; `/admin` is disallowed and `noindex`.
+- **Shared studio links preview as the design.** `/studio?design=…` now
+  renders per-link metadata on the server (title "Berry bouquet of 9 — a
+  Whimlet design", description = the plain-language description, OG/Twitter
+  tags) so a link pasted into WhatsApp/iMessage shows what was made. Shared
+  links are `noindex`; the bare `/studio` stays indexable. Bad codes fall
+  back to the generic page. (`/studio` becomes a dynamic route for this.)
+- Footer "Explore" gained a **3D Design Studio** link.
+
 ### Changed
+- Descriptions use the right article before vowel colours ("an ivory
+  double bow", not "a ivory"), and custom hex colours no longer double up
+  ("a a custom colour…"). Two tests added (82 total).
 - **Gift continuity.** The door's lid is now hinged on its back edge and
   swings open *in frame* (before it flew up out of the top of the shot),
   the ribbon slackens and tissue lifts; the hero blanket's gift box is the
@@ -255,7 +269,7 @@ touch).
 
 ### Verified
 - `tsc` clean, `next build` OK (`/studio` 7 kB route / 564 kB first load,
-  `/admin` 5.3 kB / 558 kB), 80/80 design tests, **zero page errors** in
+  `/admin` 5.3 kB / 558 kB), 82/82 design tests, **zero page errors** in
   every headless run (studio desktop low/high tier, studio phone 390×844,
   admin empty + sample, homepage hero + teaser, door sequence).
 - Studio tour through all groups and presets, admin spec sheet with the
