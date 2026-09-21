@@ -174,6 +174,96 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.12.0] — 2026-09-21
+
+The Design Studio grows up: a **full-page studio** at `/studio`, a
+**maker's viewer** at `/admin`, a portable **design file**, and the gift
+box that opens on the door is now the same box lying open on the hero
+blanket. Research this round was product research rather than visual:
+what people actually ask for when they order a custom crochet bouquet
+(flower type, palette / two-colour mixes, stem count, fillers, wrap paper
+colour, printed ribbon text, little gold/pearl accents), and how good 3D
+configurators pace their options (one group at a time, camera glides to
+the part being edited, swatches over dropdowns, undo/reset, thumb-friendly
+touch).
+
+### Added
+- **`/studio` — the full 3D Design Studio** (`components/studio/*`,
+  `app/(app)/studio`). A stage-first page: the piece fills the viewport,
+  a glass **step rail** on the left (The piece → The bloom → Stem & leaves
+  → The bouquet → Little extras → For you), a glass **sheet** with the
+  active group's controls, presets + live palette card on the right, and a
+  bottom bar with the plain-language summary, undo/redo, Surprise me,
+  Draw a petal, Reset, Save/Open, Snapshot, Copy link and Send to Whimlet.
+  The camera **glides** to the part being edited and the piece slides out
+  from under the sheet (view-offset shift, not a camera jump). Phones get
+  horizontal group tabs and a bottom drawer sized from the measured bar.
+  Keyboard: ⌘/Ctrl+Z / ⇧⌘Z undo/redo, Esc closes the sheet.
+- **Design format v2** (`lib/design.ts`): 24+ live options — yarn (cotton /
+  velvet / fuzzy) + glitter thread, finished size, petal size, openness
+  (bud/half/open), 1–3 petal rings, patterns (solid / ombré / dipped /
+  striped) with an accent colour, centre styles (dome / knots / button /
+  pompom), stem curve, leaf shapes, bouquets of 3/5/7/9 with dome/loose/tight
+  arrangements, five mix palettes, fillers (gypsophila / eucalyptus),
+  fairy lights, wrap styles (cone / fold / sheer) with inner paper colour,
+  ribbon styles, gift tag with text (≤ 18 chars), butterflies, charms
+  (ladybird / bee / pearl pins), jar/vase/pot bases, occasion + note for
+  the maker. **Every v1 link and file still opens** — new fields default.
+  Two new presets: *Starlit Night* (velvet 9-flower bouquet) and
+  *Strawberry Picnic*.
+- **Portable design file** `*.whimlet.json` (`toDesignFile / parseDesignFile`)
+  — `{format:"whimlet-design", version, app, name, createdAt, summary,
+  config}`; strict parse with per-field warnings, size-capped, never trusted.
+  Save from the bottom bar; open via the file picker or drag-drop onto the
+  page (the admin viewer also accepts pasted text). Share links use a **diff-from-default** encoding so URLs stay short.
+- **`/admin` — maker's viewer** (`AdminViewer.tsx`): drop/pick/paste a
+  customer's file or link → **spec sheet** (petal / leaf counts, estimated
+  size in cm, rough yarn grams, palette with hex), **parts** view (show/hide
+  bloom / stem / wrap / extras, exploded slider, x-ray wireframe, 1 cm-square
+  grid, turntable, four backdrops, full orbit + zoom), the raw JSON, PNG
+  export, and "Edit in studio". Eight sample designs to try. Static, no
+  auth — it is a viewer, not a portal (nothing is stored server-side).
+- **Studio materials** (`three/studioMaterials.ts`): cotton / velvet /
+  fuzzy yarn as sheen + roughness presets with a shared procedural stitch
+  normal map; sparkle as a lerped emissive twinkle.
+- **Homepage `#studio` teaser** (`DesignStudio.tsx`) now uses the same
+  hooks/controls as the full studio (presets + the eight quick controls)
+  and hands the exact design over with **Open full studio**.
+- Route groups: `app/(site)` keeps the marketing chrome (loader, nav,
+  footer, Lenis); `app/(app)` is a bare shell for `/studio` and `/admin`.
+- `npm run test:design` grew to **80 tests** (v1 compat, diff encoding,
+  sanitizer edge cases, file round-trips, spec estimates, descriptions).
+
+### Changed
+- **Gift continuity.** The door's lid is now hinged on its back edge and
+  swings open *in frame* (before it flew up out of the top of the shot),
+  the ribbon slackens and tissue lifts; the hero blanket's gift box is the
+  **same box, open** (`GiftBox open`), so the unwrap and the first section
+  are one story. The desk still-life keeps its closed box.
+- Pompom centres are a core plus a shell of tufts instead of a single ball.
+- Sanitizer collapses tabs/newlines in tag text and notes.
+
+### Fixed
+- **Grey plate under the studio on the low tier.** drei's `ContactShadows`
+  renders its depth pass into a render target expecting a transparent clear;
+  on an `alpha:false` canvas three's clear alpha defaults to 1, so the whole
+  8×8 shadow plane came back opaque grey. `AdaptiveCanvas` now sets
+  `clearAlpha(0)` on opaque canvases (the visible buffer ignores alpha) and
+  the sky dome lives on layer 1 so it never enters shadow/depth passes.
+- `scripts/design-tests.mjs` printed its summary and exited **mid-file** —
+  tests appended after it never ran. Summary moved to the end.
+
+### Verified
+- `tsc` clean, `next build` OK (`/studio` 7 kB route / 564 kB first load,
+  `/admin` 5.3 kB / 558 kB), 80/80 design tests, **zero page errors** in
+  every headless run (studio desktop low/high tier, studio phone 390×844,
+  admin empty + sample, homepage hero + teaser, door sequence).
+- Studio tour through all groups and presets, admin spec sheet with the
+  Starlit Night sample, phone drawer, and the door open-lid frames captured
+  in `docs/qa/v0.12.0-*.jpg`.
+- Not verified in a real browser: pinch/orbit feel on touch, drag-drop of
+  files on iOS/Android, and real-GPU frame rates (SwiftShader only here).
+
 ## [0.11.0] — 2026-09-21
 
 "Not the same all over" pass. Researched how the current best scroll-driven

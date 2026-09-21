@@ -72,7 +72,7 @@ for (let i = 0; i < 5000; i++) {
     ["rounded", "pointed", "custom"].includes(r.petalShape) &&
     [4, 5, 6, 7, 8].includes(r.petalCount) &&
     [0, 1, 2].includes(r.leaves) &&
-    [3, 5, 7].includes(r.bouquetCount) &&
+    [3, 5, 7, 9].includes(r.bouquetCount) &&
     /^#[0-9A-F]{6}$/.test(r.petalColor) &&
     /^#[0-9A-F]{6}$/.test(r.centerColor) &&
     /^#[0-9A-F]{6}$/.test(r.ribbonColor) &&
@@ -238,6 +238,77 @@ check("strings rejected", !sk.isValidPetalData(["a", "b"]));
 /* 20. built-in outlines are valid petal data */
 for (const [name, fn] of [["tulip", sk.tulipPetalOutline], ["wild", sk.wildPetalOutline], ["random", sk.randomPetalOutline]]) {
   check(`${name} outline quantizes to valid data`, sk.isValidPetalData(sk.quantizePetal(fn())));
+}
+
+
+/* ================================================================
+   v2 — the design file, spec sheet, new options
+   ================================================================ */
+
+/* 12. v1 links/configs still open (every new field defaults) */
+const v1 = { type: "bouquet", petalShape: "pointed", petalCount: 7, petalColor: "#F2CD8D", centerColor: "#8A6A5C", mixColors: false, stem: "tall", leaves: 2, bouquetCount: 5, wrap: true, ribbonColor: "#D8849C", customPetal: null };
+const v1code = Buffer.from(JSON.stringify(v1)).toString("base64url");
+const v1cfg = d.decodeDesign(v1code);
+check("v1 link opens", v1cfg !== null && v1cfg.type === "bouquet" && v1cfg.petalCount === 7 && v1cfg.bouquetCount === 5);
+check("v1 link gets v2 defaults", v1cfg.petalLayers === 2 && v1cfg.yarn === "cotton" && v1cfg.fillers === "none" && v1cfg.tag === "none");
+
+/* 13. URL codes carry only the diff (short links) */
+check("default design encodes tiny", d.encodeDesign(d.DEFAULT_DESIGN).length < 8);
+const full = d.DESIGN_PRESETS.find((p) => p.id === "starlit-night").config;
+check("preset round-trips via diff encoding", JSON.stringify(d.decodeDesign(d.encodeDesign(full))) === JSON.stringify(full));
+
+/* 14. free text is sanitized */
+const txt = d.sanitizeDesign({ ...d.DEFAULT_DESIGN, tag: "heart", tagText: "  for\nyou\u0007 and everyone else too  ", note: "x".repeat(500) });
+check("tag text: control chars stripped, collapsed, capped", txt.tagText === "for you and everyo" && txt.tagText.length <= d.TAG_TEXT_MAX);
+check("note capped", txt.note.length === d.NOTE_MAX);
+check("tag text dropped when no tag", d.sanitizeDesign({ ...d.DEFAULT_DESIGN, tag: "none", tagText: "hi" }).tagText === "");
+
+/* 15. business rules */
+check("bouquet → no base", d.sanitizeDesign({ ...d.DEFAULT_DESIGN, type: "bouquet", base: "vase" }).base === "none");
+check("stemless flower → no base", d.sanitizeDesign({ ...d.DEFAULT_DESIGN, stem: "none", base: "pot" }).base === "none");
+check("unknown enum → default", d.sanitizeDesign({ ...d.DEFAULT_DESIGN, yarn: "silk", centerStyle: "eyes" }).yarn === "cotton");
+
+/* 16. design file round-trip */
+const file = d.toDesignFile(full, "Nana's bouquet", new Date("2026-09-21T10:00:00Z"));
+check("file has format + version", file.format === d.DESIGN_FORMAT && file.version === d.DESIGN_VERSION);
+check("file name slug", d.designFileName(full, "Nana's bouquet") === "nana-s-bouquet.whimlet.json");
+const parsed = d.parseDesignFile(JSON.stringify(file));
+check("file parses", parsed.ok && JSON.stringify(parsed.file.config) === JSON.stringify(full) && parsed.file.name === "Nana's bouquet");
+check("file keeps date", parsed.ok && parsed.file.createdAt === "2026-09-21T10:00:00.000Z");
+const bare = d.parseDesignFile(JSON.stringify(v1));
+check("bare v1 config parses with a warning", bare.ok && bare.warnings.length > 0 && bare.file.config.bouquetCount === 5);
+const link = d.parseDesignFile("https://whimlet.example/studio?design=" + d.encodeDesign(full));
+check("share link parses", link.ok && JSON.stringify(link.file.config) === JSON.stringify(full));
+const bareCode = d.parseDesignFile(d.encodeDesign(full));
+check("bare code parses", bareCode.ok && bareCode.file.config.bouquetCount === 9);
+check("garbage json rejected", d.parseDesignFile("{not json").ok === false);
+check("unrelated json rejected", d.parseDesignFile('{"hello":"world"}').ok === false);
+check("empty rejected", d.parseDesignFile("   ").ok === false);
+const newer = d.parseDesignFile(JSON.stringify({ ...file, version: 99, config: { ...full, futureThing: 1 } }));
+check("newer version opens with a warning", newer.ok && newer.warnings.some((w) => /newer/.test(w)));
+const evil = d.parseDesignFile(JSON.stringify({ ...file, config: { ...full, petalColor: "url(javascript:1)", tagText: "<img src=x>" } }));
+check("file colours sanitized", evil.ok && /^#[0-9A-F]{6}$/.test(evil.file.config.petalColor));
+
+/* 17. spec sheet */
+const spec = d.estimateSpec(full);
+check("spec petals: 9 flowers × (6+5+4)", spec.flowers === 9 && spec.petalsPerFlower === 15 && spec.petalsTotal === 135);
+check("spec palette includes wrap + ribbon", spec.palette.some((p) => p.role === "ribbon") && spec.palette.some((p) => /wrap/.test(p.role)));
+check("spec yarn grams positive", spec.yarnGrams.length > 0 && spec.yarnGrams.every((y) => y.grams > 0));
+check("spec size sane", spec.heightCm > 10 && spec.heightCm < 80 && spec.widthCm > 5);
+const soloSpec = d.estimateSpec(d.DEFAULT_DESIGN);
+check("solo spec: 1 flower, 11 petals, 2 leaves", soloSpec.flowers === 1 && soloSpec.petalsTotal === 11 && soloSpec.leavesTotal === 2);
+check("mixed palette lists one entry per flower", d.paletteOf(d.DESIGN_PRESETS.find((p) => p.id === "sage-garden").config).filter((p) => /flower \d/.test(p.role)).length === 6);
+
+/* 18. descriptions mention the new options */
+const desc = d.describeDesign(full);
+check("description: velvet, ombré, fairy lights, sheer, double bow", /velvet/.test(desc) && /fading to/.test(desc) && /fairy lights/.test(desc) && /sheer/.test(desc) && /double bow/.test(desc));
+const msg2 = d.buildDesignMessage({ ...full, note: "for nana", occasion: "birthday" }, "https://x/studio?design=abc");
+check("message carries note, occasion and link", /for nana/.test(msg2) && /Birthday/.test(msg2) && /https:\/\/x\/studio\?design=abc/.test(msg2));
+check("short description", d.describeShort(full) === "berry bouquet of 9");
+
+{
+  const big = d.parseDesignFile("{" + " ".repeat(70 * 1024) + "}");
+  check("parseDesignFile: rejects oversized input", big.ok === false && /large/.test(big.error));
 }
 
 console.log(`\nDesign domain tests: ${pass} passed, ${fail} failed`);

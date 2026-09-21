@@ -23,7 +23,8 @@ const damp = THREE.MathUtils.damp;
  * "Unwrap") and one directed sequence plays on a local clock:
  *
  *   0.00  bow loops shrink, tails drop            (the knot gives)
- *   0.25  lid pops, tilts and floats up & back    (anticipation → release)
+ *   0.25  lid hops and swings open on its back hinge (anticipation → release);
+ *         the ribbon bands slacken and slide down — the box stays *open* in shot
  *   0.35  warm glow blooms inside the box
  *   0.40  hearts + confetti burst upward          (payoff)
  *   0.40  a little crochet bouquet springs up out of the box — the surprise
@@ -246,6 +247,8 @@ function Gift({
 }) {
   const root = useRef<THREE.Group>(null!);
   const lid = useRef<THREE.Group>(null!);
+  const bands = useRef<THREE.Group>(null!);
+  const tissue = useRef<THREE.Group>(null!);
   const glow = useRef<THREE.Mesh>(null!);
   const glowMat = useRef<THREE.MeshBasicMaterial>(null!);
   const light = useRef<THREE.PointLight>(null!);
@@ -327,12 +330,27 @@ function Gift({
     g.rotation.x = damp(g.rotation.x, 0, 4, dt);
 
     if (lid.current) {
-      const p = seg(since, 0.25, 0.7);
-      const e = easeOutCubic(p);
-      lid.current.position.y = 0.36 + e * 1.35 + (p >= 1 ? Math.sin(t * 2) * 0.02 : 0);
-      lid.current.position.z = -e * 0.35;
-      lid.current.rotation.x = -e * 0.9;
-      lid.current.rotation.z = Math.sin(p * Math.PI) * 0.25;
+      // the lid is hinged on its back edge: it pops up a touch, swings open
+      // past vertical and settles hanging behind the box — it stays IN frame,
+      // so after the push-in the visitor sees an *open* box, not a banded
+      // cube with flowers glued on top (the old lid flew out of shot)
+      const p = seg(since, 0.25, 0.75);
+      const e = easeOutBack(p, 0.9);
+      const hop = Math.sin(seg(since, 0.25, 0.3) * Math.PI) * 0.06;
+      lid.current.position.y = 0.56 + hop;
+      lid.current.rotation.x = -e * 1.95;
+      lid.current.rotation.z = Math.sin(p * Math.PI) * 0.12;
+    }
+    if (bands.current) {
+      // the ribbon bands slacken and slide down the body as the lid goes
+      const p = easeOutCubic(seg(since, 0.2, 0.5));
+      bands.current.position.y = -p * 0.16;
+      bands.current.scale.set(1 + p * 0.06, 1 - p * 0.24, 1 + p * 0.06);
+    }
+    if (tissue.current) {
+      const p = easeOutBack(seg(since, 0.38, 0.4), 1.2);
+      tissue.current.visible = p > 0.002;
+      tissue.current.scale.setScalar(Math.max(0.001, p));
     }
     if (glow.current && glowMat.current) {
       const p = seg(since, 0.35, 0.9);
@@ -376,15 +394,26 @@ function Gift({
       <RoundedBox args={[0.9, 0.62, 0.78]} radius={0.09} smoothness={5} position={[0, 0.31, 0]}>
         <primitive object={finish("clay", PALETTE.blush)} attach="material" />
       </RoundedBox>
-      {/* body ribbons */}
-      <mesh position={[0, 0.31, 0]}>
-        <boxGeometry args={[0.11, 0.64, 0.8]} />
-        <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
-      </mesh>
-      <mesh position={[0, 0.31, 0]}>
-        <boxGeometry args={[0.92, 0.64, 0.11]} />
-        <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
-      </mesh>
+      {/* body ribbons (slide down once untied) */}
+      <group ref={bands}>
+        <mesh position={[0, 0.31, 0]}>
+          <boxGeometry args={[0.11, 0.64, 0.8]} />
+          <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
+        </mesh>
+        <mesh position={[0, 0.31, 0]}>
+          <boxGeometry args={[0.92, 0.64, 0.11]} />
+          <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
+        </mesh>
+      </group>
+      {/* tissue paper peeking over the rim once open */}
+      <group ref={tissue} position={[0, 0.5, 0]} visible={false}>
+        {[[-0.22, 0.06, 0.1, 0.3], [0.2, 0.09, -0.08, 0.2], [0.02, 0.04, 0.24, 0.5], [-0.1, 0.07, -0.22, 0.7]].map(([x, y, z, r], i) => (
+          <mesh key={i} position={[x, y, z]} rotation={[r, r * 2, r]} scale={[0.19, 0.11, 0.17]}>
+            <dodecahedronGeometry args={[1, 1]} />
+            <primitive object={finish("paper", "#FFF6EC")} attach="material" />
+          </mesh>
+        ))}
+      </group>
       {/* the warm surprise inside */}
       <mesh ref={glow} position={[0, 0.45, 0]} visible={false}>
         <sphereGeometry args={[0.5, 20, 20]} />
@@ -399,9 +428,9 @@ function Gift({
         <CrochetFlower position={[0.02, 0, 0.08]} height={0.86} color={PALETTE.rose} seed={10} scale={0.35} tilt={[0.26, 0, 0.02]} sway={false} />
         <CrochetFlower position={[-0.03, 0, -0.09]} height={1.15} color={PALETTE.cream} seed={11} scale={0.34} tilt={[-0.24, 0, 0.04]} sway={false} />
       </group>
-      {/* lid: pops off and floats away */}
-      <group ref={lid} position={[0, 0.36 + 0.31 - 0.31, 0]}>
-        <group position={[0, 0.3, 0]}>
+      {/* lid: hinged on its back edge (y = body top, z = back face) */}
+      <group ref={lid} position={[0, 0.56, -0.43]}>
+        <group position={[0, 0.1, 0.43]}>
           <RoundedBox args={[0.98, 0.2, 0.86]} radius={0.08} smoothness={5}>
             <primitive object={finish("clay", PALETTE.rose)} attach="material" />
           </RoundedBox>

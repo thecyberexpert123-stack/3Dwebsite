@@ -31,13 +31,16 @@ npm run optimize:images    # resize/compress images in public/images (ImageMagic
 
 ```
 src/
-├─ app/               layout (SEO, fonts, JSON-LD), page (section order), styles
+├─ app/               root layout (SEO, fonts, JSON-LD); (site)/ homepage with
+│                     marketing chrome; (app)/ bare shell for /studio and /admin
 ├─ components/        one file per section + shared UI (Reveal, Decorations…)
-│  └─ three/          R3F scenes: HeroScene3D, DeskScene, CustomFlowerScene
+│  ├─ studio/         full studio + admin viewer (shared controls, hooks, panels)
+│  └─ three/          R3F scenes: HeroScene3D, GiftIntroScene, DesignScene, DeskScene…
 ├─ data/              ALL editable content lives here (see below)
 ├─ fonts/             self-hosted woff2 files
-└─ lib/               WhatsApp helpers + hooks (WebGL/mobile/reduced-motion)
-scripts/              image optimization utility
+└─ lib/               design.ts (studio domain + file format), sketch.ts,
+│                     WhatsApp helpers, hooks (WebGL/mobile/reduced-motion)
+scripts/              image optimization utility + design-tests.mjs
 public/images/        product & scene imagery
 ```
 
@@ -70,31 +73,49 @@ public/images/        product & scene imagery
 
 ## The 3D Design Studio
 
-A working product configurator at `#studio` (replaces the simple colour demo):
+Three surfaces share one engine (`src/lib/design.ts` + `src/components/three/DesignScene.tsx`):
 
-- **Controls:** flower vs bouquet · rounded/pointed/**hand-drawn** petals ·
-  petal count (4–8) · petal, centre & ribbon colours (palette + custom hex) ·
-  mix-pastel mode · stem length · leaf count · bouquet size (3/5/7) · wrap on/off
+- **`/#studio`** — the homepage teaser: presets and the eight quick controls,
+  with **Open full studio** carrying the exact design across.
+- **`/studio`** — the full-page studio. Step rail (The piece → The bloom →
+  Stem & leaves → The bouquet → Little extras → For you), a glass sheet with
+  the active group's controls, presets + live palette on the right, and the
+  bottom bar (summary, undo/redo, Surprise me, Draw a petal, Reset,
+  Save/Open file, Snapshot, Copy link, Send to Whimlet). The camera glides to
+  the part being edited. Keyboard: ⌘/Ctrl+Z undo, ⇧⌘Z redo, Esc closes the sheet.
+- **`/admin`** — the maker's viewer. Drop, pick or paste a customer's
+  `*.whimlet.json` (or share link) → spec sheet (petal/leaf counts, size in
+  cm, rough yarn grams, palette with hex), parts view (show/hide, exploded
+  slider, x-ray, 1 cm grid, turntable, backdrops, full orbit), raw JSON, PNG
+  export, "Edit in studio". It is a static viewer — nothing is stored
+  server-side and there is no login; if you ever need customer data kept on a
+  server, that is a separate (backend) piece of work.
+
+**Options (format v2):** flower vs bouquet · finished size · yarn
+(cotton / velvet / fuzzy) + glitter thread · rounded / pointed /
+**hand-drawn** petals · 4–8 petals × 1–3 rings · petal size · openness ·
+patterns (solid / ombré / dipped / striped) with accent colour · centre
+style · petal, centre, stem, leaf, wrap, inner paper, ribbon, butterfly and
+base colours · stem length & curve · leaf count & shape · bouquets of
+3/5/7/9 in dome / loose / tight arrangements · mix palettes · fillers ·
+fairy lights · wrap styles · ribbon styles · gift tag with text · butterflies
+· charms · jar / vase / pot · occasion + note for the maker.
+
 - **Sketch pad:** pick "✏️ Draw" and draw one petal — any shape, one stroke.
-  A geometry pipeline (`src/lib/sketch.ts`: arc-length resampling → Laplacian
-  smoothing → polar closing → mirror symmetrization → normalization) cleans
-  the wobbles, shows a live preview while you draw, and extrudes your outline
-  into real 3D crochet geometry. The outline travels with the design — it's
-  in the share link and the WhatsApp message. (It's honest signal processing,
-  not a neural network.)
-- **Presets:** six starting points, including two built on sketched petals
-  (Tulip Sketch, Wildflower Mix)
-- **Live 3D:** every change animates (colours lerp, petals pop, framing glides);
-  petals flutter in a breeze and warm dust drifts through the light;
-  drag to spin — horizontal drag only, so vertical swipes still scroll on mobile
-- **Shareable:** "Copy design link" produces a `?design=…` URL that reopens the
-  studio with the exact design (param is strictly sanitized — never trusted)
-- **Conversion:** "Send This Design to Whimlet" opens WhatsApp with a
-  plain-language description of the design, and a live `aria-live` summary
-  mirrors it for screen readers
+  `src/lib/sketch.ts` (arc-length resampling → Laplacian smoothing → polar
+  closing → mirror symmetrization → normalization) cleans the wobbles and
+  extrudes the outline into real 3D geometry. The outline travels with the
+  design — link, file and WhatsApp message.
+- **Design file:** `{ format: "whimlet-design", version: 2, app, name,
+  createdAt, summary, config }`. Older (v1) links and files still open; new
+  fields default. The reader is strict (size-capped, sanitised, per-field
+  warnings) and never trusts input. Share links encode only the diff from
+  the default design so URLs stay short.
 - **Graceful degradation:** without WebGL the preview falls back to imagery,
-  but every control, the sketch pad, the summary and the WhatsApp handoff
-  still work
+  but every control, the sketch pad, save/open, the summary and the WhatsApp
+  handoff still work.
+- `npm run test:design` runs the 80 pure-logic tests (encode/decode, v1
+  compat, sanitiser, file round-trips, spec estimates, descriptions).
 
 ## Images
 

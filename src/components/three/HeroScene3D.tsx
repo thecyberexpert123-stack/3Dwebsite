@@ -388,7 +388,7 @@ function Scene({
 
         {!simple && (
           <Entrance at={BEAT.charms + 0.12} duration={0.7} kind="drop" height={0.7}>
-            <GiftBox position={[-1.8, 0.02, 0.75]} />
+            <GiftBox position={[-1.8, 0.02, 0.75]} open />
           </Entrance>
         )}
 

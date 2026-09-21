@@ -642,3 +642,52 @@ scenes, adding dependencies or touching the build.
   still contains the AL2023 libs (`/tmp/al2023/lib`) — extract from the
   package instead of trying `apt-get`.
 
+
+## v0.12.0 — a full studio, a design file, and one honest grey plate
+
+- **A configurator with 24 options needs pacing, not a longer form.** The
+  research (Etsy custom-bouquet listings for *what* people ask; configurator
+  UX write-ups for *how*) agreed on the same shape: one group at a time,
+  the camera moves to what you are editing, swatches not dropdowns, undo
+  and reset always at hand. The step rail + sheet + directed `Rig` is that
+  shape. What the write-ups did not say and the screenshots did: the sheet
+  hides the subject. Shift the *projection* (`camera.setViewOffset`) rather
+  than the camera so the piece slides out from under the glass without
+  changing the angle you look at it; clear the offset when the sheet closes
+  and re-apply after resize (R3F rebuilds the projection). Confidence: high.
+- **`ContactShadows` on an `alpha:false` canvas paints a grey plate.**
+  Root cause, not a guess: drei renders the depth pass into its own render
+  target with `scene.background = null`, expecting a transparent clear; on
+  an opaque context three's `WebGLBackground` has `clearAlpha = 1`, so the
+  cleared target is opaque and the blurred "shadow" is the whole 8×8 plane.
+  Bisected by removing the shadows (plate gone), then by tier (`?quality=low`
+  = ContactShadows, `high` = shadowMaterial plane — no plate). Fix:
+  `gl.setClearAlpha(0)` in `onCreated` for opaque canvases — the visible
+  buffer has no alpha channel so nothing else changes. Also keep the sky
+  dome on **layer 1** so it never enters any secondary pass. Applicability:
+  any drei helper that renders the scene to a target (SoftShadows,
+  AccumulativeShadows, Reflector) on a canvas created with `alpha:false`.
+- **Move the test summary to the end of the file.** `design-tests.mjs`
+  printed "N passed" and `process.exit`ed in the middle; 30 new tests
+  appended below "passed" by never running. Test files should end with
+  the summary and nothing should follow it — same lesson as CI steps.
+- **A portable file needs a strict reader more than a rich writer.**
+  `parseDesignFile` refuses > 64 KB, requires `format`/`config`, runs the
+  same `sanitizeDesign` as the URL path, and reports per-field *warnings*
+  rather than failing — the maker still opens an old or hand-edited file
+  and sees what was normalised. Share links diff against the default so
+  a blank design is `?design=` of ~10 chars and a full one stays ~200.
+- **Continuity beats novelty, again.** The door's lid was already opening;
+  the user still read it as broken because it left the frame and the hero
+  showed a *closed* box. Hinge the lid on its back edge, cap the rotation,
+  let the ribbon slacken, and put the *same* box open on the blanket. One
+  `open` prop on `GiftBox` was the entire hero change.
+- **Anchor mobile drawers to a measured bar, not a rem guess.** The bottom
+  bar wraps differently per viewport (the summary alone is 1–2 lines); a
+  `ResizeObserver` → CSS variable (`--bar-h`) keeps the tabs and sheet
+  sitting exactly above it. Also clamp the phone summary to one line —
+  the studio stage is the product on a phone, not the sentence.
+- **Environment note:** a stale `next start` that predates new routes keeps
+  answering 404 after a rebuild (`EADDRINUSE` in the new server's log);
+  background `setsid nohup` from the bash tool does not survive the call.
+  Use the managed process tool and stop/start it around every rebuild.

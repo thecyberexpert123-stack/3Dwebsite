@@ -116,26 +116,53 @@ export function Hook({ position, rotation = [0, 0.35, Math.PI / 2 - 0.12], lengt
 /* ---------------- gift box ---------------- */
 
 /** A little gift box with ribbon and a soft bow. */
-export function GiftBox({ position }: { position: [number, number, number] }) {
+export function GiftBox({ position, open = false }: { position: [number, number, number]; open?: boolean }) {
   return (
     <group position={position}>
       <RoundedBox args={[0.5, 0.34, 0.42]} radius={0.05} smoothness={4} position={[0, 0.17, 0]}>
         <primitive object={finish("clay", "#FFF6EC")} attach="material" />
       </RoundedBox>
-      <RoundedBox args={[0.54, 0.12, 0.46]} radius={0.05} smoothness={4} position={[0, 0.38, 0]}>
-        <primitive object={finish("clay", PALETTE.blush)} attach="material" />
-      </RoundedBox>
-      {/* ribbons wrapping the box */}
-      <mesh position={[0, 0.2, 0]}>
-        <boxGeometry args={[0.06, 0.52, 0.435]} />
-        <primitive object={finish("satin", PALETTE.rose)} attach="material" />
-      </mesh>
-      <mesh position={[0, 0.2, 0]}>
-        <boxGeometry args={[0.515, 0.52, 0.06]} />
-        <primitive object={finish("satin", PALETTE.rose)} attach="material" />
-      </mesh>
-      {/* bow — lying flat on the lid */}
-      <SatinBow position={[0, 0.455, 0]} rotation={[-Math.PI / 2 + 0.25, 0, 0.3]} scale={0.7} color={PALETTE.rose} />
+      {/* lid — hinged on the back edge; `open` is the box the visitor just
+          unwrapped in the door, so it must not be shut again on the blanket */}
+      <group position={[0, 0.32, -0.23]} rotation={[open ? -1.75 : 0, 0, 0]}>
+        <group position={[0, 0.06, 0.23]}>
+          <RoundedBox args={[0.54, 0.12, 0.46]} radius={0.05} smoothness={4}>
+            <primitive object={finish("clay", PALETTE.blush)} attach="material" />
+          </RoundedBox>
+          <mesh>
+            <boxGeometry args={[0.06, 0.125, 0.47]} />
+            <primitive object={finish("satin", PALETTE.rose)} attach="material" />
+          </mesh>
+          <mesh>
+            <boxGeometry args={[0.55, 0.125, 0.06]} />
+            <primitive object={finish("satin", PALETTE.rose)} attach="material" />
+          </mesh>
+          {/* bow — lying flat on the lid */}
+          <SatinBow position={[0, 0.075, 0]} rotation={[-Math.PI / 2 + 0.25, 0, 0.3]} scale={0.7} color={PALETTE.rose} />
+        </group>
+      </group>
+      {/* ribbons wrapping the body (slackened once opened) */}
+      <group position={[0, open ? -0.03 : 0, 0]} scale={open ? [1.02, 0.86, 1.02] : 1}>
+        <mesh position={[0, 0.17, 0]}>
+          <boxGeometry args={[0.06, 0.36, 0.435]} />
+          <primitive object={finish("satin", PALETTE.rose)} attach="material" />
+        </mesh>
+        <mesh position={[0, 0.17, 0]}>
+          <boxGeometry args={[0.515, 0.36, 0.06]} />
+          <primitive object={finish("satin", PALETTE.rose)} attach="material" />
+        </mesh>
+      </group>
+      {open && (
+        /* tissue paper puffing over the rim */
+        <group position={[0, 0.3, 0]}>
+          {[[-0.12, 0.03, 0.05, 0.3], [0.11, 0.05, -0.04, 0.9], [0.01, 0.02, 0.12, 1.6]].map(([x, y, z, r], i) => (
+            <mesh key={i} position={[x, y, z]} rotation={[r, r * 2, r]} scale={[0.11, 0.06, 0.1]}>
+              <dodecahedronGeometry args={[1, 1]} />
+              <primitive object={finish("paper", "#FFF6EC")} attach="material" />
+            </mesh>
+          ))}
+        </group>
+      )}
     </group>
   );
 }

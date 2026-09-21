@@ -264,6 +264,12 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
       flat
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance", ...gl }}
       onCreated={(state) => {
+        // three's WebGLBackground defaults clearAlpha to 1 on an `alpha:false`
+        // context, so every off-screen pass that relies on a transparent clear
+        // (drei's ContactShadows depth pass on the low tier) came back opaque
+        // — a grey 8×8 plate under the scene. The visible framebuffer ignores
+        // alpha anyway, so clearing to 0 costs nothing.
+        if ((gl as { alpha?: boolean } | undefined)?.alpha === false) state.gl.setClearAlpha(0);
         // Context loss (GPU reset, too many contexts, background tab on mobile):
         // let the browser try to restore; if it doesn't within 3s, show the
         // static fallback instead of a blank rectangle.

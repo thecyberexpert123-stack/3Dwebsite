@@ -1,13 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
-import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
-import { LoadingScreen } from "@/components/LoadingScreen";
 import { HeartTrail } from "@/components/HeartTrail";
 import { GlassDefs } from "@/components/GlassDefs";
-import { SmoothScroll } from "@/components/SmoothScroll";
 import { site } from "@/data/site";
 import { faqs } from "@/data/faqs";
 import { PHONE_DISPLAY } from "@/lib/whatsapp";
@@ -121,17 +116,9 @@ export default function RootLayout({
       className={`${parisienne.variable} ${caveat.variable} ${quicksand.variable}`}
     >
       <body className="gingham min-h-screen">
-        <a href="#main" className="skip-link">
-          Skip to content
-        </a>
-        <LoadingScreen />
-        <Navbar />
-        <main id="main">{children}</main>
-        <Footer />
-        <FloatingWhatsApp />
+        {children}
         <HeartTrail />
         <GlassDefs />
-        <SmoothScroll />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
