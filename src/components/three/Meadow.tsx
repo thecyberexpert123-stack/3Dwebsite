@@ -34,11 +34,15 @@ export function hillHeight(x: number, z: number): number {
   );
 }
 
-/** the flat "picnic spot": a smooth plateau around the origin */
-function plateau(x: number, z: number): number {
-  const d = Math.hypot(x, z);
-  const k = THREE.MathUtils.smoothstep(d, 0.9, 2.4); // 0 at the box, 1 far away
-  return THREE.MathUtils.lerp(0, hillHeight(x, z), k);
+/** the flat "picnic spot": a smooth plateau around the origin. `inner` is
+ *  fully flat, the hills take over by `outer`. */
+type HeightFn = (x: number, z: number) => number;
+function makePlateau(inner: number, outer: number): HeightFn {
+  return (x, z) => {
+    const d = Math.hypot(x, z);
+    const k = THREE.MathUtils.smoothstep(d, inner, outer);
+    return THREE.MathUtils.lerp(0, hillHeight(x, z), k);
+  };
 }
 
 /* ---------- hills ---------- */
@@ -48,8 +52,9 @@ function plateau(x: number, z: number): number {
 const GRASS_LIGHT = new THREE.Color("#b5cf78");
 const GRASS_MID = new THREE.Color("#7ea955");
 const GRASS_DEEP = new THREE.Color("#4e7a3b");
+const GRASS_COOL = new THREE.Color("#6aa38a");
 
-function Hills({ size = 14, segments = 96 }: { size?: number; segments?: number }) {
+function Hills({ size = 14, segments = 96, height }: { size?: number; segments?: number; height: HeightFn }) {
   const geo = useMemo(() => {
     const g = new THREE.PlaneGeometry(size, size, segments, segments);
     g.rotateX(-Math.PI / 2);
@@ -59,7 +64,7 @@ function Hills({ size = 14, segments = 96 }: { size?: number; segments?: number 
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const z = pos.getZ(i);
-      const y = plateau(x, z);
+      const y = height(x, z);
       pos.setY(i, y);
       // colour by height + a little deterministic mottling — a real lawn is
       // never one green
@@ -74,7 +79,7 @@ function Hills({ size = 14, segments = 96 }: { size?: number; segments?: number 
     g.setAttribute("color", new THREE.BufferAttribute(col, 3));
     g.computeVertexNormals();
     return g;
-  }, [size, segments]);
+  }, [size, segments, height]);
   useEffect(() => () => geo.dispose(), [geo]);
   return (
     <mesh geometry={geo} receiveShadow position={[0, -0.003, 0]}>
@@ -114,28 +119,46 @@ function Grass({
   radius = 6.2,
   reduced,
   clear = 0.7,
+  nearZ = 1.7,
+  height,
+  scale = 1,
+  sunDir,
 }: {
   count: number;
   radius?: number;
   reduced: boolean;
   /** radius around the origin kept clear (the picnic spot) */
   clear?: number;
+  /** nothing is planted closer to the camera than this z */
+  nearZ?: number;
+  height: HeightFn;
+  /** blade height multiplier */
+  scale?: number;
+  /** view-space-independent sun direction (world), for translucency */
+  sunDir: [number, number, number];
 }) {
   const mesh = useRef<THREE.InstancedMesh>(null!);
-  const uniforms = useMemo(() => ({ uTime: { value: 0 } }), []);
+  const uniforms = useMemo(
+    () => ({ uTime: { value: 0 }, uSunDir: { value: new THREE.Vector3(...sunDir).normalize() } }),
+    [sunDir],
+  );
   const material = useMemo(() => {
     const m = new THREE.MeshStandardMaterial({
       color: "#ffffff", // × instanceColor
-      roughness: 0.8,
+      roughness: 0.75,
       side: THREE.DoubleSide,
     });
     m.onBeforeCompile = (shader) => {
       shader.uniforms.uTime = uniforms.uTime;
+      shader.uniforms.uSunDir = uniforms.uSunDir;
       shader.vertexShader = shader.vertexShader
         .replace(
           "#include <common>",
           `#include <common>
-           uniform float uTime;`,
+           uniform float uTime;
+           varying float vBlade;   // 0 root → 1 tip
+           varying float vPatch;   // world-space patch variation
+           varying float vGust;`,
         )
         .replace(
           "#include <begin_vertex>",
@@ -148,7 +171,49 @@ function Grass({
                       + sin(uTime * 2.7 + ip.z * 1.7 - ip.x * 1.1) * 0.25;
            transformed.x += gust * 0.16 * bw;
            transformed.z += gust * 0.06 * bw;
-           transformed.y -= abs(gust) * 0.03 * bw;`,
+           transformed.y -= abs(gust) * 0.03 * bw;
+           vBlade = uv.y;
+           vGust = gust;
+           // large soft patches (two octaves) so the lawn is not one green
+           vPatch = sin(ip.x * 0.55 + 1.7) * sin(ip.z * 0.7 - 0.4) * 0.5
+                  + sin(ip.x * 1.9 - ip.z * 1.3) * 0.25;`,
+        );
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          "#include <common>",
+          `#include <common>
+           uniform vec3 uSunDir;
+           varying float vBlade;
+           varying float vPatch;
+           varying float vGust;`,
+        )
+        .replace(
+          "#include <color_fragment>",
+          `#include <color_fragment>
+           // four-layer stylised grass (see AGENT-EXPERIENCE: Floating Islands /
+           // halisavakis): ground colour as fake AO at the root, the blade's own
+           // colour in the body, a warm sunlit tint at the tip, and a world-space
+           // patch tint on top so the lawn reads as *a meadow* not a texture.
+           vec3 root = diffuseColor.rgb * vec3(0.55, 0.62, 0.5);
+           vec3 tip  = mix(diffuseColor.rgb, vec3(0.86, 0.93, 0.55), 0.55);
+           float h = smoothstep(0.0, 0.35, vBlade);
+           float th = smoothstep(0.55, 1.0, vBlade);
+           vec3 g = mix(root, diffuseColor.rgb, h);
+           g = mix(g, tip, th);
+           g *= 1.0 + vPatch * 0.16;
+           // blades leaning into the gust catch a little more light
+           g *= 1.0 + vGust * 0.05 * vBlade;
+           diffuseColor.rgb = g;`,
+        )
+        .replace(
+          "#include <dithering_fragment>",
+          `#include <dithering_fragment>
+           // translucency: sun through the thin tips when looking toward it
+           vec3 V = normalize(vViewPosition);                    // surface → camera (view space)
+           vec3 S = normalize((viewMatrix * vec4(uSunDir, 0.0)).xyz); // surface → sun (view space)
+           float back = clamp(dot(V, -S), 0.0, 1.0);
+           float trans = pow(back, 3.0) * vBlade * vBlade * 0.35;
+           gl_FragColor.rgb += vec3(0.95, 0.98, 0.6) * trans;`,
         );
     };
     m.customProgramCacheKey = () => "whimlet-grass";
@@ -171,15 +236,17 @@ function Grass({
       if (Math.hypot(x, z) < clear) continue;
       // nothing right under the lens (camera sits at z ≈ 3) or on the far
       // back slope it never sees
-      if (z > 1.7 || z < -radius * 0.7) continue;
-      const y = plateau(x, z);
+      if (z > nearZ || z < -radius * 0.7) continue;
+      const y = height(x, z);
       dummy.position.set(x, y - 0.01, z);
       dummy.rotation.set((rnd(i * 4.1) - 0.5) * 0.45, rnd(i * 5.3) * Math.PI, (rnd(i * 6.7) - 0.5) * 0.45);
-      const s = 0.07 + rnd(i * 7.9) * 0.1;
+      const s = (0.07 + rnd(i * 7.9) * 0.1) * scale;
       dummy.scale.set(0.9 + rnd(i * 9.1) * 0.6, s, 1);
       dummy.updateMatrix();
       m.setMatrixAt(placed, dummy.matrix);
       color.copy(GRASS_DEEP).lerp(GRASS_LIGHT, 0.25 + rnd(i * 3.3) * 0.7);
+      // a few cooler blades — real lawns are never one hue
+      if (rnd(i * 12.7) < 0.18) color.lerp(GRASS_COOL, 0.5);
       colors[placed * 3] = color.r;
       colors[placed * 3 + 1] = color.g;
       colors[placed * 3 + 2] = color.b;
@@ -189,7 +256,7 @@ function Grass({
     m.instanceMatrix.needsUpdate = true;
     m.instanceColor = new THREE.InstancedBufferAttribute(colors, 3);
     m.instanceColor.needsUpdate = true;
-  }, [count, radius, clear]);
+  }, [count, radius, clear, nearZ, height, scale]);
 
   useFrame(({ clock }) => {
     uniforms.uTime.value = reduced ? 0 : clock.elapsedTime;
@@ -209,7 +276,7 @@ function Grass({
 
 /* ---------- little wild flowers dotted in the grass ---------- */
 
-function WildFlowers({ count, radius = 4.5 }: { count: number; radius?: number }) {
+function WildFlowers({ count, radius = 4.5, height, inner = 1.1 }: { count: number; radius?: number; height: HeightFn; inner?: number }) {
   const heads = useRef<THREE.InstancedMesh>(null!);
   const geo = useMemo(() => new THREE.SphereGeometry(0.035, 8, 6), []);
   useEffect(() => () => geo.dispose(), [geo]);
@@ -221,10 +288,10 @@ function WildFlowers({ count, radius = 4.5 }: { count: number; radius?: number }
     const colors = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
       const a = rnd(i * 1.7 + 21) * Math.PI * 2;
-      const r = 1.1 + Math.sqrt(rnd(i * 2.9 + 22)) * (radius - 1.1);
+      const r = inner + Math.sqrt(rnd(i * 2.9 + 22)) * (radius - inner);
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r;
-      d.position.set(x, plateau(x, z) + 0.06 + rnd(i * 3.1) * 0.05, z);
+      d.position.set(x, height(x, z) + 0.06 + rnd(i * 3.1) * 0.05, z);
       d.scale.setScalar(0.8 + rnd(i * 4.3) * 0.7);
       d.updateMatrix();
       m.setMatrixAt(i, d.matrix);
@@ -235,7 +302,7 @@ function WildFlowers({ count, radius = 4.5 }: { count: number; radius?: number }
     }
     m.instanceMatrix.needsUpdate = true;
     m.instanceColor = new THREE.InstancedBufferAttribute(colors, 3);
-  }, [count, radius, palette]);
+  }, [count, radius, palette, height, inner]);
   return (
     <instancedMesh ref={heads} args={[geo, undefined, count]} frustumCulled={false} userData={{ noShadow: true }}>
       <meshStandardMaterial roughness={0.7} />
@@ -331,6 +398,75 @@ function Motes({ count, reduced }: { count: number; reduced: boolean }) {
   );
 }
 
+/* ---------- butterflies: the little life that says "afternoon" ---------- */
+
+const BUTTERFLY_COLORS = ["#ffd1dc", "#e6d8ff", "#fff1a8", "#ffffff", "#ffb7c9"];
+
+function Butterfly({ seed, reduced, area }: { seed: number; reduced: boolean; area: [number, number, number] }) {
+  const root = useRef<THREE.Group>(null!);
+  const left = useRef<THREE.Mesh>(null!);
+  const right = useRef<THREE.Mesh>(null!);
+  const color = BUTTERFLY_COLORS[seed % BUTTERFLY_COLORS.length];
+  const p = useMemo(
+    () => ({
+      ax: 0.6 + rnd(seed * 1.3) * (area[0] * 0.5),
+      ay: 0.15 + rnd(seed * 2.1) * 0.25,
+      az: 0.4 + rnd(seed * 3.7) * (area[2] * 0.5),
+      fx: 0.11 + rnd(seed * 4.9) * 0.08,
+      fy: 0.5 + rnd(seed * 5.3) * 0.4,
+      fz: 0.09 + rnd(seed * 6.1) * 0.07,
+      ph: rnd(seed * 7.7) * Math.PI * 2,
+      flap: 9 + rnd(seed * 8.3) * 4,
+      cx: (rnd(seed * 9.1) - 0.5) * area[0],
+      cy: area[1] * 0.5 + rnd(seed * 9.7) * area[1] * 0.5,
+      cz: (rnd(seed * 10.3) - 0.5) * area[2],
+      scale: 0.06 + rnd(seed * 11.1) * 0.035,
+    }),
+    [seed, area],
+  );
+  const prev = useMemo(() => new THREE.Vector3(), []);
+  useFrame(({ clock }) => {
+    const g = root.current;
+    if (!g) return;
+    const t = reduced ? p.ph : clock.elapsedTime + p.ph;
+    // a slow wandering loop with a small vertical flutter
+    const x = p.cx + Math.sin(t * p.fx * Math.PI * 2) * p.ax;
+    const z = p.cz + Math.cos(t * p.fz * Math.PI * 2) * p.az;
+    const y = p.cy + Math.sin(t * p.fy * Math.PI * 2) * p.ay + Math.sin(t * p.flap) * 0.01;
+    prev.copy(g.position);
+    g.position.set(x, y, z);
+    if (!reduced && prev.distanceToSquared(g.position) > 1e-8) {
+      g.lookAt(prev.x, prev.y, prev.z); // face travel direction (wings hinge on x)
+      g.rotateY(Math.PI);
+    }
+    const flap = reduced ? 0.6 : 0.35 + Math.abs(Math.sin(t * p.flap)) * 0.95;
+    if (left.current) left.current.rotation.z = flap;
+    if (right.current) right.current.rotation.z = -flap;
+  });
+  return (
+    <group ref={root} scale={p.scale} userData={{ noShadow: true }}>
+      <mesh ref={left} position={[0, 0, 0]} userData={{ noShadow: true }}>
+        <planeGeometry args={[1, 0.8]} />
+        <meshStandardMaterial color={color} roughness={0.6} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh ref={right} userData={{ noShadow: true }}>
+        <planeGeometry args={[1, 0.8]} />
+        <meshStandardMaterial color={color} roughness={0.6} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
+
+function Butterflies({ count, reduced, area }: { count: number; reduced: boolean; area: [number, number, number] }) {
+  return (
+    <group>
+      {Array.from({ length: count }, (_, i) => (
+        <Butterfly key={i} seed={i * 17 + 5} reduced={reduced} area={area} />
+      ))}
+    </group>
+  );
+}
+
 /* ---------- the set ---------- */
 
 export function Meadow({
@@ -338,20 +474,47 @@ export function Meadow({
   simple,
   reduced,
   sun = [7, 7.5, -14],
+  plateauInner = 0.9,
+  plateauOuter = 2.4,
+  grassClear = 0.7,
+  grassNearZ = 1.7,
+  grassScale = 1,
+  grassCount = 9000,
+  butterflies = 0,
+  butterflyArea = [3.2, 1.6, 2.4],
 }: {
   density: number;
   simple: boolean;
   reduced: boolean;
   sun?: [number, number, number];
+  /** flat radius around the origin, and where the hills take over */
+  plateauInner?: number;
+  plateauOuter?: number;
+  grassClear?: number;
+  grassNearZ?: number;
+  grassScale?: number;
+  grassCount?: number;
+  butterflies?: number;
+  butterflyArea?: [number, number, number];
 }) {
+  const height = useMemo(() => makePlateau(plateauInner, plateauOuter), [plateauInner, plateauOuter]);
   return (
     <group>
       <Sky />
       <Sun position={sun} />
-      <Hills segments={simple ? 48 : 96} />
-      <Grass count={Math.round((simple ? 3000 : 9000) * Math.max(0.5, density))} reduced={reduced} />
-      {!simple && <WildFlowers count={Math.round(70 * density)} />}
+      <Hills segments={simple ? 48 : 96} height={height} />
+      <Grass
+        count={Math.round((simple ? grassCount / 3 : grassCount) * Math.max(0.5, density))}
+        reduced={reduced}
+        clear={grassClear}
+        nearZ={grassNearZ}
+        height={height}
+        scale={grassScale}
+        sunDir={sun}
+      />
+      {!simple && <WildFlowers count={Math.round(70 * density)} height={height} inner={Math.max(1.1, grassClear + 0.4)} />}
       {!simple && <Motes count={Math.round(40 * density)} reduced={reduced} />}
+      {!simple && butterflies > 0 && <Butterflies count={butterflies} reduced={reduced} area={butterflyArea} />}
       {/* clouds — large and far so they sit in the sky, not on the hill */}
       <group scale={2.6}>
         <PuffyCloud position={[-1.7, 0.95, -2.8]} scale={1.15} color="#FFFFFF" reduced={reduced} phase={0} />

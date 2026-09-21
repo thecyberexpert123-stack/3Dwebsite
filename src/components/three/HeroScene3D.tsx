@@ -5,7 +5,7 @@ import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { useSectionScrollProgress, useWebGL } from "@/lib/hooks";
-import { useQuality } from "@/lib/quality";
+import { useQuality, type Quality } from "@/lib/quality";
 import { markHeroReady, useIntroStarted, seg, easeInOutCubic, easeOutCubic } from "@/lib/intro";
 import { HeroStatic } from "@/components/HeroStatic";
 import { CrochetFlower, PALETTE } from "./CrochetFlower";
@@ -23,6 +23,7 @@ import {
 import { BreathingLight, DustMotes, Entrance, FallingPetals, HeartBurst } from "./anim";
 import {
   AdaptiveCanvas,
+  LowTierToneMapping,
   Breeze,
   IntroClockProvider,
   SoftGround,
@@ -30,6 +31,8 @@ import {
   StudioShadows,
   useIntroClock,
 } from "./Stage";
+import { Meadow } from "./Meadow";
+import { Post } from "./Post";
 import { makeThreadGeometry } from "./geometry";
 import { shared as finish } from "./materials";
 
@@ -150,12 +153,17 @@ function RollingYarn({ simple }: { simple: boolean }) {
    ================================================================ */
 
 const CAM_START = new THREE.Vector3(1.4, 0.55, 3.6);
-const CAM_REST = new THREE.Vector3(0.35, 1.85, 7.1);
+const CAM_REST = new THREE.Vector3(0.35, 1.95, 7.9);
 const LOOK_START = new THREE.Vector3(0.6, 0.35, 0.4);
 const LOOK_REST = new THREE.Vector3(0, 0.9, 0);
 
 function CameraRig({ reduced }: { reduced: boolean }) {
-  const { camera } = useThree();
+  const { camera, size } = useThree();
+  // the meadow is full-bleed behind the copy: on wide screens the bouquet is
+  // framed into the right column (the glass panel sits on the left); on
+  // narrow screens it stays centred and the panel sits below it
+  const wide = size.width >= 1024;
+  const portrait = size.height > size.width;
   const { t } = useIntroClock();
   const scroll = useRef(0);
   useSectionScrollProgress("home", scroll);
@@ -170,6 +178,18 @@ function CameraRig({ reduced }: { reduced: boolean }) {
     // base frame: intro interpolation
     pos.lerpVectors(CAM_START, CAM_REST, p);
     look.lerpVectors(LOOK_START, LOOK_REST, p);
+    if (wide) {
+      pos.x -= 1.0;
+      look.x -= 1.5;
+    } else if (portrait) {
+      // phones: the copy panel covers the lower half of the screen, so the
+      // camera aims low and the bouquet sits in the open top half
+      pos.z += 2.2;
+      pos.y -= 0.35;
+      pos.x -= 0.3;
+      look.x -= 0.3;
+      look.y -= 1.05;
+    }
 
     // living frame after the intro: pointer parallax + breath
     const px = state.pointer.x * motion * p;
@@ -292,11 +312,13 @@ function Scene({
   density,
   reduced,
   shadowRes,
+  quality,
 }: {
   simple: boolean;
   density: number;
   reduced: boolean;
   shadowRes: number;
+  quality: Quality;
 }) {
   const world = useRef<THREE.Group>(null!);
   const [burst, setBurst] = useState(0);
@@ -321,11 +343,27 @@ function Scene({
 
   return (
     <>
-      <StudioLights />
+      <StudioLights outdoor keyIntensity={1.15} shadowSize={4} />
       <CameraRig reduced={reduced} />
 
+      {/* the world outside the blanket does not yaw with the pointer */}
+      <Meadow
+        density={density}
+        simple={simple}
+        reduced={reduced}
+        plateauInner={2.9}
+        plateauOuter={5.2}
+        grassClear={2.75}
+        grassNearZ={3.2}
+        grassScale={1.25}
+        grassCount={7000}
+        butterflies={simple ? 0 : 4}
+        butterflyArea={[4.2, 1.4, 2.6]}
+      />
+
       <group ref={world}>
-        <SoftGround />
+        {/* the picnic blanket the studio sits on — gingham, like the site */}
+        <SoftGround radius={2.75} blanket />
 
         {/* cozy ambient life: warm drifting dust + falling petals */}
         {!simple && <DustMotes count={Math.round(40 * density)} area={[4.6, 2.6, 3]} reduced={reduced} />}
@@ -395,7 +433,9 @@ function Scene({
         )}
       </group>
 
-      <StudioShadows scale={11} far={2.4} opacity={0.35} resolution={shadowRes} />
+      {simple && <StudioShadows scale={11} far={2.4} opacity={0.35} resolution={shadowRes} />}
+      <LowTierToneMapping enabled={simple} />
+      <Post quality={quality} aoRadius={0.3} aoIntensity={1.5} bloomIntensity={0.45} vignette={0.22} toneMapping />
     </>
   );
 }
@@ -424,6 +464,8 @@ export default function HeroScene3D({ active = true }: { active?: boolean }) {
       fallback={<HeroStatic />}
       className="!absolute inset-0"
       camera={{ position: CAM_START.toArray(), fov: 35 }}
+      gl={{ alpha: false }}
+      scene={{ fog: new THREE.Fog("#cfe2f4", 9, 26) }}
       frameloop={active ? "always" : "never"}
       aria-hidden="true"
     >
@@ -434,6 +476,7 @@ export default function HeroScene3D({ active = true }: { active?: boolean }) {
             density={quality.density}
             reduced={reduced}
             shadowRes={quality.shadowRes}
+            quality={quality}
           />
         </Breeze>
       </IntroClockProvider>

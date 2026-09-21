@@ -8,26 +8,20 @@ import Image from "next/image";
  */
 export function HeroStatic() {
   return (
-    <div className="relative h-full w-full">
-      {/* soft blush halo */}
-      <div
-        aria-hidden="true"
-        className="absolute -inset-10 -z-10 rounded-full bg-blush/45 blur-3xl"
-      />
-      <div className="absolute inset-2 rotate-1 overflow-hidden rounded-[3rem] shadow-lift md:inset-5 md:rotate-[0.6deg]">
+    <div className="candy relative h-full w-full overflow-hidden">
+      <div className="gingham absolute inset-0 opacity-45 mix-blend-multiply" aria-hidden="true" />
+      {/* full-bleed, soft-focused at the edges so the copy sits comfortably on it */}
+      <div className="absolute inset-y-0 right-0 w-full lg:w-[58%]">
         <Image
           src="/images/hero-fallback.jpg"
           alt="A hand-crocheted bouquet of blush pink and cream yarn flowers with pastel yarn balls, a wooden crochet hook, a loose yarn thread, a tiny heart and a small gift box resting on a cream surface"
           fill
           priority
-          sizes="(min-width: 1024px) 46vw, 92vw"
+          sizes="(min-width: 1024px) 58vw, 100vw"
           className="object-cover"
         />
-        {/* warm wash so it sits softly in the page */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-blush-soft/25 via-transparent to-white/10"
-        />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-[#fde5ec] via-[#fde5ec]/40 to-transparent" />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#fde5ec] via-transparent to-white/20" />
       </div>
     </div>
   );

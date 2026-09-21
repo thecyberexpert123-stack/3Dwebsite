@@ -174,6 +174,60 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.10.0] — 2026-09-21
+
+Research-led "cute, not solid" pass. Studied the current best-in-class
+stylised/cozy 3D sites (Jordan Breton's floating island, WoraWork's cozy
+garden, Susurrus' watercolour world, Oryzo/Hubtown "one object with weight",
+Bruno Simon folio-2025, the 80.lv / halisavakis stylised-grass write-ups) and
+applied the recurring patterns rather than any one look.
+
+### Changed — hero
+- The hero is now **the meadow**, full-bleed. The bouquet studio sits on a
+  gingham **picnic blanket** on the same hills, sky and sun the gift door
+  opens onto — the door and the first screen are one continuous place instead
+  of a pink card next to a floating scene.
+- Editorial copy moved into a milkier **liquid-glass panel** (`.hero-panel`)
+  so type stays crisp over grass; handwritten annotations got frosted
+  sticker backings for the same reason. Off-page flower/leaf doodles removed
+  (the meadow is the decoration now).
+- Camera framing is layout-aware: bouquet framed into the right column on
+  ≥1024 px, centred in the open top half on portrait phones (panel slides in
+  under it); scroll hand-off unchanged.
+- Hero canvas is **opaque** with fog, so the AAA post stack (N8AO contact
+  shadows, soft bloom, neutral tone mapping, vignette) now runs on the hero
+  too on mid/high tiers; simple tier falls back to renderer tone mapping and
+  the old baked contact shadows.
+- Four **butterflies** wander the meadow behind the blanket (directed loops
+  that face their travel direction, wings hinged on the body — no random
+  particles); static under reduced motion.
+
+### Changed — grass & world
+- Grass blades get the four-layer stylised model: darker ground colour as
+  fake AO at the root → the blade's own colour → warm sunlit tip, a large
+  world-space patch tint so the lawn is not one green, a gust-facing light
+  bias, ~18 % cooler blue-green blades, and sun **translucency** through the
+  tips when looking toward the sun. `Meadow` is parametric (plateau radius,
+  grass clear/near-z, blade scale, butterfly count) so the door and hero
+  share one component.
+
+### Changed — page surfaces
+- Every section surface is now layered: `.polka`, `.candy`, `.gingham-pink`
+  gained large lavender / mint / butter colour blooms under their pattern, and
+  ivory sections use a new `.ivory-bloom` so consecutive sections no longer
+  merge into one flat pink. A 6 % fixed **paper grain** (inline SVG
+  turbulence, no image request, no blend mode) sits over the whole page.
+
+### Fixed
+- `HeroStatic` (no-WebGL / loading / no-JS) is full-bleed to match the new
+  slot instead of a framed card floating in an empty column.
+
+### Verified
+- `tsc` clean, `next build` OK, 46 design tests pass, zero page errors in
+  headless runs (desktop 1440×900 / 1200×750, phone 390×844, reduced motion).
+- Hero draw calls 66–73 at mid (composer on), 101–117 at low; triangles
+  ~103–119 k (was ~40 k) — within the budget used for the door.
+
 ## [0.9.1] — 2026-09-21
 
 ### Added

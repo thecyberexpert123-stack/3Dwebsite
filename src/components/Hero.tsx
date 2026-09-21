@@ -17,8 +17,8 @@ const HeroScene3D = dynamic(() => import("./three/HeroScene3D"), {
 const ANNOTATIONS = [
   { text: "handmade", className: "left-[1%] top-[14%] -rotate-6" },
   { text: "custom made", className: "right-[2%] top-[24%] rotate-3" },
-  { text: "one stitch at a time", className: "left-[4%] bottom-[20%] rotate-2" },
-  { text: "tiny things, happy things", className: "right-[3%] bottom-[12%] -rotate-3" },
+  { text: "one stitch at a time", className: "left-[4%] bottom-[30%] rotate-2" },
+  { text: "tiny things, happy things", className: "right-[3%] bottom-[24%] -rotate-3" },
 ] as const;
 
 const wordContainer: Variants = {
@@ -84,15 +84,22 @@ export function Hero() {
         };
 
   return (
-    <section id="home" ref={sectionRef} className="candy relative overflow-hidden">
-      {/* subtle gingham over the candy wash */}
-      <div className="gingham pointer-events-none absolute inset-0 opacity-45 mix-blend-multiply" aria-hidden="true" />
-      {/* decorative doodles — kept few, with breathing room */}
-      <FlowerDoodleBg />
-      <LeafBg />
+    <section id="home" ref={sectionRef} className="relative overflow-hidden bg-[#cfe2f4]">
+      {/* ---------- the meadow: full-bleed behind the whole hero ---------- */}
+      <motion.div style={{ y: sceneY }} className="absolute inset-0" aria-hidden="true">
+        {/* the canvas is always mounted so shaders compile behind the curtain */}
+        <HeroScene3D active={heroActive} />
+        {/* a soft light veil under the copy so type stays legible over grass;
+            fades out toward the scene so the meadow stays open on the right */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-white/55 via-white/25 to-transparent lg:w-[62%]" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-ivory to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/40 to-transparent" />
+      </motion.div>
       <BowCorner />
 
-      <div className="wrap grid min-h-[92vh] items-center gap-10 pb-16 pt-32 md:pb-24 md:pt-36 lg:grid-cols-[1.02fr_1fr] lg:gap-8">
+      {/* phones: the meadow gets the top half of the screen to itself, the
+          copy panel slides in under it; desktop: panel left, bouquet right */}
+      <div className="wrap relative grid min-h-[100svh] items-end gap-10 pb-20 pt-[46svh] md:pb-28 md:pt-[42svh] lg:items-center lg:pt-36 lg:grid-cols-[1.02fr_1fr] lg:gap-8">
         {/* ---------- left: editorial copy ----------
             keyed on hydration: framer's `initial` only applies at mount, so the
             SSR-visible copy remounts once (under the curtain) into its hidden
@@ -100,7 +107,7 @@ export function Hero() {
         <motion.div
           key={hydrated ? "live" : "ssr"}
           style={{ y: copyY, opacity: copyOpacity }}
-          className="relative z-10 flex max-w-xl flex-col items-start gap-6"
+          className="glass-panel hero-panel relative z-10 flex max-w-xl flex-col items-start gap-5 px-6 py-7 md:gap-6 md:px-10 md:py-10"
         >
           <motion.p
             {...fadeUp(0.05)}
@@ -182,15 +189,7 @@ export function Hero() {
         </motion.div>
 
         {/* ---------- right: the 3D studio ---------- */}
-        <motion.div style={{ y: sceneY }} className="relative h-[440px] w-full sm:h-[500px] md:h-[580px] lg:h-[660px]">
-          {/* soft pastel blobs give the scene a "stage" without boxing it in */}
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-            <span className="absolute left-[8%] top-[12%] h-[62%] w-[78%] rounded-[46%_54%_52%_48%/58%_44%_56%_42%] bg-blush-soft/80 blur-2xl" />
-            <span className="absolute right-[2%] top-[4%] h-40 w-40 rounded-full bg-lavender/70 blur-2xl" />
-            <span className="absolute bottom-[8%] left-[2%] h-32 w-32 rounded-full bg-mint/80 blur-2xl" />
-          </div>
-          {/* the canvas is always mounted so shaders compile behind the curtain */}
-          <HeroScene3D active={heroActive} />
+        <div className="pointer-events-none relative hidden h-[440px] w-full sm:h-[500px] md:h-[580px] lg:block lg:h-[660px]">
 
           {/* floating handmade annotations — arrive after the charms land (~3s beat) */}
           {ANNOTATIONS.map((a, i) => (
@@ -204,7 +203,7 @@ export function Hero() {
                     animate: show ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 },
                     transition: { duration: 0.7, delay: 3.0 + i * 0.16, ease: [0.22, 1, 0.36, 1] as const },
                   })}
-              className={`pointer-events-none absolute z-10 hidden font-hand text-xl text-rose-ink sm:block ${a.className}`}
+              className={`pointer-events-none absolute z-10 hidden rounded-full bg-white/55 px-2.5 py-0.5 font-hand text-xl text-rose-ink backdrop-blur-sm sm:block ${a.className}`}
             >
               <span className="block animate-float" style={{ animationDelay: `${i * 1.1}s` }}>
                 {a.text}
@@ -228,7 +227,7 @@ export function Hero() {
           >
             tap the bouquet ✿
           </motion.span>
-        </motion.div>
+        </div>
       </div>
 
       {/* scroll cue */}
@@ -244,25 +243,7 @@ export function Hero() {
   );
 }
 
-/* off-screen decorative doodles */
-function FlowerDoodleBg() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="absolute -left-6 bottom-24 -z-0 h-40 w-40 -rotate-12 text-blush/40"
-    >
-      <g fill="none" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round">
-        {[0, 72, 144, 216, 288].map((deg) => (
-          <ellipse key={deg} cx="12" cy="7" rx="2.4" ry="3.6" transform={`rotate(${deg} 12 12)`} />
-        ))}
-        <circle cx="12" cy="12" r="2.1" />
-      </g>
-    </svg>
-  );
-}
-
-/* a satin bow in the top-right corner — the coquette signature */
+/* decorative corner bow — the only doodle left; the meadow is the decoration now */
 function BowCorner() {
   return (
     <svg

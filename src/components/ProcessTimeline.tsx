@@ -68,7 +68,7 @@ export function ProcessTimeline() {
   }, [scrollYProgress]);
 
   return (
-    <section id="process" className="relative bg-whitish py-20 md:py-28">
+    <section id="process" className="ivory-bloom relative py-20 md:py-28">
       <div className="wrap">
         <SectionHeading
           eyebrow="from yarn to you"

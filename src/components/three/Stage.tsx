@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree, type CanvasProps } from "@react-three/fiber";
 import {
   ContactShadows,
@@ -396,12 +396,16 @@ export function SoftGround({
   radius = 3.0,
   color = "#FFE9F0",
   opacity = 1,
+  blanket = false,
 }: {
   radius?: number;
   color?: string;
   opacity?: number;
+  /** picnic blanket: gingham, lit + shadowed like a real cloth on grass,
+   *  with a slightly wavy hem so it reads as fabric, not a disc */
+  blanket?: boolean;
 }) {
-  const mat = useRef<THREE.MeshBasicMaterial>(null!);
+  const mat = useRef<THREE.MeshBasicMaterial | THREE.MeshStandardMaterial>(null!);
   const { t, reduced } = useIntroClock();
   useFrame(() => {
     if (!mat.current) return;
@@ -409,11 +413,51 @@ export function SoftGround({
     const k = reduced ? 1 : Math.min(1, t.current / 0.9);
     mat.current.opacity = opacity * k;
   });
+  const hem = useMemo(() => {
+    if (!blanket) return null;
+    // a rounded square with a soft scalloped edge
+    const shape = new THREE.Shape();
+    const n = 96;
+    for (let i = 0; i <= n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      // superellipse (n=3.2) ≈ rounded square; tiny ripple = cloth hem
+      const c = Math.cos(a);
+      const sn = Math.sin(a);
+      const r = radius / Math.pow(Math.pow(Math.abs(c), 3.2) + Math.pow(Math.abs(sn), 3.2), 1 / 3.2);
+      const ripple = 1 + Math.sin(a * 22) * 0.012;
+      const x = c * r * ripple;
+      const y = sn * r * ripple;
+      if (i === 0) shape.moveTo(x, y);
+      else shape.lineTo(x, y);
+    }
+    const g = new THREE.ShapeGeometry(shape, 4);
+    // planar UVs in blanket space so the gingham tiles evenly
+    const uv = g.attributes.uv as THREE.BufferAttribute;
+    const pos = g.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) / radius + 1) * 0.5, (pos.getY(i) / radius + 1) * 0.5);
+    return g;
+  }, [blanket, radius]);
+  useEffect(() => () => hem?.dispose(), [hem]);
+
+  if (blanket) {
+    return (
+      <mesh geometry={hem!} rotation={[-Math.PI / 2, 0, 0.18]} position={[0, 0.004, 0]} receiveShadow>
+        <meshStandardMaterial
+          ref={mat as React.RefObject<THREE.MeshStandardMaterial>}
+          color="#FFFFFF"
+          map={ginghamTexture()}
+          roughness={0.95}
+          transparent
+          opacity={0}
+        />
+      </mesh>
+    );
+  }
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} renderOrder={-1}>
       <circleGeometry args={[radius, 56]} />
       <meshBasicMaterial
-        ref={mat}
+        ref={mat as React.RefObject<THREE.MeshBasicMaterial>}
         color={color}
         map={linenTexture()}
         transparent
@@ -423,6 +467,35 @@ export function SoftGround({
       />
     </mesh>
   );
+}
+
+/** Pink gingham for the picnic blanket — the same check the page uses,
+ *  drawn once into a canvas so the 3D and the CSS agree. */
+let ginghamTex: THREE.CanvasTexture | null = null;
+function ginghamTexture(): THREE.CanvasTexture {
+  if (ginghamTex) return ginghamTex;
+  const S = 512;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#fff7f9";
+  ctx.fillRect(0, 0, S, S);
+  const n = 12; // checks per tile
+  const w = S / n;
+  ctx.fillStyle = "rgba(243,168,191,0.55)";
+  for (let i = 0; i < n; i += 2) ctx.fillRect(i * w, 0, w, S);
+  for (let j = 0; j < n; j += 2) ctx.fillRect(0, j * w, S, w);
+  // a fine weave so the cloth catches light like fabric
+  ctx.fillStyle = "rgba(120,80,95,0.05)";
+  for (let i = 0; i < S; i += 4) ctx.fillRect(i, 0, 1, S);
+  for (let j = 0; j < S; j += 4) ctx.fillRect(0, j, S, 1);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 4);
+  tex.anisotropy = 8;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  ginghamTex = tex;
+  return tex;
 }
 
 /* ================================================================
@@ -465,4 +538,25 @@ export function Breeze({ children, reduced }: { children: React.ReactNode; reduc
 
 export function useWind(): React.RefObject<number> {
   return useContext(WindContext);
+}
+
+/** Outdoor canvases: the composer applies NEUTRAL tone mapping on mid/high;
+ *  when Post is skipped (simple tier) the renderer does it instead so the
+ *  HDR sun does not clip to a video-game white. */
+export function LowTierToneMapping({ enabled }: { enabled: boolean }) {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    gl.toneMapping = enabled ? THREE.NeutralToneMapping : THREE.NoToneMapping;
+    gl.toneMappingExposure = 1;
+    // programs bake the tone-mapping function in — recompile anything already built
+    scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(m)) m.forEach((x) => (x.needsUpdate = true));
+      else if (m) m.needsUpdate = true;
+    });
+    return () => {
+      gl.toneMapping = THREE.NoToneMapping;
+    };
+  }, [gl, scene, enabled]);
+  return null;
 }

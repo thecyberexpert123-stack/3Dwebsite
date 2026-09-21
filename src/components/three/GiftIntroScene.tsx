@@ -9,7 +9,7 @@ import { clamp01, easeInOutCubic, easeOutBack, easeOutCubic, seg } from "@/lib/i
 import { makeHeartGeometry, rnd } from "./geometry";
 import { CrochetFlower, PALETTE } from "./CrochetFlower";
 import { bowLoopGeometry, bowTailGeometry } from "./parts";
-import { AdaptiveCanvas, StudioLights, StudioShadows } from "./Stage";
+import { AdaptiveCanvas, LowTierToneMapping, StudioLights, StudioShadows } from "./Stage";
 import { Meadow } from "./Meadow";
 import { Post } from "./Post";
 import { shared as finish } from "./materials";
@@ -579,24 +579,6 @@ export default function GiftIntroScene({
 
 /** The low tier has no post stack (so no ToneMapping pass) — give the outdoor
  *  scene the renderer's own neutral curve instead of a hard clip at 1.0. */
-function LowTierToneMapping({ enabled }: { enabled: boolean }) {
-  const { gl, scene } = useThree();
-  useEffect(() => {
-    gl.toneMapping = enabled ? THREE.NeutralToneMapping : THREE.NoToneMapping;
-    gl.toneMappingExposure = 1;
-    // programs bake the tone-mapping function in — recompile anything already built
-    scene.traverse((o) => {
-      const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
-      if (Array.isArray(m)) m.forEach((x) => (x.needsUpdate = true));
-      else if (m) m.needsUpdate = true;
-    });
-    return () => {
-      gl.toneMapping = THREE.NoToneMapping;
-    };
-  }, [gl, scene, enabled]);
-  return null;
-}
-
 function Ready({ onReady }: { onReady: () => void }) {
   const done = useRef(false);
   useFrame(() => {

@@ -561,3 +561,46 @@ scenes, adding dependencies or touching the build.
   ≥ 0.6 tint to keep contrast.
 - Keep the loading backdrop the brand wash and fade the opaque canvas in
   over it; a flat sky-blue first paint read as a broken page.
+
+## v0.10.0 — the meadow is the hero
+
+- **Research distilled to patterns, not looks.** The cozy/cute 3D sites that
+  win awards share five moves: one hero object rendered *with weight*
+  (contact shadow, rim, soft bloom), scroll as narrative, an explorable or
+  at least continuous *place*, set dressing with direction (butterflies,
+  petals that travel somewhere), and a palette that survives from loader to
+  last section. Apply the moves; never copy a scene.
+- **Continuity beats novelty.** Users asked for "more aesthetic" after the
+  door already looked good — the real gap was that the door opened onto a
+  *different* world (pink card, framed studio). Putting the studio on a
+  blanket in the same meadow fixed "solid colour" more than any new effect.
+  Confidence: high (visual before/after in `docs/qa/v0.10.0-*`).
+- **"Solid colour" is usually a missing layer, not a wrong colour.** The
+  sections were the right pinks; they read flat because pattern sat directly
+  on a single fill. Large radial colour blooms + a 6 % paper grain fixed it
+  with zero new elements. Avoid `mix-blend-mode` on a fixed full-page layer —
+  it forces recomposite on scroll; low-alpha plain grain is enough.
+- **Stylised grass = four colour layers, not more blades.** Root fake-AO,
+  body, sunlit tip, world-space patch tint (+ translucency toward the sun,
+  in view space: transform the world sun direction with `viewMatrix`
+  before dotting with `vViewPosition`). Hooked into `MeshStandardMaterial`
+  via `onBeforeCompile` at `<color_fragment>` / `<dithering_fragment>` so
+  shadows/fog/tone mapping keep working. Confidence: high.
+- **Post on the hero required opacity, not a workaround.** Earlier note
+  ("Post on transparent canvas breaks it") stands; the fix was making the
+  hero canvas opaque with its own sky+fog — which the meadow provided for
+  free. Keep `LowTierToneMapping` (now shared in `Stage.tsx`) for the
+  composer-less simple tier.
+- **Layout-aware camera > responsive DOM tricks.** With the canvas full-
+  bleed, framing the subject into the free column (`size.width >= 1024`)
+  and into the open top half on portrait phones (`pos.z += 2.2`,
+  `look.y -= 1.05`) is one `useFrame` branch; no duplicate scenes.
+- **Reduced motion is also the fastest QA lens.** `prefers-reduced-motion`
+  jumps the intro clock to the end, so a settled-composition screenshot
+  costs ~60 s under SwiftShader instead of 4 min waiting for the intro.
+- **Glass over a live scene needs a milkier pane.** `.glass-panel` (alpha
+  .12–.26) was right over flat pastel; over grass and sky the body copy
+  lost contrast. `.hero-panel` raises the fill to .4–.58 with
+  `blur(22px)`. Rule: transparency budget scales inversely with backdrop
+  busyness.
+
