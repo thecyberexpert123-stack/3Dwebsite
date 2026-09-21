@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Image from "next/image";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
 import { Reveal, TextReveal } from "./Reveal";
 import { HeartDoodle, SparkleDoodle, StitchDoodle } from "./Decorations";
 
@@ -31,7 +31,7 @@ export function StorySection() {
   const imgScale = useTransform(scrollYProgress, [0.05, 0.4], [reduce ? 1 : 1.16, 1]);
 
   return (
-    <section id="story-beat" className="gingham-pink scallop-bottom relative overflow-hidden py-20 md:py-28" style={{ "--scallop": "var(--color-blush-soft)" } as React.CSSProperties} ref={ref}>
+    <section id="story-beat" className="surface-sky scallop-bottom relative overflow-hidden py-20 md:py-28" style={{ "--scallop": "#f4f8fd" } as React.CSSProperties} ref={ref}>
       <div className="wrap grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
         {/* image with soft parallax */}
         <motion.div style={{ y }} className="relative mx-auto w-full max-w-lg">
@@ -61,11 +61,11 @@ export function StorySection() {
             <TextReveal text="Made Slowly." />
             <TextReveal text="Made Specially." className="block font-script font-normal text-rose-ink" stagger={0.1} />
           </h2>
-          <p className="text-pretty text-lg leading-relaxed text-cocoa-soft">
-            At Whimlet, every piece begins with yarn, imagination and a lot of
-            little stitches. What starts as a simple thread becomes something
-            you can gift, keep, wear or treasure.
-          </p>
+          <ScrubLine
+            progress={scrollYProgress}
+            text="At Whimlet, every piece begins with yarn, imagination and a lot of little stitches. What starts as a simple thread becomes something you can gift, keep, wear or treasure."
+            reduce={!!reduce}
+          />
           <ul className="mt-2 flex flex-col gap-3">
             {VALUES.map((v) => (
               <li key={v.label} className="flex items-center gap-3 font-semibold text-cocoa">
@@ -81,3 +81,31 @@ export function StorySection() {
     </section>
   );
 }
+
+/**
+ * A paragraph that is *read by the scroll*: each word inks in from a pale
+ * blush to full cocoa as the section travels through the viewport, like a
+ * highlighter moving along the line. The scrub range is narrow (25–60 % of
+ * the section's travel) so the whole thought is legible well before the
+ * section leaves.
+ */
+function ScrubLine({ text, progress, reduce }: { text: string; progress: MotionValue<number>; reduce: boolean }) {
+  const words = text.split(" ");
+  return (
+    <p className="text-pretty text-lg leading-relaxed text-cocoa-soft" aria-label={text}>
+      {words.map((w, i) => (
+        <Word key={i} word={w} progress={progress} start={0.22 + (i / words.length) * 0.36} reduce={reduce} />
+      ))}
+    </p>
+  );
+}
+
+function Word({ word, progress, start, reduce }: { word: string; progress: MotionValue<number>; start: number; reduce: boolean }) {
+  const color = useTransform(progress, [start, start + 0.06], ["rgb(233 178 195)", "rgb(74 50 56)"]);
+  return (
+    <motion.span aria-hidden="true" style={reduce ? undefined : { color }} className="inline-block whitespace-pre">
+      {word + " "}
+    </motion.span>
+  );
+}
+

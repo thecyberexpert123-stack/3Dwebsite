@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useScroll } from "framer-motion";
 import { primaryNav, site } from "@/data/site";
 import { waLink, waMessages, PHONE_DISPLAY, PHONE_TEL } from "@/lib/whatsapp";
 import { HeartDoodle, PhoneDoodle, WhatsAppGlyph } from "./Decorations";
+import { lockScroll, unlockScroll } from "@/lib/scroll";
 
 /**
  * Floating translucent navbar: compacts while scrolling down, expands when
@@ -33,12 +34,11 @@ export function Navbar() {
   // scroll lock + Escape while the mobile menu is open
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
     return () => {
-      document.body.style.overflow = prev;
+      unlockScroll();
       window.removeEventListener("keydown", onKey);
     };
   }, [open]);

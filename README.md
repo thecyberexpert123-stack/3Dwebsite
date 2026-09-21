@@ -14,6 +14,7 @@ primary conversion channel.
   opening-gift scene in the closing CTA, and the custom-order desk still life
   (all lazy-loaded, viewport-gated, with beautiful static fallbacks)
 - **Framer Motion** — reveals, parallax, modals, carousel
+- **Lenis** (MIT) — inertial page scroll; `src/lib/scroll.ts` owns the instance (scroll locks, anchor travel). QA overrides: `?intro=skip|hold|gift`, `?quality=low|mid|high`, `?pointer=fine`.
 - Self-hosted fonts (Parisienne · Caveat · Quicksand) — no external font CDN
 
 ## Getting started

@@ -1,6 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
+import { motion, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
+import { useDesktopPointer } from "@/lib/hooks";
 import { showcaseCategories } from "@/data/categories";
 import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
@@ -15,10 +18,20 @@ const SHAPES = [
   { radius: "3rem 2.25rem 3rem 2.75rem", rotate: "-rotate-[1.5deg]", lift: "md:translate-y-5", frame: "bg-sky", bow: "text-rose-ink" },
 ] as const;
 
-/** Editorial floating category cards — "Find Your Little Something". */
+/**
+ * Editorial floating category cards — "Find Your Little Something".
+ * The five cards arrive as a *hand of cards* being fanned: gathered and
+ * overlapping at the centre while the section is still low in the
+ * viewport, spreading to their places as it rises (scroll-scrubbed, so the
+ * fan follows the hand). One directed move instead of five staggered fades.
+ */
 export function CategoryShowcase() {
+  const ref = useRef<HTMLElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 95%", "start 35%"] });
+  const spread = useSpring(scrollYProgress, { stiffness: 90, damping: 24, mass: 0.5 });
   return (
-    <section id="collections" className="ivory-bloom relative py-24 md:py-32">
+    <section id="collections" ref={ref} className="ivory-bloom relative py-24 md:py-32">
       <div className="wrap">
         <SectionHeading
           eyebrow="browse the little shop"
@@ -31,9 +44,12 @@ export function CategoryShowcase() {
           {showcaseCategories.map((cat, i) => {
             const shape = SHAPES[i % SHAPES.length];
             return (
-              <Reveal
+              <FanCard
                 key={cat.id}
-                delay={i * 0.08}
+                index={i}
+                total={showcaseCategories.length}
+                spread={spread}
+                reduce={!!reduce}
                 className={`w-[calc(50%-0.65rem)] sm:w-56 md:w-60 lg:w-[13.5rem] ${shape.lift}`}
               >
                 <a
@@ -75,7 +91,7 @@ export function CategoryShowcase() {
                   </div>
                   </div>
                 </a>
-              </Reveal>
+              </FanCard>
             );
           })}
         </div>
@@ -83,3 +99,43 @@ export function CategoryShowcase() {
     </section>
   );
 }
+
+/** One card of the fan: offset toward the centre and rotated like a held
+ *  hand of cards at spread=0, at rest at spread=1. Phones keep a soft
+ *  reveal — five cards wrap to rows there and a fan would collide. */
+function FanCard({
+  index,
+  total,
+  spread,
+  reduce,
+  className,
+  children,
+}: {
+  index: number;
+  total: number;
+  spread: MotionValue<number>;
+  reduce: boolean;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const desktop = useDesktopPointer(768);
+  const k = index - (total - 1) / 2; // −2 … 2
+  const on = desktop && !reduce;
+  const x = useTransform(spread, [0, 1], [on ? -k * 150 : 0, 0]);
+  const y = useTransform(spread, [0, 1], [on ? Math.abs(k) * 26 + 40 : 0, 0]);
+  const rotate = useTransform(spread, [0, 1], [on ? k * 9 : 0, 0]);
+  const opacity = useTransform(spread, [0, 0.35], [on ? 0.6 : 1, 1]);
+  if (!on) {
+    return (
+      <Reveal delay={index * 0.08} className={className}>
+        {children}
+      </Reveal>
+    );
+  }
+  return (
+    <motion.div style={{ x, y, rotate, opacity, zIndex: total - Math.abs(k) }} className={`relative ${className}`}>
+      {children}
+    </motion.div>
+  );
+}
+

@@ -17,6 +17,19 @@ export function useMediaQuery(query: string): boolean {
   return matches;
 }
 
+/** "Desktop with a mouse": the gate for scroll-linked choreography that
+ *  would only cost frames on touch (pinned strips, card stacks, section
+ *  peel). QA override `?pointer=fine` lets headless runs (which report
+ *  hover:none) exercise the desktop path. */
+export function useDesktopPointer(minWidth = 1024): boolean {
+  const mq = useMediaQuery(`(min-width: ${minWidth}px) and (hover: hover) and (pointer: fine)`);
+  const [forced, setForced] = useState(false);
+  useEffect(() => {
+    setForced(new URLSearchParams(window.location.search).get("pointer") === "fine" && window.innerWidth >= minWidth);
+  }, [minWidth]);
+  return mq || forced;
+}
+
 /** Simplify the 3D scene on small screens. */
 export function useIsMobile(): boolean {
   return useMediaQuery("(max-width: 767px)");

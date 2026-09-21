@@ -174,6 +174,64 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.11.0] — 2026-09-21
+
+"Not the same all over" pass. Researched how the current best scroll-driven
+3D sites keep a long page feeling like one piece (Shopify Editions W'26 —
+each section staged as a beat with its own axis of motion; Sleep Well
+Creative / Bilal.show — scroll as narrative; Lenis showcase sites — one
+inertial scroll engine driving every scroll-linked effect; the Codrops
+84—24 / Treize Grammes case studies — per-section timelines). The pattern:
+**one smooth scroll engine + one shared transition between sections + a
+different axis of motion per section.**
+
+### Added
+- **Inertial scroll** (`SmoothScroll.tsx`, Lenis 1.3 MIT, ~9 KB gz): wheel
+  scroll eases with `lerp 0.085`; touch stays native; anchors get the same
+  eased travel with the nav offset; reduced motion → not created at all.
+  New `lib/scroll.ts` owns the instance: modals/lightbox/menu/loading door
+  now call `lockScroll()/unlockScroll()` (ref-counted) so the page and the
+  smoother pause together; `data-lenis-prevent` on the product modal body.
+- **Section transition — `Beat`** (`Beat.tsx`): every section peels away as
+  it leaves the top (5° perspective tilt around its bottom edge, 28 px
+  lift, fade to 0.65) while the next arrives flat underneath. Desktop
+  pointer devices only; z-order preserved so scalloped trims still overhang.
+- **A different move per section:**
+  - *Story beat* — the paragraph is read by the scroll: each word inks from
+    blush to cocoa as the section travels (`ScrubLine`).
+  - *Collections* — the five category cards arrive as a **fanned hand of
+    cards** (scroll-scrubbed with a spring), not five staggered fades.
+  - *Occasions* — the page **changes axis**: the section pins and vertical
+    scroll pulls six occasion cards sideways along a stitched progress
+    line; phones get a native snap scroller.
+  - *Why Handmade* — a **card stack**: each principle is sticky; the next
+    slides up and settles on top while the one beneath shrinks back.
+  - *Kind Words* — the lonely carousel card became a **pinboard**: all notes
+    visible as tilted paper with coloured pins; one lifts at a time (auto,
+    hover, dots, keyboard).
+  - *Gallery* — the three masonry columns **drift at different speeds**.
+- **The day arc** (`globals.css`): section surfaces now walk through an
+  afternoon — sky (story) → mint (custom) → butter (occasions, kind words)
+  → lavender (process) → dusk (contact) — with polka/gingham/ivory-bloom in
+  between, so no two neighbouring sections share a surface.
+- `useDesktopPointer()` hook (`lib/hooks.ts`): one gate for all
+  scroll-linked choreography that would only cost frames on touch; QA
+  override `?pointer=fine` because headless Chromium reports `hover: none`.
+
+### Changed
+- Process stage background matches its lavender section (was a pink candy
+  block inside lavender); stage-1 camera pulled back so the yarn ball is no
+  longer cropped.
+
+### Verified
+- `tsc` clean, `next build` OK, 46 design tests pass, zero page errors in
+  every headless run (1440×900 desktop with/without `pointer=fine`, 390×844
+  phone, reduced motion). Section tour, scroll-position series for
+  collections / occasions / why / story-beat, and phone tour captured in
+  `docs/qa/v0.11.0-*.jpg`.
+- Lenis confirmed live (`html.lenis.lenis-on`, `isStopped=false`,
+  `limit≈16.7k`); loading door and modals lock/unlock it.
+
 ## [0.10.0] — 2026-09-21
 
 Research-led "cute, not solid" pass. Studied the current best-in-class

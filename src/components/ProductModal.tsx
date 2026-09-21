@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { productCategoryLabel, type Product } from "@/data/products";
 import { waLink, waMessages } from "@/lib/whatsapp";
 import { HeartDoodle, SparkleDoodle, WhatsAppGlyph } from "./Decorations";
+import { lockScroll, unlockScroll } from "@/lib/scroll";
 
 /**
  * Product detail dialog: image, story, customization notes and a WhatsApp
@@ -26,12 +27,11 @@ export function ProductModal({
     if (!product) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     closeRef.current?.focus();
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
   }, [product, onClose]);
 
@@ -61,6 +61,7 @@ export function ProductModal({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 40, opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            data-lenis-prevent
             className="relative grid max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-[2rem] bg-whitish shadow-lift sm:grid-cols-2 sm:rounded-[2rem]"
           >
             <button

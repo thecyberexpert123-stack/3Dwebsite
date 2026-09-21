@@ -11,7 +11,7 @@ export function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="ivory-bloom relative py-20 md:py-28">
+    <section id="faq" className="polka relative py-20 md:py-28">
       <div className="wrap">
         <SectionHeading
           eyebrow="good questions"

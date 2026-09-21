@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { useMediaQuery } from "@/lib/hooks";
 import { galleryFilters, galleryItems } from "@/data/gallery";
 import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
+import { lockScroll, unlockScroll } from "@/lib/scroll";
 
 const ASPECTS: Record<string, string> = {
   tall: "aspect-[3/4]",
@@ -21,6 +23,22 @@ export function Gallery() {
 
   const shown =
     filter === "all" ? galleryItems : galleryItems.filter((g) => g.category === filter);
+
+  // deal the photos into columns (2 on phones, 3 from md) keeping their
+  // original index so the lightbox order is unchanged
+  const cols = useMediaQuery("(min-width: 768px)") ? 3 : 2;
+  const columns = Array.from({ length: cols }, (_, c) =>
+    shown.map((item, i) => ({ item, i })).filter((_, i) => i % cols === c),
+  );
+
+  // column parallax: outer columns move with the page, the middle one lags
+  const wallRef = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: wallRef, offset: ["start end", "end start"] });
+  const d0 = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -36]);
+  const d1 = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : 44]);
+  const d2 = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -24]);
+  const drift = [d0, d1, d2];
 
   const openLightbox = (index: number) => setLightbox(index);
   const close = useCallback(() => setLightbox(null), []);
@@ -39,19 +57,18 @@ export function Gallery() {
       if (e.key === "ArrowLeft") step(-1);
     };
     window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     closeRef.current?.focus();
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
   }, [lightbox, close, step]);
 
   const current = lightbox !== null ? shown[lightbox] : null;
 
   return (
-    <section id="gallery" className="polka relative py-20 md:py-28">
+    <section id="gallery" className="ivory-bloom relative py-20 md:py-28">
       <div className="wrap">
         <SectionHeading
           eyebrow="a peek inside"
@@ -85,45 +102,45 @@ export function Gallery() {
           })}
         </Reveal>
 
-        {/* masonry */}
-        <motion.div
-          key={filter}
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-10 columns-2 gap-4 md:columns-3 md:gap-5"
-        >
-          {shown.map((item, i) => (
-            <motion.figure
-              key={item.id}
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: Math.min(i * 0.04, 0.3) }}
-              className="group relative mb-4 break-inside-avoid overflow-hidden rounded-[1.5rem] shadow-card transition-all duration-500 hover:-translate-y-1 hover:rotate-[0.5deg] hover:shadow-lift md:mb-5"
-              style={{ rotate: `${((i % 3) - 1) * 0.4}deg` }}
-            >
-              <button
-                type="button"
-                onClick={() => openLightbox(i)}
-                className="block w-full cursor-zoom-in"
-                aria-label={`Open photo: ${item.alt}`}
-              >
-                <span className={`relative block ${ASPECTS[item.aspect]} w-full`}>
-                  <Image
-                    src={item.src}
-                    alt={item.alt}
-                    fill
-                    sizes="(min-width: 768px) 33vw, 50vw"
-                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.07]"
-                  />
-                </span>
-                <span className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-cocoa/60 to-transparent p-3.5 pt-8 font-hand text-lg text-white transition-transform duration-400 group-hover:translate-y-0">
-                  {item.caption}
-                </span>
-              </button>
-            </motion.figure>
+        {/* masonry — three columns that drift at different speeds as the
+            section scrolls (the middle column lags), so the wall of photos
+            has depth instead of sliding as one sheet */}
+        <div ref={wallRef} className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-5">
+          {columns.map((col, c) => (
+            <motion.div key={`${filter}-${c}`} style={{ y: drift[c] }} className="flex flex-col gap-4 md:gap-5">
+              {col.map(({ item, i }) => (
+                <motion.figure
+                  key={item.id}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, delay: Math.min(i * 0.04, 0.3) }}
+                  className="group relative overflow-hidden rounded-[1.5rem] shadow-card transition-all duration-500 hover:-translate-y-1 hover:rotate-[0.5deg] hover:shadow-lift"
+                  style={{ rotate: `${((i % 3) - 1) * 0.4}deg` }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => openLightbox(i)}
+                    className="block w-full cursor-zoom-in"
+                    aria-label={`Open photo: ${item.alt}`}
+                  >
+                    <span className={`relative block ${ASPECTS[item.aspect]} w-full`}>
+                      <Image
+                        src={item.src}
+                        alt={item.alt}
+                        fill
+                        sizes="(min-width: 768px) 33vw, 50vw"
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.07]"
+                      />
+                    </span>
+                    <span className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-cocoa/60 to-transparent p-3.5 pt-8 font-hand text-lg text-white transition-transform duration-400 group-hover:translate-y-0">
+                      {item.caption}
+                    </span>
+                  </button>
+                </motion.figure>
+              ))}
+            </motion.div>
           ))}
-        </motion.div>
+        </div>
       </div>
 
       {/* ---------- lightbox ---------- */}

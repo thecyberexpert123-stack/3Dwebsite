@@ -604,3 +604,41 @@ scenes, adding dependencies or touching the build.
   `blur(22px)`. Rule: transparency budget scales inversely with backdrop
   busyness.
 
+## v0.11.0 — one engine, one transition, a different axis per section
+
+- **"Looks the same all over" is a motion problem before it is a colour
+  problem.** Every section used the same Reveal (fade-up 26 px) on the same
+  grid; the colour pass in v0.10 could not fix that. The fix that worked
+  is structural: one shared *transition between* sections (`Beat`) plus a
+  *different axis* inside each (scrub-read text → fan → sideways → depth
+  stack → pinboard → column parallax). Confidence: high (before/after in
+  `docs/qa/v0.11.0-*`).
+- **Inertial scroll must own the scroll locks.** With Lenis, a modal that
+  only sets `body.overflow=hidden` keeps receiving wheel deltas; the page
+  jumps when the lock lifts. Centralise: `lockScroll()/unlockScroll()`
+  (ref-counted) → `lenis.stop()/start()` + body overflow, and mark nested
+  scrollers with `data-lenis-prevent`. Also disable CSS `scroll-behavior:
+  smooth` while Lenis is on (double-easing on anchors).
+- **Touch stays native.** `syncTouch:false`; phones already have inertia
+  and every "smooth" desktop trick (pinned strips, sticky stacks, section
+  peel) is gated behind `useDesktopPointer()` — the same three conditions
+  (≥ width, `hover:hover`, `pointer:fine`) everywhere, one hook.
+- **Headless Chromium cannot emulate `hover:hover`/`pointer:fine`**
+  (`emulateMediaFeatures` rejects them; blink-settings flags are ignored).
+  Ship a QA override (`?pointer=fine`) like `?quality=`/`?intro=` rather
+  than fight the browser. Reduced-motion *can* be emulated.
+- **Pinned horizontal strips: measure travel, do not compute it.** The
+  first version derived the track width from card count × rem in CSS calc
+  and drifted with padding/fonts; `ResizeObserver` on the track writing a
+  MotionValue (`scrollWidth − innerWidth`) is exact and resize-safe.
+- **Sticky card stacks need short gaps.** 14vh gaps left one-and-a-half
+  cards visible at rest (read as a broken grid); 9vh + top offsets of
+  `22vh + i·1.1rem` gives a true pile. Keep the last card un-shrunk.
+- **A `Beat` wrapper creates a stacking context per section.** Anything
+  that used to overhang the next section (scallop trims at `bottom:-13px`)
+  needs explicit descending z-index on the wrappers or it is clipped.
+- **Environment note:** the sandbox loses node_modules, .next, /tmp
+  tooling *and* apt access between turns; the sparticuz chromium tarball
+  still contains the AL2023 libs (`/tmp/al2023/lib`) — extract from the
+  package instead of trying `apt-get`.
+

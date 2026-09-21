@@ -30,7 +30,7 @@ export function ContactSection() {
   const has3D = webgl === true;
 
   return (
-    <section id="contact" className="candy relative overflow-hidden py-24 md:py-32">
+    <section id="contact" className="surface-dusk relative overflow-hidden py-24 md:py-32">
       {/* a few floating doodles — kept minimal */}
       <FlowerDoodle className="absolute left-[6%] top-16 h-12 w-12 -rotate-12 text-rose/40 animate-float" />
       <LeafDoodle className="absolute bottom-24 left-[12%] hidden h-14 w-14 rotate-12 text-sage-deep/40 animate-float-slow md:block" />

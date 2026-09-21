@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { startIntro } from "@/lib/intro";
 import { useWebGL } from "@/lib/hooks";
 import { GiftDoodle, SparkleDoodle } from "./Decorations";
+import { lockScroll, unlockScroll } from "@/lib/scroll";
 
 const GiftIntroScene = dynamic(() => import("./three/GiftIntroScene"), { ssr: false });
 
@@ -100,10 +101,9 @@ export function LoadingScreen() {
   // lock the page while the door is closed
   useEffect(() => {
     if (!visible) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     return () => {
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
   }, [visible]);
 

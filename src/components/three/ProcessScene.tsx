@@ -382,7 +382,7 @@ function PackBox({ p: pr }: { p: P }) {
 /* ---------- camera: each stage has its own framing ---------- */
 
 const FRAMES: { pos: [number, number, number]; look: [number, number, number] }[] = [
-  { pos: [1.6, 1.1, 3.4], look: [0.6, 0.3, 0.2] }, // yarn — close on the ball
+  { pos: [1.5, 1.25, 4.1], look: [0.55, 0.28, 0.1] }, // yarn — close on the ball (portrait stage: keep it whole)
   { pos: [0.3, 1.5, 4.4], look: [0.15, 1.05, 0] }, // design — the sketch in the air (yarn ball still in frame)
   { pos: [0.9, 1.3, 3.9], look: [0.3, 0.7, 0] }, // stitch — stem + thread
   { pos: [0.3, 1.9, 3.2], look: [0, 1.25, 0] }, // detail — petals close-up
