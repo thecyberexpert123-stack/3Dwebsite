@@ -375,3 +375,52 @@ scenes, adding dependencies or touching the build.
   on one confident, well-lit centrepiece with scroll as the narrative
   device; that is why effort went into *one* bloom system and directed
   beats rather than more props.
+
+## v0.7.0 — realism without a new renderer
+
+### "More realistic" for pastel crochet is *material + light*, not polycount
+- The requests that moved the needle, in order of visual payoff per cost:
+  1. one real shadow-casting key light onto a tinted `ShadowMaterial`
+     plane (objects finally sit on the table; the blurred ContactShadows
+     blob had no direction and no contact edge);
+  2. a knit **albedo** map on top of the bump map (bump vanishes in flat
+     light and at grazing angles — the faint ±7 % tint keeps stitches
+     readable everywhere);
+  3. silhouette detail on the flower: scalloped rims, cross-cup, folded
+     leaves, bent stems, knots + calyx. Sphere segment counts went
+     12×14 → 16×18; triangles per hero ~2×, draw calls barely moved
+     because everything new is instanced or merged.
+- Things that did NOT help and were skipped: HDRI environments (network,
+  and they grey out pastels), post-processing bloom (fights the flat
+  tone-mapping decision from 0.5.0), higher DPR.
+
+### Shadow policy that survived testing
+- `PCFShadowMap` (not PCFSoft) so `shadow.radius` feathers the edge.
+  `bias −0.0005`, `normalBias 0.05` — thin cupped petals show acne at
+  smaller normalBias. Keep the ortho frustum tight (`shadowSize` per scene);
+  every extra unit costs resolution.
+- Flag every see-through / floating decorative mesh `userData.noShadow`
+  (particles, glows, sparkles, clouds, tissue): clouds 2 m up otherwise drop
+  big grey blobs on the table. A throttled `scene.traverse` marking casters
+  once is far cheaper than touching 60 mesh sites and catches late
+  `Entrance` arrivals.
+- Low tier keeps shadow maps OFF and the old ContactShadows path — verified
+  with `?quality=low`.
+
+### Geometry recipes worth reusing
+- Ribbon loop = `ExtrudeGeometry(thin rectangle, { extrudePath: teardrop
+  CatmullRom })`. A torus can never read as ribbon; it reads as a tyre.
+- Yarn wraps = bands of 3 parallel strands whose circle radius is
+  `sqrt(R² − lift²)` so they hug the sphere; rotate bands by the golden
+  angle. Random single toruses read as rubber bands.
+- Stems as `TubeGeometry` along a 3-point curve, with `curve.getPoint(f)`
+  feeding leaf and head positions — the bend is free and nothing detaches.
+
+### Process notes
+- The sandbox wiped `node_modules`, `.next`, `/tmp/pw` and git history
+  again *and* the GitHub token had expired the turn before; the uncommitted
+  0.6.0 work survived only because the working tree is auto-saved.
+  Recovery = `git reset --soft origin/<branch>` + commit + push, then
+  `npm ci`, `npm i` puppeteer-core/@sparticuz/chromium in `/tmp/pw`.
+- `npx eslint` without a flat config is a dead end in this repo (v10 +
+  legacy .eslintrc); rely on `tsc --noEmit` and `next build`'s lint.

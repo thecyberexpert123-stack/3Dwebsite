@@ -326,6 +326,36 @@ function groundAlphaMap(): THREE.Texture {
   return groundAlpha;
 }
 
+/** A soft linen weave for the table: fine warp/weft lines with a faint
+ *  slub, tiled small. It is what the props sit ON — without it the
+ *  ground reads as a printed disc rather than a cloth. */
+let linenTex: THREE.CanvasTexture | null = null;
+function linenTexture(): THREE.CanvasTexture {
+  if (linenTex) return linenTex;
+  const S = 256;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, S, S);
+  const n = 32; // threads per tile
+  const w = S / n;
+  for (let i = 0; i < n; i++) {
+    const slub = 0.06 + ((i * 7919) % 13) / 13 * 0.05; // deterministic thread-to-thread variation
+    ctx.fillStyle = `rgba(120,80,95,${slub})`;
+    ctx.fillRect(i * w, 0, w * 0.45, S); // warp
+    ctx.fillStyle = `rgba(120,80,95,${slub * 0.8})`;
+    ctx.fillRect(0, i * w, S, w * 0.45); // weft
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(14, 14);
+  tex.anisotropy = 4;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  linenTex = tex;
+  return tex;
+}
+
 export function SoftGround({
   radius = 3.0,
   color = "#FFE9F0",
@@ -349,6 +379,7 @@ export function SoftGround({
       <meshBasicMaterial
         ref={mat}
         color={color}
+        map={linenTexture()}
         transparent
         opacity={0}
         alphaMap={groundAlphaMap()}

@@ -47,46 +47,84 @@ export type MaterialOptions = {
    ------------------------------------------------------------------ */
 
 let knitTex: THREE.CanvasTexture | null = null;
+let knitTint: THREE.CanvasTexture | null = null;
+
+/** Height field of one tile of single-crochet: every stitch is a plump "V"
+ *  (two legs), rows are offset by half a stitch and separated by a groove,
+ *  and a few fibres stray across the surface. Drawn with radial gradients so
+ *  the bump has *rounded* tops — the earlier stroked lines gave every stitch
+ *  a hard ridge that shaded like corrugated card. */
+function drawKnit(ctx: CanvasRenderingContext2D, S: number, cols: number, rows: number) {
+  const cw = S / cols;
+  const rh = S / rows;
+  const leg = (x0: number, y0: number, x1: number, y1: number, r: number, peak: string) => {
+    // a leg is a chain of soft discs — reads as a twisted strand
+    const n = 7;
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      const x = x0 + (x1 - x0) * t;
+      const y = y0 + (y1 - y0) * t;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, peak);
+      g.addColorStop(1, "rgba(128,128,128,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+  for (let r = -1; r <= rows; r++) {
+    for (let col = -1; col <= cols; col++) {
+      const x = col * cw + (r % 2 ? cw / 2 : 0);
+      const y = r * rh;
+      // left leg rises, right leg falls — the V
+      leg(x + cw * 0.14, y + rh * 0.12, x + cw * 0.5, y + rh * 0.8, cw * 0.2, "rgba(214,214,214,0.95)");
+      leg(x + cw * 0.86, y + rh * 0.12, x + cw * 0.5, y + rh * 0.8, cw * 0.2, "rgba(196,196,196,0.95)");
+    }
+    // the groove between rows
+    ctx.fillStyle = "rgba(70,70,70,0.35)";
+    ctx.fillRect(0, r * rh + rh * 0.86, S, rh * 0.16);
+  }
+}
 
 function knitTexture(): THREE.CanvasTexture {
   if (knitTex) return knitTex;
-  const S = 128;
+  const S = 256;
   const c = document.createElement("canvas");
   c.width = c.height = S;
   const ctx = c.getContext("2d")!;
   ctx.fillStyle = "#808080"; // mid-grey = no displacement
   ctx.fillRect(0, 0, S, S);
-
-  // stitch grid: columns of V's, rows offset by half a stitch
-  const cols = 6;
-  const rows = 8;
-  const cw = S / cols;
-  const rh = S / rows;
-  ctx.lineCap = "round";
-  for (let r = -1; r <= rows; r++) {
-    for (let col = -1; col <= cols; col++) {
-      const x = col * cw + (r % 2 ? cw / 2 : 0);
-      const y = r * rh;
-      // highlight arm (left leg of the V) — lighter = raised
-      ctx.strokeStyle = "#b4b4b4";
-      ctx.lineWidth = cw * 0.26;
-      ctx.beginPath();
-      ctx.moveTo(x + cw * 0.12, y + rh * 0.1);
-      ctx.quadraticCurveTo(x + cw * 0.34, y + rh * 0.5, x + cw * 0.5, y + rh * 0.86);
-      ctx.stroke();
-      // shadow arm (right leg) — darker = recessed groove beside it
-      ctx.strokeStyle = "#5a5a5a";
-      ctx.beginPath();
-      ctx.moveTo(x + cw * 0.88, y + rh * 0.1);
-      ctx.quadraticCurveTo(x + cw * 0.66, y + rh * 0.5, x + cw * 0.5, y + rh * 0.86);
-      ctx.stroke();
-    }
-  }
+  drawKnit(ctx, S, 6, 8);
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(5, 5);
-  tex.anisotropy = 2;
+  tex.anisotropy = 4;
   knitTex = tex;
+  return tex;
+}
+
+/** Albedo modulation for yarn: the same stitch pattern as a faint light/dark
+ *  map (multiplied over the colour) so rows stay readable in flat light and
+ *  at grazing angles where the bump map fades out. Kept subtle (±7 %) — the
+ *  brand's pastels must stay pastel. */
+function knitTintTexture(): THREE.CanvasTexture {
+  if (knitTint) return knitTint;
+  const S = 256;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#f4f4f4";
+  ctx.fillRect(0, 0, S, S);
+  ctx.globalAlpha = 0.22;
+  drawKnit(ctx, S, 6, 8);
+  ctx.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(5, 5);
+  tex.anisotropy = 4;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  knitTint = tex;
   return tex;
 }
 
@@ -128,10 +166,11 @@ export function create(finish: Finish, color: THREE.ColorRepresentation, opts: M
         sheen: 0.9,
         sheenRoughness: 0.55,
         sheenColor: sheenTint(base),
+        map: knitTintTexture(),
         bumpMap: knitTexture(),
         // subtle: the knit should read as texture in the highlights, not as
         // craters — 0.35 made every petal look like crumpled foil
-        bumpScale: 0.12,
+        bumpScale: 0.16,
         envMapIntensity: 0.6,
       });
       return m;

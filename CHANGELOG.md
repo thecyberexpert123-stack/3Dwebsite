@@ -174,6 +174,50 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.7.0] — 2026-09-21
+
+The "realism" release — the same scenes, but the things in them are now
+*made*: stitched petals, folded leaves, bent stems, wound yarn, real bows,
+and real light falling on all of it.
+
+### Added
+- **Real cast shadows** (`Stage.tsx`): the key light is now a shadow caster
+  (PCF, feathered `shadow.radius 4`, tight per-scene frustum) onto a
+  hue-tinted `ShadowMaterial` plane. Petals shade stems, bows shade boxes,
+  balls have a contact edge. `AutoShadowCasters` flags solid meshes as they
+  arrive (throttled traversal); particles, glows, sparkles, clouds and
+  tissue are opted out via `userData.noShadow`. The **low tier keeps the old
+  ContactShadows blob** and no shadow maps — degradation is explicit.
+- **Stitched yarn finish** (`materials.ts`): the knit bump map is redrawn with
+  rounded-top stitches and row grooves at 256², and paired with a faint
+  albedo knit map (±7 %) so rows stay readable in flat light and at grazing
+  angles. Petals now visibly read as crochet at hero scale.
+- **Flower anatomy** (`CrochetFlower.tsx`, `geometry.ts`):
+  scalloped, cross-cupped petals (`makePetalGeometry` — 5–6 stitch bumps per
+  edge, edges curl toward the face); pointed leaves with a folded midrib
+  (`makeLeafGeometry`); stems are gently bent tubes (`makeStemCurve` /
+  `makeStemGeometry`) with leaves and head placed *on* the curve; a ring of
+  french knots on the centre dome (one instanced draw) and a 5-sepal calyx
+  under the head (one instanced draw). Studio and process flowers share the
+  new leaf.
+- **`SatinBow` rebuilt** (`parts.tsx`): loops are flat ribbon swept along a
+  teardrop curve (visible inner face and fold), swallow-tail tails that
+  drape forward, ribbon knot with a small pearl. The hero `GiftBox` uses it.
+- **Banded yarn balls** (`YarnBall`): each wrap is a band of three strands
+  hugging the sphere, successive bands rotate through the golden angle —
+  reads as hand-wound. Still 2 draw calls per ball.
+- **Linen table** (`SoftGround`): fine warp/weft weave with slub, tiled
+  small, under every scene.
+- **Desk props** (`DeskScene.tsx`): a ribbon spool with wooden flanges and a
+  trailing end (`RibbonSpool`) replaces the anonymous torus; gold
+  embroidery scissors (`Scissors`) rest by the hook.
+
+### Changed
+- Gift-door camera pulled back a touch more (`CAM_IN` z 2.75) so the taller,
+  fuller bouquet is not cropped by the stage.
+- Shadow bias/normalBias tuned (−0.0005 / 0.05) to remove acne on the
+  thin, cupped petals.
+
 ## [0.6.0] — 2026-09-21
 
 The "one bloom" release — every crochet flower on the site now comes from the

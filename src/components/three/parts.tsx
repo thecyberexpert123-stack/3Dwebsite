@@ -458,3 +458,99 @@ export function PuffyCloud({
     </group>
   );
 }
+
+
+/* ---------------- ribbon spool ---------------- */
+
+/** A wooden spool with satin ribbon wound around it and a loose end
+ *  trailing off — replaces the anonymous torus that read as a donut. */
+export function RibbonSpool({
+  position,
+  rotation = [0, 0, 0],
+  color = PALETTE.rose,
+  scale = 1,
+}: {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  color?: string;
+  scale?: number;
+}) {
+  const tail = useMemo(() => {
+    const pts = [
+      new THREE.Vector3(0.15, 0.06, 0.02),
+      new THREE.Vector3(0.3, 0.02, 0.1),
+      new THREE.Vector3(0.48, 0.006, 0.05),
+      new THREE.Vector3(0.66, 0.006, -0.08),
+    ];
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const shape = new THREE.Shape();
+    shape.moveTo(-0.045, -0.003);
+    shape.lineTo(0.045, -0.003);
+    shape.lineTo(0.045, 0.003);
+    shape.lineTo(-0.045, 0.003);
+    shape.closePath();
+    const g = new THREE.ExtrudeGeometry(shape, { steps: 24, bevelEnabled: false, extrudePath: curve });
+    g.computeVertexNormals();
+    return g;
+  }, []);
+  useEffect(() => () => tail.dispose(), [tail]);
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      {/* wound ribbon: a fat, slightly flattened torus ring — the layers */}
+      <mesh position={[0, 0.06, 0]}>
+        <cylinderGeometry args={[0.15, 0.15, 0.09, 32]} />
+        <primitive object={finish("satin", color)} attach="material" />
+      </mesh>
+      {/* wooden flanges */}
+      <mesh position={[0, 0.11, 0]}>
+        <cylinderGeometry args={[0.17, 0.17, 0.014, 32]} />
+        <primitive object={finish("wood", PALETTE.wood)} attach="material" />
+      </mesh>
+      <mesh position={[0, 0.008, 0]}>
+        <cylinderGeometry args={[0.17, 0.17, 0.014, 32]} />
+        <primitive object={finish("wood", PALETTE.wood)} attach="material" />
+      </mesh>
+      {/* the loose end */}
+      <mesh geometry={tail} material={finish("satin", color, { side: THREE.DoubleSide })} />
+    </group>
+  );
+}
+
+/* ---------------- embroidery scissors ---------------- */
+
+/** Little gold stork-style scissors — closed, resting on the desk. */
+export function Scissors({
+  position,
+  rotation = [0, 0, 0],
+  scale = 1,
+}: {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: number;
+}) {
+  const gold = finish("pearl", "#E7C77A");
+  const handle = useMemo(() => new THREE.TorusGeometry(0.05, 0.011, 8, 20), []);
+  useEffect(() => () => handle.dispose(), [handle]);
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      {[-1, 1].map((side) => (
+        <group key={side} rotation={[0, 0, side * 0.07]}>
+          {/* blade: a long thin box tapering to the tip */}
+          <mesh position={[0, 0.2, side * 0.004]} scale={[1, 1, 1]}>
+            <boxGeometry args={[0.022, 0.42, 0.006]} />
+            <primitive object={gold} attach="material" />
+          </mesh>
+          {/* finger loop */}
+          <mesh geometry={handle} position={[side * 0.045, -0.06, side * 0.004]} rotation={[0, 0, 0]} scale={[0.9, 1.2, 1]}>
+            <primitive object={gold} attach="material" />
+          </mesh>
+        </group>
+      ))}
+      {/* pivot screw */}
+      <mesh position={[0, 0.0, 0.006]}>
+        <sphereGeometry args={[0.012, 8, 8]} />
+        <primitive object={gold} attach="material" />
+      </mesh>
+    </group>
+  );
+}

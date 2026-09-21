@@ -8,7 +8,7 @@ import * as THREE from "three";
 import { PALETTE } from "./CrochetFlower";
 import { shared as finish } from "./materials";
 import { CrochetFlower } from "./CrochetFlower";
-import { FloatingHeart, GiftBox, Hook, Sparkle3D, YarnBall } from "./parts";
+import { FloatingHeart, GiftBox, Hook, Sparkle3D, YarnBall, RibbonSpool, Scissors } from "./parts";
 import { BreathingLight, DustMotes } from "./anim";
 import { AdaptiveCanvas, Breeze, SoftGround, StudioLights, StudioShadows } from "./Stage";
 import { useQuality } from "@/lib/quality";
@@ -91,13 +91,9 @@ function Desk({ reduced, density }: { reduced: boolean; density: number }) {
       <Hook position={[-1.15, 0.03, 0.85]} rotation={[0, -0.5, Math.PI / 2 - 0.08]} length={0.95} />
       <GiftBox position={[-1.45, 0.02, -0.45]} />
 
-      {/* ribbon spool */}
-      <group position={[0.15, 0.06, -0.75]}>
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.14, 0.045, 10, 28]} />
-          <primitive object={finish("satin", PALETTE.rose)} attach="material" />
-        </mesh>
-      </group>
+      {/* ribbon spool with a loose end, and the little gold scissors */}
+      <RibbonSpool position={[0.15, 0, -0.75]} rotation={[0, 0.6, 0]} color={PALETTE.rose} />
+      <Scissors position={[-0.95, 0.012, 0.25]} rotation={[-Math.PI / 2, 0, 0.9]} scale={0.95} />
 
       <FloatingHeart position={[0.5, 0.85, 0.1]} scale={0.16} color={PALETTE.rose} />
       <Sparkle3D position={[-0.85, 1.35, 0.8]} phase={1.2} size={0.04} reduced={reduced} />
