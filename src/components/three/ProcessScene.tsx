@@ -8,7 +8,7 @@ import * as THREE from "three";
 import { useQuality } from "@/lib/quality";
 import { clamp01, easeOutBack, easeOutCubic, seg, smoothstep } from "@/lib/intro";
 import { makePetalGeometry, makeThreadGeometry, rnd } from "./geometry";
-import { PALETTE } from "./CrochetFlower";
+import { BLOOM, PALETTE } from "./CrochetFlower";
 import { Hook, SatinBow, YarnBall } from "./parts";
 import { DustMotes } from "./anim";
 import { AdaptiveCanvas, SoftGround, StudioLights, StudioShadows } from "./Stage";
@@ -133,6 +133,7 @@ function GrowingFlower({ p: pr }: { p: P }) {
     if (head.current) {
       head.current.position.y = H * grow;
       head.current.rotation.y = Math.sin(t * 0.3) * 0.05;
+      head.current.rotation.x = BLOOM.face * 0.8;
     }
     for (let i = 0; i < PETALS; i++) {
       const g = petalRefs.current[i];
@@ -150,7 +151,7 @@ function GrowingFlower({ p: pr }: { p: P }) {
     }
     if (center.current) {
       const s = easeOutBack(seg(detail, 0.8, 0.2), 1.6);
-      center.current.scale.setScalar(Math.max(0.001, s));
+      center.current.scale.set(Math.max(0.001, s), Math.max(0.001, s) * BLOOM.center.squash, Math.max(0.001, s));
       center.current.visible = s > 0.002;
     }
   });
@@ -186,14 +187,19 @@ function GrowingFlower({ p: pr }: { p: P }) {
               }}
               rotation={[0, (i / PETALS) * Math.PI * 2 + j * 0.4, 0]}
             >
-              <mesh geometry={petalGeo} rotation={[1.05 + j * 0.12, 0, 0]} position={[0, 0.01, 0.05]} scale={[0.92 + j * 0.16, 0.19, 1]}>
+              <mesh
+                geometry={petalGeo}
+                rotation={[BLOOM.outer.tilt + j * BLOOM.outer.tiltJitter, 0, 0]}
+                position={[0, BLOOM.outer.lift, BLOOM.outer.out]}
+                scale={[BLOOM.outer.width + j * BLOOM.outer.widthJitter, BLOOM.outer.scaleY, BLOOM.outer.scaleZ]}
+              >
                 <primitive object={finish("yarn", PALETTE.blush)} attach="material" />
               </mesh>
             </group>
           );
         })}
-        <mesh ref={center}>
-          <sphereGeometry args={[0.09, 12, 12]} />
+        <mesh ref={center} position={[0, BLOOM.center.lift, 0]}>
+          <sphereGeometry args={[BLOOM.center.radius, 14, 12]} />
           <primitive object={finish("yarn", PALETTE.butter)} attach="material" />
         </mesh>
       </group>

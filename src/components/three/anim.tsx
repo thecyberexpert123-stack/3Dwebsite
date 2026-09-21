@@ -192,7 +192,7 @@ export function FallingPetals({
         spinZ: (Math.random() - 0.5) * 1.2,
         sway: 0.5 + Math.random(),
         ph: Math.random() * Math.PI * 2,
-        s: 0.55 + Math.random() * 0.5,
+        s: 0.32 + Math.random() * 0.3,
         rx: Math.random() * Math.PI * 2,
         rz: Math.random() * Math.PI * 2,
         color: new THREE.Color(PETAL_COLORS[i % PETAL_COLORS.length]),

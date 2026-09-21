@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { makePetalGeometry, makePointedPetalGeometry, makeCustomPetalGeometry, rnd } from "./geometry";
+import { BLOOM } from "./CrochetFlower";
 import { MIX_PALETTE, type DesignConfig } from "@/lib/design";
 import { DustMotes } from "./anim";
 import { AdaptiveCanvas, StudioLights, StudioShadows } from "./Stage";
@@ -144,12 +145,12 @@ function StudioFlower({
   const geo = customGeo ?? (petalShape === "pointed" ? pointedGeo : roundedGeo);
 
   const outerBase = useMemo(
-    () => Array.from({ length: petalCount }, (_, i) => 1.05 + rnd(seed + i * 3.7) * 0.12),
+    () => Array.from({ length: petalCount }, (_, i) => BLOOM.outer.tilt + rnd(seed + i * 3.7) * BLOOM.outer.tiltJitter),
     [petalCount, seed]
   );
   const innerCount = Math.max(3, petalCount - 1);
   const innerBase = useMemo(
-    () => Array.from({ length: innerCount }, (_, i) => 0.5 + rnd(seed + 20 + i * 2.9) * 0.1),
+    () => Array.from({ length: innerCount }, (_, i) => BLOOM.inner.tilt + rnd(seed + 20 + i * 2.9) * BLOOM.inner.tiltJitter),
     [innerCount, seed]
   );
 
@@ -167,7 +168,7 @@ function StudioFlower({
     if (reduced || !head.current) return;
     const t = clock.elapsedTime;
     head.current.rotation.z = Math.sin(t * 0.6 + seed * 2.1) * 0.035;
-    head.current.rotation.x = Math.sin(t * 0.42 + seed * 1.3) * 0.02;
+    head.current.rotation.x = BLOOM.face * 0.7 + Math.sin(t * 0.42 + seed * 1.3) * 0.02;
     for (let i = 0; i < flutterOuter.current.length; i++) {
       const m = flutterOuter.current[i];
       if (m) m.rotation.x = outerBase[i] + Math.sin(t * 0.9 + i * 1.3 + seed) * 0.05;
@@ -222,7 +223,7 @@ function StudioFlower({
         ))}
 
       {/* blossom head */}
-      <group ref={head} position={[0, headY, 0]}>
+      <group ref={head} position={[0, headY, 0]} rotation={[BLOOM.face * 0.7, 0, 0]}>
         <Pop key={`outer-${ringKey}`} reduced={reduced}>
           {Array.from({ length: petalCount }).map((_, i) => {
             const j = rnd(seed + i * 3.7);
@@ -234,9 +235,9 @@ function StudioFlower({
                   }}
                   geometry={geo}
                   material={mats.outer}
-                  rotation={[1.05 + j * 0.12, 0, 0]}
-                  position={[0, 0.01, 0.05]}
-                  scale={[0.92 + j * 0.16, 0.2, 1]}
+                  rotation={[BLOOM.outer.tilt + j * BLOOM.outer.tiltJitter, 0, 0]}
+                  position={[0, BLOOM.outer.lift, BLOOM.outer.out]}
+                  scale={[BLOOM.outer.width + j * BLOOM.outer.widthJitter, BLOOM.outer.scaleY, BLOOM.outer.scaleZ]}
                 />
               </group>
             );
@@ -253,16 +254,16 @@ function StudioFlower({
                   }}
                   geometry={geo}
                   material={mats.inner}
-                  rotation={[0.5 + j * 0.1, 0, 0]}
-                  position={[0, 0.02, 0.03]}
-                  scale={[0.8 + j * 0.1, 0.155, 0.9]}
+                  rotation={[BLOOM.inner.tilt + j * BLOOM.inner.tiltJitter, 0, 0]}
+                  position={[0, BLOOM.inner.lift, BLOOM.inner.out]}
+                  scale={[BLOOM.inner.width + j * BLOOM.inner.widthJitter, BLOOM.inner.scaleY, BLOOM.inner.scaleZ]}
                 />
               </group>
             );
           })}
         </Pop>
-        <mesh material={mats.center}>
-          <sphereGeometry args={[0.1, 12, 12]} />
+        <mesh material={mats.center} position={[0, BLOOM.center.lift, 0]} scale={[1, BLOOM.center.squash, 1]}>
+          <sphereGeometry args={[BLOOM.center.radius, 14, 12]} />
         </mesh>
       </group>
     </group>

@@ -84,7 +84,7 @@ function knitTexture(): THREE.CanvasTexture {
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(3, 3);
+  tex.repeat.set(5, 5);
   tex.anisotropy = 2;
   knitTex = tex;
   return tex;
@@ -129,7 +129,9 @@ export function create(finish: Finish, color: THREE.ColorRepresentation, opts: M
         sheenRoughness: 0.55,
         sheenColor: sheenTint(base),
         bumpMap: knitTexture(),
-        bumpScale: 0.35,
+        // subtle: the knit should read as texture in the highlights, not as
+        // craters — 0.35 made every petal look like crumpled foil
+        bumpScale: 0.12,
         envMapIntensity: 0.6,
       });
       return m;

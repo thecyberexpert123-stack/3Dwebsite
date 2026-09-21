@@ -39,10 +39,21 @@ export function makePetalGeometry(
   thickness = 0.16,
   seed = 1
 ): THREE.BufferGeometry {
-  const geo = new THREE.SphereGeometry(0.5, 10, 12);
+  const geo = new THREE.SphereGeometry(0.5, 12, 14);
   geo.scale(width, length, thickness);
   geo.translate(0, 0.5, 0);
-  return wobbleGeometry(geo, 0.035, seed);
+  // taper toward the base (where the petal is worked into the centre) and
+  // cup the tip slightly forward — a lens, not a bead
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const yN = THREE.MathUtils.clamp(pos.getY(i) / length, 0, 1);
+    const taper = 0.55 + 0.45 * Math.sin(Math.min(1, yN * 1.25) * Math.PI * 0.5);
+    pos.setX(i, pos.getX(i) * taper);
+    pos.setZ(i, pos.getZ(i) + Math.sin(yN * Math.PI) * thickness * 0.25);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  return wobbleGeometry(geo, 0.018, seed);
 }
 
 /** A soft extruded heart, centred, with a handmade wobble. */

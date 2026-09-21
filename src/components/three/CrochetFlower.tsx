@@ -41,10 +41,33 @@ type CrochetFlowerProps = {
   scale?: number;
   tilt?: [number, number, number];
   sway?: boolean;
+  /** head lean toward +z (the camera); defaults to BLOOM.face */
+  face?: number;
 };
 
 const OUTER = 6;
 const INNER = 5;
+
+/**
+ * The Whimlet bloom — ONE petal system shared by every scene (hero, gift
+ * door, desk, studio, process). A crochet petal is a plump lens, longer than
+ * it is wide, cupped upward around a round centre; an inner ring sits more
+ * upright like a bud. Numbers are mesh transforms applied to
+ * `makePetalGeometry(0.36, 0.95, 0.17)` (length axis = +Y, base at origin).
+ *   scale   → [width, length, thickness]
+ *   tilt    → radians from vertical (0 = pointing straight up)
+ *   lift    → how high the ring sits above the head origin
+ */
+export const BLOOM = {
+  // outer ring: petals ~0.26 wide × 0.32 long, opened ~68° from vertical
+  outer: { tilt: 1.18, tiltJitter: 0.1, width: 0.72, widthJitter: 0.1, scaleY: 0.34, scaleZ: 0.42, lift: 0.0, out: 0.04 },
+  // inner ring: a touch smaller and more upright, cupped around the centre
+  inner: { tilt: 0.8, tiltJitter: 0.08, width: 0.62, widthJitter: 0.08, scaleY: 0.26, scaleZ: 0.42, lift: 0.02, out: 0.025 },
+  /** the "french-knot" centre: a squashed sphere */
+  center: { radius: 0.1, squash: 0.68, lift: 0.035 },
+  /** heads lean toward the viewer (+z) so the bloom face reads from the front */
+  face: 0.5,
+} as const;
 
 /**
  * A hand-crocheted flower: stem, leaves and a two-ring petal head.
@@ -66,6 +89,7 @@ export function CrochetFlower({
   scale = 1,
   tilt = [0, 0, 0],
   sway = true,
+  face = BLOOM.face,
 }: CrochetFlowerProps) {
   const head = useRef<THREE.Group>(null!);
   const plant = useRef<THREE.Group>(null!);
@@ -88,7 +112,8 @@ export function CrochetFlower({
     () =>
       Array.from({ length: OUTER }, (_, i) => {
         const j = rnd(seed + i * 3.7);
-        return { angle: (i / OUTER) * Math.PI * 2 + j * 0.4, tilt: 1.05 + j * 0.12, width: 0.92 + j * 0.16 };
+        const b = BLOOM.outer;
+        return { angle: (i / OUTER) * Math.PI * 2 + j * 0.4, tilt: b.tilt + j * b.tiltJitter, width: b.width + j * b.widthJitter };
       }),
     [seed]
   );
@@ -96,7 +121,8 @@ export function CrochetFlower({
     () =>
       Array.from({ length: INNER }, (_, i) => {
         const j = rnd(seed + 20 + i * 2.9);
-        return { angle: (i / INNER) * Math.PI * 2 + 0.5 + j * 0.4, tilt: 0.5 + j * 0.1, width: 0.8 + j * 0.1 };
+        const b = BLOOM.inner;
+        return { angle: (i / INNER) * Math.PI * 2 + 0.5 + j * 0.4, tilt: b.tilt + j * b.tiltJitter, width: b.width + j * b.widthJitter };
       }),
     [seed]
   );
@@ -106,18 +132,16 @@ export function CrochetFlower({
   const writeRing = (
     mesh: THREE.InstancedMesh | null,
     petals: { angle: number; tilt: number; width: number }[],
-    ringScaleY: number,
-    ringScaleZ: number,
-    lift: number,
+    ring: typeof BLOOM.outer | typeof BLOOM.inner,
     flutter: (i: number) => number
   ) => {
     if (!mesh) return;
     const { o, rot, m } = tmp;
     for (let i = 0; i < petals.length; i++) {
       const p = petals[i];
-      o.position.set(0, lift, 0.05);
+      o.position.set(0, ring.lift, ring.out);
       o.rotation.set(p.tilt + flutter(i), 0, 0);
-      o.scale.set(p.width, ringScaleY, ringScaleZ);
+      o.scale.set(p.width, ring.scaleY, ring.scaleZ);
       o.updateMatrix();
       rot.makeRotationY(p.angle);
       m.multiplyMatrices(rot, o.matrix);
@@ -128,8 +152,8 @@ export function CrochetFlower({
 
   // resting pose (also the only pose when sway is off / reduced motion)
   useLayoutEffect(() => {
-    writeRing(outerRef.current, outerPetals, 0.19, 1, 0.01, () => 0);
-    writeRing(innerRef.current, innerPetals, 0.15, 0.9, 0.02, () => 0);
+    writeRing(outerRef.current, outerPetals, BLOOM.outer, () => 0);
+    writeRing(innerRef.current, innerPetals, BLOOM.inner, () => 0);
     outerRef.current?.computeBoundingSphere();
     innerRef.current?.computeBoundingSphere();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -173,12 +197,12 @@ export function CrochetFlower({
     // the head sways on its own clock
     if (head.current) {
       head.current.rotation.z = Math.sin(t * 0.6 + seed * 2.1) * 0.035 - gust * 0.5;
-      head.current.rotation.x = Math.sin(t * 0.42 + seed * 1.3) * 0.02;
+      head.current.rotation.x = face + Math.sin(t * 0.42 + seed * 1.3) * 0.02;
     }
     // each petal flutters individually, like fabric catching air
     const f = 0.9 + Math.abs(w) * 2;
-    writeRing(outerRef.current, outerPetals, 0.19, 1, 0.01, (i) => Math.sin(t * f + i * 1.3 + seed) * 0.05 * flutterGain);
-    writeRing(innerRef.current, innerPetals, 0.15, 0.9, 0.02, (i) => Math.sin(t * (f + 0.15) + i * 1.1 + seed) * 0.04 * flutterGain);
+    writeRing(outerRef.current, outerPetals, BLOOM.outer, (i) => Math.sin(t * f + i * 1.3 + seed) * 0.05 * flutterGain);
+    writeRing(innerRef.current, innerPetals, BLOOM.inner, (i) => Math.sin(t * (f + 0.15) + i * 1.1 + seed) * 0.04 * flutterGain);
   });
 
   return (
@@ -205,11 +229,11 @@ export function CrochetFlower({
         </group>
       ))}
       {/* head */}
-      <group ref={head} position={[0, height, 0]}>
+      <group ref={head} position={[0, height, 0]} rotation={[face, 0, 0]}>
         <instancedMesh ref={outerRef} args={[petals.outer, mats.outer, OUTER]} frustumCulled={false} />
         <instancedMesh ref={innerRef} args={[petals.inner, mats.inner, INNER]} frustumCulled={false} />
-        <mesh material={mats.center}>
-          <sphereGeometry args={[0.09, 12, 12]} />
+        <mesh material={mats.center} position={[0, BLOOM.center.lift, 0]} scale={[1, BLOOM.center.squash, 1]}>
+          <sphereGeometry args={[BLOOM.center.radius, 14, 12]} />
         </mesh>
       </group>
       </group>

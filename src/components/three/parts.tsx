@@ -192,7 +192,7 @@ export function TinyDaisy({ position, seed = 11, petalColor = PALETTE.white }: T
             geometry={petal}
             rotation={[1.3, 0, 0]}
             position={[0, 0, 0.035]}
-            scale={[1, 0.16, 1]}
+            scale={[1, 0.42, 0.55]}
           >
             <primitive object={finish("yarn", petalColor)} attach="material" />
           </mesh>
