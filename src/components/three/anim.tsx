@@ -243,7 +243,7 @@ export function FallingPetals({
   });
 
   return (
-    <instancedMesh ref={mesh} args={[geo, undefined, count]} frustumCulled={false}>
+    <instancedMesh ref={mesh} args={[geo, undefined, count]} frustumCulled={false} userData={{ noShadow: true }}>
       <primitive object={finish("yarn", "#FFFFFF")} attach="material" />
     </instancedMesh>
   );
@@ -449,7 +449,7 @@ export function HeartBurst({
   });
 
   return (
-    <instancedMesh ref={mesh} args={[geo, undefined, count]} visible={false} frustumCulled={false}>
+    <instancedMesh ref={mesh} args={[geo, undefined, count]} visible={false} frustumCulled={false} userData={{ noShadow: true }}>
       <meshStandardMaterial ref={mat} roughness={0.62} />
     </instancedMesh>
   );

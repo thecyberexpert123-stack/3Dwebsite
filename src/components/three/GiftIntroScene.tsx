@@ -104,7 +104,7 @@ function Confetti({ count, openedAt }: { count: number; openedAt: React.RefObjec
   });
 
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, count]} visible={false} frustumCulled={false}>
+    <instancedMesh ref={mesh} args={[undefined, undefined, count]} visible={false} frustumCulled={false} userData={{ noShadow: true }}>
       <planeGeometry args={[1, 0.6]} />
       <meshStandardMaterial roughness={0.6} side={THREE.DoubleSide} />
     </instancedMesh>
@@ -164,7 +164,7 @@ function Hearts({ count, openedAt }: { count: number; openedAt: React.RefObject<
   });
 
   return (
-    <instancedMesh ref={mesh} args={[geo, undefined, count]} visible={false} frustumCulled={false}>
+    <instancedMesh ref={mesh} args={[geo, undefined, count]} visible={false} frustumCulled={false} userData={{ noShadow: true }}>
       <meshStandardMaterial roughness={0.55} />
     </instancedMesh>
   );
@@ -422,7 +422,7 @@ function Twinkles({ count, reduced }: { count: number; reduced: boolean }) {
     m.instanceMatrix.needsUpdate = true;
   });
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, count]} frustumCulled={false}>
+    <instancedMesh ref={mesh} args={[undefined, undefined, count]} frustumCulled={false} userData={{ noShadow: true }}>
       <octahedronGeometry args={[1, 0]} />
       <meshBasicMaterial color="#FFFFFF" transparent opacity={0.85} />
     </instancedMesh>
@@ -434,9 +434,9 @@ function Twinkles({ count, reduced }: { count: number; reduced: boolean }) {
 const CAM_IDLE = new THREE.Vector3(0, 0.95, 2.55);
 // the push-in frames the WHOLE bouquet standing in the open box (head of the
 // tallest stem ≈ y 0.95): close enough to feel the lean-in, far enough to read
-const CAM_IN = new THREE.Vector3(0.14, 1.05, 2.4);
+const CAM_IN = new THREE.Vector3(0.14, 1.1, 2.75);
 const LOOK = new THREE.Vector3(0, 0.42, 0);
-const LOOK_IN = new THREE.Vector3(0, 0.72, 0);
+const LOOK_IN = new THREE.Vector3(0, 0.78, 0);
 
 function Camera({ openedAt, reduced }: { openedAt: React.RefObject<number>; reduced: boolean }) {
   const { camera } = useThree();

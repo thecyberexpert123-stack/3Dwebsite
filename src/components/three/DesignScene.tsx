@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
-import { makePetalGeometry, makePointedPetalGeometry, makeCustomPetalGeometry, rnd } from "./geometry";
+import { makeLeafGeometry, makePetalGeometry, makePointedPetalGeometry, makeCustomPetalGeometry, rnd } from "./geometry";
 import { BLOOM } from "./CrochetFlower";
 import { MIX_PALETTE, type DesignConfig } from "@/lib/design";
 import { DustMotes, FallingPetals } from "./anim";
@@ -142,7 +142,7 @@ function StudioFlower({
     () => (petalShape === "custom" && customPetal ? makeCustomPetalGeometry(customPetal, seed + 11) : null),
     [petalShape, customPetal, seed]
   );
-  const leafGeo = useMemo(() => makePetalGeometry(0.4, 1, 0.12, seed + 7), [seed]);
+  const leafGeo = useMemo(() => makeLeafGeometry(0.34, 1, 0.1, seed + 7), [seed]);
   const geo = customGeo ?? (petalShape === "pointed" ? pointedGeo : roundedGeo);
 
   const outerBase = useMemo(
@@ -201,9 +201,9 @@ function StudioFlower({
                 <mesh
                   geometry={leafGeo}
                   material={mats.leaf}
-                  rotation={[1.15, 0, 0.15]}
-                  scale={[0.55, 0.42, 0.55]}
-                  position={[0, 0.01, 0.03]}
+                  rotation={[1.05 + i * 0.1, 0, 0.12]}
+                  scale={[0.56, 0.45, 0.56]}
+                  position={[0, 0.01, 0.02]}
                 />
               </group>
             );
@@ -219,7 +219,7 @@ function StudioFlower({
             position={[0, -0.07, 0]}
             rotation={[Math.PI - 1.2, (i / Math.max(leaves, 1)) * Math.PI * 2, 0]}
           >
-            <mesh geometry={leafGeo} material={mats.leaf} scale={[0.55, 0.42, 0.55]} />
+            <mesh geometry={leafGeo} material={mats.leaf} scale={[0.56, 0.45, 0.56]} />
           </group>
         ))}
 

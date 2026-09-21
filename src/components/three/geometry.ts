@@ -32,28 +32,97 @@ export function wobbleGeometry(
   return geo;
 }
 
-/** A crochet petal pointing +Y with its base at the origin (unit-ish scale). */
+/**
+ * A crochet petal pointing +Y with its base at the origin (unit-ish scale).
+ *
+ * Shape notes (from the product photos): a worked petal is a plump lens that
+ *  - tapers into the centre where it is stitched on,
+ *  - cups *across* its width (the edges curl toward the face, like a spoon),
+ *  - bows *along* its length so the tip leans out,
+ *  - has a softly scalloped rim — the row of stitches around the edge —
+ *    not a razor-clean ellipse.
+ * Segment counts are a little higher than before so the scallop and the
+ * crease actually show in the silhouette (16×18 → 322 verts, still tiny).
+ */
 export function makePetalGeometry(
   width = 0.36,
   length = 0.95,
   thickness = 0.16,
   seed = 1
 ): THREE.BufferGeometry {
-  const geo = new THREE.SphereGeometry(0.5, 12, 14);
+  const geo = new THREE.SphereGeometry(0.5, 16, 18);
   geo.scale(width, length, thickness);
   geo.translate(0, 0.5, 0);
-  // taper toward the base (where the petal is worked into the centre) and
-  // cup the tip slightly forward — a lens, not a bead
   const pos = geo.attributes.position as THREE.BufferAttribute;
+  const uv = geo.attributes.uv as THREE.BufferAttribute;
+  const scallops = 5 + Math.floor(rnd(seed + 0.5) * 2); // 5–6 stitch bumps per side
+  const halfW = width * 0.5;
   for (let i = 0; i < pos.count; i++) {
     const yN = THREE.MathUtils.clamp(pos.getY(i) / length, 0, 1);
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    // taper toward the base (worked into the centre)
     const taper = 0.55 + 0.45 * Math.sin(Math.min(1, yN * 1.25) * Math.PI * 0.5);
-    pos.setX(i, pos.getX(i) * taper);
-    pos.setZ(i, pos.getZ(i) + Math.sin(yN * Math.PI) * thickness * 0.25);
+    // scalloped rim: modulate the radial extent with the sphere's azimuth (uv.x)
+    const rim = Math.abs(x) / halfW; // 0 at the midrib, 1 at the edge
+    const scallop = 1 + 0.045 * Math.sin(uv.getX(i) * Math.PI * 2 * scallops + seed) * rim * Math.sin(yN * Math.PI);
+    const nx = x * taper * scallop;
+    // cross-cup: edges curl toward the face; length-bow: tip leans out
+    const curl = (nx / halfW) ** 2 * thickness * 0.55 * (0.4 + 0.6 * yN);
+    const bow = Math.sin(yN * Math.PI) * thickness * 0.25;
+    pos.setX(i, nx);
+    pos.setZ(i, z * scallop + curl + bow);
   }
   pos.needsUpdate = true;
   geo.computeVertexNormals();
-  return wobbleGeometry(geo, 0.018, seed);
+  return wobbleGeometry(geo, 0.014, seed);
+}
+
+/**
+ * A crochet leaf: a pointed lens with a folded midrib, base at the origin,
+ * pointing +Y. Distinct from a petal — leaves are longer, come to a tip,
+ * and crease down the middle so light catches each half differently.
+ */
+export function makeLeafGeometry(width = 0.34, length = 1, thickness = 0.1, seed = 1): THREE.BufferGeometry {
+  const geo = new THREE.SphereGeometry(0.5, 14, 16);
+  geo.scale(width, length, thickness);
+  geo.translate(0, 0.5, 0);
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  const halfW = width * 0.5;
+  for (let i = 0; i < pos.count; i++) {
+    const yN = THREE.MathUtils.clamp(pos.getY(i) / length, 0, 1);
+    const x = pos.getX(i);
+    // pointed at both ends: widest at 40 % of the length
+    const profile = Math.pow(Math.sin(Math.PI * Math.pow(yN, 0.8)), 0.75);
+    const nx = x * (0.12 + 0.88 * profile);
+    // midrib fold (V across the width) + gentle upward bow along the length
+    const fold = Math.abs(nx / halfW) * thickness * 0.9;
+    const bow = Math.sin(yN * Math.PI) * thickness * 0.5;
+    pos.setX(i, nx);
+    pos.setZ(i, pos.getZ(i) * (0.6 + 0.4 * profile) + fold + bow);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  return wobbleGeometry(geo, 0.012, seed);
+}
+
+/**
+ * A gently bending stem: a tube along a 3-point curve so no stem is a ruler.
+ * Returns the curve too so callers can place leaves and the head *on* it.
+ * `lean` is the sideways drift at the top in world units.
+ */
+export function makeStemCurve(height: number, seed = 1, lean = 0.05): THREE.CatmullRomCurve3 {
+  const a = rnd(seed + 3.3) * Math.PI * 2;
+  const mid = 0.55 + rnd(seed + 6.1) * 0.15;
+  return new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(Math.cos(a) * lean * 0.55, height * mid, Math.sin(a) * lean * 0.55),
+    new THREE.Vector3(Math.cos(a) * lean, height, Math.sin(a) * lean),
+  ]);
+}
+
+export function makeStemGeometry(curve: THREE.CatmullRomCurve3, radius = 0.024): THREE.BufferGeometry {
+  return new THREE.TubeGeometry(curve, 12, radius, 8, false);
 }
 
 /** A soft extruded heart, centred, with a handmade wobble. */

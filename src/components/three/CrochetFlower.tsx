@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { makePetalGeometry, rnd } from "./geometry";
+import { makeLeafGeometry, makePetalGeometry, makeStemCurve, makeStemGeometry, rnd } from "./geometry";
 import { useWind } from "./Stage";
 import { create as createMat } from "./materials";
 
@@ -63,8 +63,10 @@ export const BLOOM = {
   outer: { tilt: 1.18, tiltJitter: 0.1, width: 0.72, widthJitter: 0.1, scaleY: 0.34, scaleZ: 0.42, lift: 0.0, out: 0.04 },
   // inner ring: a touch smaller and more upright, cupped around the centre
   inner: { tilt: 0.8, tiltJitter: 0.08, width: 0.62, widthJitter: 0.08, scaleY: 0.26, scaleZ: 0.42, lift: 0.02, out: 0.025 },
-  /** the "french-knot" centre: a squashed sphere */
-  center: { radius: 0.1, squash: 0.68, lift: 0.035 },
+  /** the centre: a squashed yarn dome studded with a ring of french knots */
+  center: { radius: 0.1, squash: 0.68, lift: 0.035, knots: 9, knotRadius: 0.024 },
+  /** calyx: five small sepals cupping the head from below */
+  sepals: { count: 5, tilt: 1.35, scale: 0.16 },
   /** heads lean toward the viewer (+z) so the bloom face reads from the front */
   face: 0.5,
 } as const;
@@ -106,7 +108,22 @@ export function CrochetFlower({
     }),
     [seed]
   );
-  const leaf = useMemo(() => makePetalGeometry(0.4, 1, 0.12, seed + 7), [seed]);
+  const leaf = useMemo(() => makeLeafGeometry(0.34, 1, 0.1, seed + 7), [seed]);
+  // the stem bends a touch and the head sits on its tip — no ruler-straight stalks
+  const stemCurve = useMemo(() => makeStemCurve(height, seed, 0.04 + rnd(seed + 1.7) * 0.05), [height, seed]);
+  const stemGeo = useMemo(() => makeStemGeometry(stemCurve, 0.024), [stemCurve]);
+  const top = useMemo(() => stemCurve.getPoint(1), [stemCurve]);
+  const leafAnchors = useMemo(
+    () =>
+      [0.42, 0.64].map((f, i) => ({
+        p: stemCurve.getPoint(f),
+        yaw: rnd(seed + i * 9) * Math.PI * 2,
+        scale: 0.5 + rnd(seed + i * 4.4) * 0.14,
+      })),
+    [stemCurve, seed]
+  );
+  const knotRef = useRef<THREE.InstancedMesh>(null!);
+  const sepalRef = useRef<THREE.InstancedMesh>(null!);
   // per-petal layout (deterministic per seed): ring angle, tilt, width
   const outerPetals = useMemo(
     () =>
@@ -156,6 +173,39 @@ export function CrochetFlower({
     writeRing(innerRef.current, innerPetals, BLOOM.inner, () => 0);
     outerRef.current?.computeBoundingSphere();
     innerRef.current?.computeBoundingSphere();
+    // french knots: a ring around the dome plus one on top, each a little off
+    const { o } = tmp;
+    const c = BLOOM.center;
+    if (knotRef.current) {
+      for (let i = 0; i < c.knots; i++) {
+        const last = i === c.knots - 1;
+        const a = (i / (c.knots - 1)) * Math.PI * 2 + rnd(seed + i) * 0.3;
+        const r = last ? 0 : c.radius * 0.62;
+        o.position.set(Math.cos(a) * r, c.lift + c.radius * c.squash * (last ? 0.95 : 0.7) + rnd(seed + i * 2) * 0.008, Math.sin(a) * r);
+        o.rotation.set(0, 0, 0);
+        o.scale.setScalar(0.85 + rnd(seed + i * 5) * 0.3);
+        o.updateMatrix();
+        knotRef.current.setMatrixAt(i, o.matrix);
+      }
+      knotRef.current.instanceMatrix.needsUpdate = true;
+      knotRef.current.computeBoundingSphere();
+    }
+    // sepals hug the underside of the head
+    if (sepalRef.current) {
+      const sp = BLOOM.sepals;
+      for (let i = 0; i < sp.count; i++) {
+        const a = (i / sp.count) * Math.PI * 2 + 0.3;
+        o.position.set(0, -0.02, 0);
+        o.rotation.set(sp.tilt + rnd(seed + 40 + i) * 0.15, 0, 0);
+        o.scale.set(sp.scale * 1.2, sp.scale, sp.scale);
+        o.updateMatrix();
+        tmp.rot.makeRotationY(a);
+        tmp.m.multiplyMatrices(tmp.rot, o.matrix);
+        sepalRef.current.setMatrixAt(i, tmp.m);
+      }
+      sepalRef.current.instanceMatrix.needsUpdate = true;
+      sepalRef.current.computeBoundingSphere();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [outerPetals, innerPetals]);
 
@@ -166,6 +216,8 @@ export function CrochetFlower({
       outer: createMat("yarn", base),
       inner: createMat("yarn", inner),
       center: createMat("yarn", centerColor),
+      // knots are a shade deeper than the dome so they read as bumps, not spots
+      knot: createMat("yarn", new THREE.Color(centerColor).lerp(new THREE.Color("#9A6B3A"), 0.28)),
       stem: createMat("yarn", PALETTE.sageDeep),
       leaf: createMat("yarn", PALETTE.sage),
     };
@@ -177,8 +229,9 @@ export function CrochetFlower({
       petals.outer.dispose();
       petals.inner.dispose();
       leaf.dispose();
+      stemGeo.dispose();
     },
-    [mats, petals, leaf]
+    [mats, petals, leaf, stemGeo]
   );
 
   useFrame(({ clock }, dt) => {
@@ -208,33 +261,31 @@ export function CrochetFlower({
   return (
     <group position={position} rotation={tilt} scale={scale}>
       <group ref={plant}>
-      {/* stem */}
-      <mesh position={[0, height / 2, 0]} material={mats.stem}>
-        <cylinderGeometry args={[0.02, 0.028, height, 8]} />
-      </mesh>
-      {/* leaves */}
-      {[0.42, 0.62].map((f, i) => (
-        <group
-          key={i}
-          position={[0, height * f, 0]}
-          rotation={[0, rnd(seed + i * 9) * Math.PI * 2, 0]}
-        >
+      {/* stem — a gently bent tube */}
+      <mesh geometry={stemGeo} material={mats.stem} />
+      {/* leaves, folded along the midrib, growing from the stem's actual curve */}
+      {leafAnchors.map((l, i) => (
+        <group key={i} position={l.p} rotation={[0, l.yaw, 0]}>
           <mesh
             geometry={leaf}
             material={mats.leaf}
-            rotation={[1.15, 0, 0.15]}
-            scale={[0.55, 0.42, 0.55]}
-            position={[0, 0.01, 0.03]}
+            rotation={[1.05 + i * 0.1, 0, 0.12]}
+            scale={[l.scale, l.scale * 0.8, l.scale]}
+            position={[0, 0.01, 0.02]}
           />
         </group>
       ))}
       {/* head */}
-      <group ref={head} position={[0, height, 0]} rotation={[face, 0, 0]}>
+      <group ref={head} position={top} rotation={[face, 0, 0]}>
+        <instancedMesh ref={sepalRef} args={[leaf, mats.leaf, BLOOM.sepals.count]} frustumCulled={false} />
         <instancedMesh ref={outerRef} args={[petals.outer, mats.outer, OUTER]} frustumCulled={false} />
         <instancedMesh ref={innerRef} args={[petals.inner, mats.inner, INNER]} frustumCulled={false} />
         <mesh material={mats.center} position={[0, BLOOM.center.lift, 0]} scale={[1, BLOOM.center.squash, 1]}>
           <sphereGeometry args={[BLOOM.center.radius, 14, 12]} />
         </mesh>
+        <instancedMesh ref={knotRef} args={[undefined, mats.knot, BLOOM.center.knots]} frustumCulled={false}>
+          <sphereGeometry args={[BLOOM.center.knotRadius, 8, 8]} />
+        </instancedMesh>
       </group>
       </group>
     </group>

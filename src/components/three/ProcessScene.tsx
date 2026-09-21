@@ -7,7 +7,7 @@ import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { useQuality } from "@/lib/quality";
 import { clamp01, easeOutBack, easeOutCubic, seg, smoothstep } from "@/lib/intro";
-import { makePetalGeometry, makeThreadGeometry, rnd } from "./geometry";
+import { makeLeafGeometry, makePetalGeometry, makeThreadGeometry, rnd } from "./geometry";
 import { BLOOM, PALETTE } from "./CrochetFlower";
 import { Hook, SatinBow, YarnBall } from "./parts";
 import { DustMotes } from "./anim";
@@ -96,7 +96,7 @@ function GrowingFlower({ p: pr }: { p: P }) {
   const root = useRef<THREE.Group>(null!);
 
   const petalGeo = useMemo(() => makePetalGeometry(0.36, 0.95, 0.17, 3), []);
-  const leafGeo = useMemo(() => makePetalGeometry(0.4, 1, 0.12, 9), []);
+  const leafGeo = useMemo(() => makeLeafGeometry(0.34, 1, 0.1, 9), []);
   useEffect(
     () => () => {
       petalGeo.dispose();
@@ -173,7 +173,7 @@ function GrowingFlower({ p: pr }: { p: P }) {
           position={[0, H * f, 0]}
           rotation={[0, rnd(i * 9 + 3) * Math.PI * 2, 0]}
         >
-          <mesh geometry={leafGeo} rotation={[1.15, 0, 0.15]} scale={[0.55, 0.42, 0.55]} position={[0, 0.01, 0.03]}>
+          <mesh geometry={leafGeo} rotation={[1.05 + i * 0.1, 0, 0.12]} scale={[0.56, 0.45, 0.56]} position={[0, 0.01, 0.02]}>
             <primitive object={finish("yarn", PALETTE.sage)} attach="material" />
           </mesh>
         </group>

@@ -20,18 +20,41 @@ import type { Quality } from "@/lib/quality";
 export function StudioLights({
   target = [0, 0.8, 0],
   keyIntensity = 0.95,
+  shadowSize = 3,
 }: {
   target?: [number, number, number];
   keyIntensity?: number;
+  /** half-extent (world units) of the key light's shadow frustum — keep it
+   *  as tight as the scene allows; every unit wider costs shadow resolution */
+  shadowSize?: number;
 }) {
+  const shadows = useShadowsEnabled();
+  const { res } = useContext(ShadowContext);
   return (
     <>
-      <ambientLight intensity={0.5} color="#FFF4F7" />
+      <ambientLight intensity={shadows ? 0.42 : 0.5} color="#FFF4F7" />
       {/* hemisphere: sky-white above, blush bounce from the table below —
           undersides go pink instead of grey, the way pastel toys are lit */}
-      <hemisphereLight args={["#FFFBFD", "#F7C9D8", 0.55]} />
-      {/* key: warm window light, top-right */}
-      <directionalLight position={[3, 5, 2.5]} intensity={keyIntensity} color="#FFFDFB" />
+      <hemisphereLight args={["#FFFBFD", "#F7C9D8", shadows ? 0.5 : 0.55]} />
+      {/* key: warm window light, top-right. It is the ONE shadow caster —
+          real cast shadows are what make petals sit *on* each other and
+          props sit *on* the table instead of floating over a blurred blob. */}
+      <directionalLight
+        position={[3, 5, 2.5]}
+        intensity={shadows ? keyIntensity * 1.18 : keyIntensity}
+        color="#FFFDFB"
+        castShadow={shadows}
+        shadow-mapSize={[res, res]}
+        shadow-camera-near={0.5}
+        shadow-camera-far={16}
+        shadow-camera-left={-shadowSize}
+        shadow-camera-right={shadowSize}
+        shadow-camera-top={shadowSize}
+        shadow-camera-bottom={-shadowSize}
+        shadow-radius={4}
+        shadow-bias={-0.0005}
+        shadow-normalBias={0.05}
+      />
       {/* fill: cool lilac from the left/back so shadows go lavender, not grey */}
       <directionalLight position={[-4, 2.5, -2]} intensity={0.42} color="#E4D6FF" />
       {/* rim: candy-pink kicker from behind separates plump forms from the page */}
@@ -46,7 +69,48 @@ export function StudioLights({
   );
 }
 
-/** Soft, colour-tinted contact shadow shared by all still lifes. */
+/* ================================================================
+   Shadows — one policy for every scene.
+
+   With real shadow maps on (mid/high tiers) the key light casts onto a
+   hue-tinted ShadowMaterial plane: petals shade the stems, the bow shades
+   the box, the yarn ball has a contact edge. That is ONE extra depth pass
+   per frame. The low tier (and any scene that opts out) keeps the old
+   blurred ContactShadows blob, which is itself a depth pass + two blur
+   passes — so the realistic option is not the expensive one.
+   ================================================================ */
+
+type ShadowInfo = { enabled: boolean; res: number };
+const ShadowContext = createContext<ShadowInfo>({ enabled: false, res: 512 });
+
+export function useShadowsEnabled(): boolean {
+  return useContext(ShadowContext).enabled;
+}
+
+/** Marks every mesh mounted under the canvas as a shadow caster/receiver.
+ *  Objects arrive late (Entrance beats, pops), so a throttled traversal is
+ *  the honest way to catch them without touching 60 call sites. Anything
+ *  see-through (particles, glows, sparkles, tissue) is skipped so shadows
+ *  come only from solid yarn, clay and satin. */
+function AutoShadowCasters() {
+  const { scene } = useThree();
+  const frame = useRef(0);
+  useFrame(() => {
+    if (frame.current++ % 15 !== 0) return;
+    scene.traverse((o) => {
+      if (o.userData.shadowed || !(o as THREE.Mesh).isMesh) return;
+      const m = o as THREE.Mesh;
+      o.userData.shadowed = true;
+      const mat = Array.isArray(m.material) ? m.material[0] : m.material;
+      if (!mat || (mat as THREE.Material).transparent || !(mat as THREE.Material).depthWrite || m.userData.noShadow) return;
+      m.castShadow = true;
+      m.receiveShadow = true;
+    });
+  });
+  return null;
+}
+
+/** Soft, colour-tinted ground shadow shared by all still lifes. */
 export function StudioShadows({
   scale = 10,
   far = 2.4,
@@ -60,6 +124,15 @@ export function StudioShadows({
   resolution?: number;
   position?: [number, number, number];
 }) {
+  const shadows = useShadowsEnabled();
+  if (shadows) {
+    return (
+      <mesh position={position} rotation={[-Math.PI / 2, 0, 0]} receiveShadow userData={{ shadowed: true }}>
+        <planeGeometry args={[scale, scale]} />
+        <shadowMaterial color="#B4607E" opacity={opacity * 1.15} transparent depthWrite={false} />
+      </mesh>
+    );
+  }
   return (
     <ContactShadows
       position={position}
@@ -141,9 +214,14 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
 
   if (lost) return <>{fallback}</>;
 
+  // PCF (not PCFSoft) so `shadow.radius` can feather the edge — crochet is
+  // lit by a window, not a laser. The low tier keeps shadow maps off.
+  const shadowInfo: ShadowInfo = { enabled: !quality.simple, res: quality.shadowRes * 2 };
+
   return (
     <Canvas
       dpr={dpr}
+      shadows={shadowInfo.enabled ? { type: THREE.PCFShadowMap } : false}
       // `flat` = no tone mapping. ACES (the default) compresses and greys out
       // light pastels — the exact colours this brand lives on. With flat
       // output a #FFE3EA material really reads as #FFE3EA.
@@ -167,18 +245,21 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
       }}
       {...rest}
     >
-      <PerformanceMonitor
-        ms={250}
-        iterations={6}
-        threshold={0.7}
-        flipflops={3}
-        onDecline={() => setDpr((d) => Math.max(1, +(d - 0.25).toFixed(2)))}
-        onIncline={() => setDpr((d) => Math.min(quality.dpr[1], +(d + 0.25).toFixed(2)))}
-        onFallback={() => setDpr(1)}
-      >
-        {children}
-        {statsLabel && statsEnabled() && <StatsProbe label={statsLabel} />}
-      </PerformanceMonitor>
+      <ShadowContext.Provider value={shadowInfo}>
+        <PerformanceMonitor
+          ms={250}
+          iterations={6}
+          threshold={0.7}
+          flipflops={3}
+          onDecline={() => setDpr((d) => Math.max(1, +(d - 0.25).toFixed(2)))}
+          onIncline={() => setDpr((d) => Math.min(quality.dpr[1], +(d + 0.25).toFixed(2)))}
+          onFallback={() => setDpr(1)}
+        >
+          {children}
+          {shadowInfo.enabled && <AutoShadowCasters />}
+          {statsLabel && statsEnabled() && <StatsProbe label={statsLabel} />}
+        </PerformanceMonitor>
+      </ShadowContext.Provider>
     </Canvas>
   );
 }

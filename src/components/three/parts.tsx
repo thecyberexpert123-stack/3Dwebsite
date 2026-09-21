@@ -33,14 +33,32 @@ export function YarnBall({
   spin = 0,
 }: YarnBallProps) {
   const ball = useRef<THREE.Group>(null!);
+  // A real ball is wound in *bands*: several parallel strands laid side by
+  // side at one orientation, then the ball is turned and another band goes
+  // over the top. So each "ring" here is a band of 3 thin strands, spaced
+  // one strand apart, all hugging the sphere surface; successive bands rotate
+  // through the golden angle so they cross each other the way hand-wound
+  // yarn does. Everything merges into ONE geometry (2 draw calls per ball).
   const ringGeo = useMemo(() => {
     const parts: THREE.BufferGeometry[] = [];
-    for (let i = 0; i < rings; i++) {
-      const g = new THREE.TorusGeometry(radius * (0.99 + rnd(seed + i) * 0.06), radius * 0.055, 6, 40);
-      g.rotateX(rnd(seed + i * 5.3) * Math.PI);
-      g.rotateY(rnd(seed + i * 8.1 + 2) * Math.PI);
-      g.rotateZ(rnd(seed + i * 3.2 + 5) * Math.PI);
-      parts.push(g);
+    const strand = radius * 0.028;
+    const bands = Math.max(4, Math.round(rings * 0.6));
+    for (let b = 0; b < bands; b++) {
+      const rx = rnd(seed + b * 5.3) * Math.PI;
+      const ry = b * 2.399963 + rnd(seed + b * 8.1 + 2) * 0.4; // golden angle
+      const rz = rnd(seed + b * 3.2 + 5) * Math.PI;
+      const offset = (rnd(seed + b * 1.7) - 0.5) * radius * 0.5; // band sits off the equator
+      for (let k = -1; k <= 1; k++) {
+        const lift = offset + k * strand * 2.4;
+        // circle radius on the sphere at this height (the strand hugs the surface)
+        const rr = Math.sqrt(Math.max(0.05 * radius * radius, radius * radius * 1.02 - lift * lift));
+        const g = new THREE.TorusGeometry(rr, strand, 5, 48);
+        g.translate(0, 0, lift);
+        g.rotateX(rx);
+        g.rotateY(ry);
+        g.rotateZ(rz);
+        parts.push(g);
+      }
     }
     const merged = mergeGeometries(parts, false)!;
     parts.forEach((g) => g.dispose());
@@ -55,7 +73,7 @@ export function YarnBall({
   return (
     <group ref={ball} position={position}>
       <mesh material={finish("yarn", color)}>
-        <sphereGeometry args={[radius * 0.965, 18, 18]} />
+        <sphereGeometry args={[radius * 0.975, 24, 20]} />
       </mesh>
       <mesh geometry={ringGeo} material={finish("yarn", color)} />
     </group>
@@ -116,21 +134,8 @@ export function GiftBox({ position }: { position: [number, number, number] }) {
         <boxGeometry args={[0.515, 0.52, 0.06]} />
         <primitive object={finish("satin", PALETTE.rose)} attach="material" />
       </mesh>
-      {/* bow */}
-      <group position={[0, 0.46, 0]}>
-        <mesh position={[-0.055, 0.01, 0]} rotation={[Math.PI / 2, 0, 0.5]}>
-          <torusGeometry args={[0.05, 0.015, 8, 16, Math.PI * 1.4]} />
-          <primitive object={finish("satin", PALETTE.rose)} attach="material" />
-        </mesh>
-        <mesh position={[0.055, 0.01, 0]} rotation={[Math.PI / 2, 0, Math.PI - 0.5]}>
-          <torusGeometry args={[0.05, 0.015, 8, 16, Math.PI * 1.4]} />
-          <primitive object={finish("satin", PALETTE.rose)} attach="material" />
-        </mesh>
-        <mesh>
-          <sphereGeometry args={[0.024, 8, 8]} />
-          <primitive object={finish("pearl", PALETTE.white)} attach="material" />
-        </mesh>
-      </group>
+      {/* bow — lying flat on the lid */}
+      <SatinBow position={[0, 0.455, 0]} rotation={[-Math.PI / 2 + 0.25, 0, 0.3]} scale={0.7} color={PALETTE.rose} />
     </group>
   );
 }
@@ -233,7 +238,7 @@ export function Sparkle3D({
     ref.current.rotation.y = t * 0.6 + phase;
   });
   return (
-    <mesh ref={ref} position={position}>
+    <mesh ref={ref} position={position} userData={{ noShadow: true }}>
       <octahedronGeometry args={[size, 0]} />
       <meshBasicMaterial color={color} />
     </mesh>
@@ -252,6 +257,66 @@ type BowProps = {
 
 /** A plump satin bow — two fat loops, a knot and two tails. The coquette
  *  signature, reused on the wrap, the gift and as a loose charm. */
+/** One bow loop as a flat ribbon swept along a teardrop curve (in the XY
+ *  plane, opening at the origin). Built once per side and cached: a strip
+ *  of quads with real width and a paper-thin depth, so the loop has a
+ *  visible inner face and a soft fold — unlike a torus, which reads as a
+ *  rubber tyre. */
+const loopCache = new Map<string, THREE.BufferGeometry>();
+function bowLoopGeometry(dir: 1 | -1, width = 0.055): THREE.BufferGeometry {
+  const key = `${dir}|${width}`;
+  const hit = loopCache.get(key);
+  if (hit) return hit;
+  const pts: THREE.Vector3[] = [];
+  const N = 24;
+  for (let i = 0; i <= N; i++) {
+    const t = (i / N) * Math.PI * 2;
+    // teardrop: r shrinks to 0 at the knot (t = 0 and 2π)
+    const r = 0.13 * Math.sin(t / 2);
+    const x = dir * (0.02 + r * (1 + 0.35 * Math.cos(t))); // lean outward
+    const y = r * Math.sin(t) * 0.75 + 0.02;
+    const z = Math.sin(t) * 0.02; // gentle twist so it isn't a perfectly flat plane
+    pts.push(new THREE.Vector3(x, y, z));
+  }
+  const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.4);
+  // ribbon = extruded rectangle along the curve (width across, thin in depth)
+  const shape = new THREE.Shape();
+  shape.moveTo(-width / 2, -0.004);
+  shape.lineTo(width / 2, -0.004);
+  shape.lineTo(width / 2, 0.004);
+  shape.lineTo(-width / 2, 0.004);
+  shape.closePath();
+  const geo = new THREE.ExtrudeGeometry(shape, { steps: 40, bevelEnabled: false, extrudePath: curve });
+  geo.computeVertexNormals();
+  loopCache.set(key, geo);
+  return geo;
+}
+
+/** A ribbon tail: a slightly curved strip with a swallow-tail cut. */
+const tailCache = new Map<number, THREE.BufferGeometry>();
+function bowTailGeometry(len = 0.24, width = 0.05): THREE.BufferGeometry {
+  const hit = tailCache.get(len);
+  if (hit) return hit;
+  const shape = new THREE.Shape();
+  shape.moveTo(-width / 2, 0);
+  shape.lineTo(width / 2, 0);
+  shape.lineTo(width / 2, -len);
+  shape.lineTo(0, -len + width * 0.7); // the notch
+  shape.lineTo(-width / 2, -len);
+  shape.closePath();
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.007, bevelEnabled: false, curveSegments: 2 });
+  // bow the tail forward so it drapes instead of hanging like a plank
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const y = -pos.getY(i) / len;
+    pos.setZ(i, pos.getZ(i) + Math.sin(y * Math.PI * 0.8) * 0.03);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  tailCache.set(len, geo);
+  return geo;
+}
+
 export function SatinBow({
   position,
   rotation = [0, 0, 0],
@@ -259,28 +324,25 @@ export function SatinBow({
   color = PALETTE.strawberry,
   knotColor = PALETTE.white,
 }: BowProps) {
+  const left = useMemo(() => bowLoopGeometry(-1), []);
+  const right = useMemo(() => bowLoopGeometry(1), []);
+  const tail = useMemo(() => bowTailGeometry(), []);
+  const satin = finish("satin", color, { side: THREE.DoubleSide });
   return (
     <group position={position} rotation={rotation} scale={scale}>
-      <mesh position={[-0.11, 0.02, 0]} rotation={[Math.PI / 2, 0, 0.5]} scale={[1, 0.62, 1]}>
-        <torusGeometry args={[0.09, 0.034, 10, 22]} />
+      <mesh geometry={left} material={satin} rotation={[0, 0, 0.12]} />
+      <mesh geometry={right} material={satin} rotation={[0, 0, -0.12]} />
+      {/* the knot: a small ribbon wrap, not a marble */}
+      <mesh rotation={[0, 0, 0.2]} scale={[1, 0.8, 1]}>
+        <sphereGeometry args={[0.04, 12, 10]} />
         <primitive object={finish("satin", color)} attach="material" />
       </mesh>
-      <mesh position={[0.11, 0.02, 0]} rotation={[Math.PI / 2, 0, -0.5]} scale={[1, 0.62, 1]}>
-        <torusGeometry args={[0.09, 0.034, 10, 22]} />
-        <primitive object={finish("satin", color)} attach="material" />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[0.045, 12, 12]} />
+      <mesh position={[0, 0, 0.03]}>
+        <sphereGeometry args={[0.014, 8, 8]} />
         <primitive object={finish("pearl", knotColor)} attach="material" />
       </mesh>
-      <mesh position={[-0.06, -0.12, 0.02]} rotation={[0.1, 0, 0.5]}>
-        <boxGeometry args={[0.05, 0.22, 0.012]} />
-        <primitive object={finish("satin", color)} attach="material" />
-      </mesh>
-      <mesh position={[0.06, -0.12, 0.02]} rotation={[0.1, 0, -0.5]}>
-        <boxGeometry args={[0.05, 0.22, 0.012]} />
-        <primitive object={finish("satin", color)} attach="material" />
-      </mesh>
+      <mesh geometry={tail} material={satin} position={[-0.02, -0.02, 0.005]} rotation={[0.15, 0, 0.42]} />
+      <mesh geometry={tail} material={satin} position={[0.02, -0.02, 0.005]} rotation={[0.15, 0, -0.42]} />
     </group>
   );
 }
@@ -377,19 +439,19 @@ export function PuffyCloud({
   });
   return (
     <group ref={ref} position={position} scale={scale}>
-      <mesh position={[0, 0, 0]}>
+      <mesh position={[0, 0, 0]} userData={{ noShadow: true }}>
         <sphereGeometry args={[0.22, 16, 14]} />
         <primitive object={finish("clay", color)} attach="material" />
       </mesh>
-      <mesh position={[-0.22, -0.05, 0.02]}>
+      <mesh position={[-0.22, -0.05, 0.02]} userData={{ noShadow: true }}>
         <sphereGeometry args={[0.16, 14, 12]} />
         <primitive object={finish("clay", color)} attach="material" />
       </mesh>
-      <mesh position={[0.22, -0.04, 0]}>
+      <mesh position={[0.22, -0.04, 0]} userData={{ noShadow: true }}>
         <sphereGeometry args={[0.17, 14, 12]} />
         <primitive object={finish("clay", color)} attach="material" />
       </mesh>
-      <mesh position={[0.02, -0.1, 0.06]} scale={[1.6, 0.6, 1]}>
+      <mesh position={[0.02, -0.1, 0.06]} scale={[1.6, 0.6, 1]} userData={{ noShadow: true }}>
         <sphereGeometry args={[0.2, 14, 12]} />
         <primitive object={finish("clay", color)} attach="material" />
       </mesh>
