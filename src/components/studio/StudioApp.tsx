@@ -70,10 +70,31 @@ export function StudioApp() {
   // the drawer on phones; centred again when the sheet is closed
   const phone = useIsMobile();
   const sheetOpen = !!panel || drawing;
+  const sheetRef = useRef<HTMLElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    const shift: [number, number] = !sheetOpen ? [0, 0] : phone ? [0, 0.42] : [0.28, 0];
-    setView((v) => (v.shift?.[0] === shift[0] && v.shift?.[1] === shift[1] ? v : { ...v, shift }));
-  }, [sheetOpen, phone]);
+    const compute = () => {
+      let shift: [number, number] = [0, 0];
+      if (sheetOpen && phone) shift = [0, 0.42];
+      else if (sheetOpen) {
+        // centre the piece in the free band between the sheet and the
+        // right-hand aside (measured, so it holds at 1000 px and 2560 px)
+        const w = window.innerWidth;
+        const sheetRight = sheetRef.current?.getBoundingClientRect().right ?? 0;
+        const aside = asideRef.current;
+        const asideW = aside && getComputedStyle(aside).display !== "none" ? w - aside.getBoundingClientRect().left : 0;
+        shift = [Math.min(0.6, Math.max(0, (sheetRight - asideW) / w)), 0];
+      }
+      setView((v) => (Math.abs((v.shift?.[0] ?? 0) - shift[0]) < 0.005 && (v.shift?.[1] ?? 0) === shift[1] ? v : { ...v, shift }));
+    };
+    // the sheet mounts with an enter animation; measure after layout
+    const id = requestAnimationFrame(compute);
+    window.addEventListener("resize", compute);
+    return () => {
+      cancelAnimationFrame(id);
+      window.removeEventListener("resize", compute);
+    };
+  }, [sheetOpen, phone, panel, drawing]);
   // a bouquet-only group closes when the piece becomes a single flower
   useEffect(() => {
     if (c.type !== "bouquet" && panel === "bouquet") setPanel("piece");
@@ -235,6 +256,7 @@ export function StudioApp() {
       <AnimatePresence mode="wait">
         {(panel || drawing) && (
           <motion.aside
+            ref={sheetRef}
             key={drawing ? "draw" : panel}
             initial={reduce ? false : { opacity: 0, x: -14, y: 0, scale: 0.98 }}
             animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
@@ -276,7 +298,7 @@ export function StudioApp() {
       </AnimatePresence>
 
       {/* ---------- right: presets + palette ---------- */}
-      <aside className="absolute right-3 top-16 z-10 hidden w-56 flex-col gap-3 lg:flex md:top-20">
+      <aside ref={asideRef} className="absolute right-3 top-16 z-10 hidden w-56 flex-col gap-3 lg:flex md:top-20">
         <div className="glass-sheet p-3">
           <p className="mb-2 font-hand text-lg text-rose-ink">start from</p>
           <div className="flex flex-wrap gap-1.5">

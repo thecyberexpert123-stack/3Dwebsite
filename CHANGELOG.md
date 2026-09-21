@@ -196,7 +196,9 @@ touch).
   bottom bar with the plain-language summary, undo/redo, Surprise me,
   Draw a petal, Reset, Save/Open, Snapshot, Copy link and Send to Whimlet.
   The camera **glides** to the part being edited and the piece slides out
-  from under the sheet (view-offset shift, not a camera jump). Phones get
+  from under the sheet (view-offset shift, not a camera jump), centred in
+  the measured band between the sheet and the right-hand cards so the
+  framing holds from 1000 px to 1920 px wide. Phones get
   horizontal group tabs and a bottom drawer sized from the measured bar.
   Keyboard: ⌘/Ctrl+Z / ⇧⌘Z undo/redo, Esc closes the sheet.
 - **Design format v2** (`lib/design.ts`): 24+ live options — yarn (cotton /
