@@ -212,18 +212,22 @@ function Bouquet({
   const group = useRef<THREE.Group>(null!);
   const { gl } = useThree();
 
+  // cursor: the canvas flips to the "interactive" heart via a data attribute
+  // (globals.css maps it) — inline `cursor: pointer` would override the theme
   useEffect(() => {
-    document.body.style.cursor = hover ? "pointer" : "auto";
+    if (hover) gl.domElement.dataset.cursor = "pointer";
+    else delete gl.domElement.dataset.cursor;
     return () => {
-      document.body.style.cursor = "auto";
+      delete gl.domElement.dataset.cursor;
     };
-  }, [hover]);
+  }, [hover, gl]);
 
   // R3F only fires onPointerOut when the ray moves to another object or the
   // canvas emits pointerout — if the pointer leaves the canvas *while* over
   // the bouquet, clear the hover ourselves so the cursor never sticks.
   useEffect(() => {
     const el = gl.domElement;
+    if (!el) return; // context already torn down (lost / fallback swapped in)
     const clear = () => setHover(false);
     el.addEventListener("pointerleave", clear);
     return () => el.removeEventListener("pointerleave", clear);

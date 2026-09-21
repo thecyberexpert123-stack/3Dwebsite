@@ -36,7 +36,7 @@ export function SectionHeading({
         {accent ? (
           <>
             {" "}
-            <TextReveal text={accent} className="font-script font-normal text-rose-ink" stagger={0.09} />
+            <TextReveal text={accent} className="u-hand font-script font-normal text-rose-ink" stagger={0.09} />
           </>
         ) : null}
       </h2>

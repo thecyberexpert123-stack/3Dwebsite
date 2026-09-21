@@ -263,7 +263,7 @@ type BowProps = {
  *  visible inner face and a soft fold — unlike a torus, which reads as a
  *  rubber tyre. */
 const loopCache = new Map<string, THREE.BufferGeometry>();
-function bowLoopGeometry(dir: 1 | -1, width = 0.055): THREE.BufferGeometry {
+export function bowLoopGeometry(dir: 1 | -1, width = 0.055): THREE.BufferGeometry {
   const key = `${dir}|${width}`;
   const hit = loopCache.get(key);
   if (hit) return hit;
@@ -294,7 +294,7 @@ function bowLoopGeometry(dir: 1 | -1, width = 0.055): THREE.BufferGeometry {
 
 /** A ribbon tail: a slightly curved strip with a swallow-tail cut. */
 const tailCache = new Map<number, THREE.BufferGeometry>();
-function bowTailGeometry(len = 0.24, width = 0.05): THREE.BufferGeometry {
+export function bowTailGeometry(len = 0.24, width = 0.05): THREE.BufferGeometry {
   const hit = tailCache.get(len);
   if (hit) return hit;
   const shape = new THREE.Shape();

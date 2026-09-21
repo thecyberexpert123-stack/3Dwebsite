@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Float, RoundedBox } from "@react-three/drei";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
@@ -64,6 +64,14 @@ function OpenableGift({
   reduced: boolean;
 }) {
   const lid = useRef<THREE.Group>(null!);
+  const { gl } = useThree();
+  // if the scene unmounts mid-hover, never leave a stuck cursor state
+  useEffect(
+    () => () => {
+      delete gl.domElement.dataset.cursor;
+    },
+    [gl]
+  );
 
   useFrame((_, dt) => {
     if (!lid.current) return;
@@ -74,10 +82,10 @@ function OpenableGift({
   const hover = {
     onPointerOver: (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
-      document.body.style.cursor = "pointer";
+      gl.domElement.dataset.cursor = "pointer";
     },
     onPointerOut: () => {
-      document.body.style.cursor = "auto";
+      delete gl.domElement.dataset.cursor;
     },
     onClick: (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
@@ -157,16 +165,11 @@ export default function GiftScene({
     }
   }, [open]);
 
-  // if the scene unmounts mid-hover, never leave a stuck pointer cursor
-  useEffect(() => () => {
-    document.body.style.cursor = "auto";
-  }, []);
-
   return (
     <AdaptiveCanvas
       statsLabel="gift"
       quality={quality}
-      className="!absolute inset-0 cursor-pointer"
+      className="!absolute inset-0"
       camera={{ position: [0.15, 0.95, 2.75], fov: 36 }}
       aria-hidden="true"
     >

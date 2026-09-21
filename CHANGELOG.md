@@ -174,6 +174,48 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.8.0] — 2026-09-21
+
+Polish pass: a heart-shaped cursor, a more *directed* first minute (gift
+arrival, stitched headline, running-stitch loader) and a few finer-grained
+micro-interactions. No new dependencies, no new canvases.
+
+### Added
+- **Heart cursor** — CSS-native (`cursor: url(data:image/svg+xml…)`), four
+  states: blush heart (default), rose heart with a sparkle (links/buttons/
+  tappable 3D), lavender heart (grab) and a squeezed heart (grabbing).
+  Text fields keep the I-beam; zoom/crosshair stay native. Only applies on
+  `(hover: hover) and (pointer: fine)` — touch devices never see it, and
+  every value carries a keyword fallback.
+- **Gift arrival beat** on the door: the box drops in, lands with a squash
+  and one soft bounce, settles its rotation, and the ribbon *ties itself*
+  (bow loops scale up from 0.9–1.4 s). The lid pop now gives the camera a
+  short decaying kick so the lens feels it.
+- **Real ribbon bow** on the door gift — flat ribbon loops swept along a
+  teardrop curve (`bowLoopGeometry`/`bowTailGeometry` from `parts.tsx`),
+  a satin knot and a pearl bead; the old torus loops read as a tyre.
+- **Running-stitch loader** under the Whimlet mark on the door: a dashed
+  seam sews across while the gift's shaders compile, then settles once the
+  scene reports ready.
+- **Stitched headline**: "Big Feelings." now rises letter-by-letter out of
+  a clipping line, with a blush glow and blur that cool as each glyph
+  settles, then a hand-drawn underline draws beneath it. The same `.u-hand`
+  underline draws under every section heading's script accent when its
+  `Reveal` enters view.
+- **Satin sheen** sweep on `.btn-primary` hover.
+
+### Changed
+- 3D canvases signal hover through `data-cursor="pointer"` on the canvas
+  element instead of writing `style.cursor` (which would override the theme
+  cursor). `HeroScene3D`, `GiftIntroScene` and `GiftScene` updated;
+  `GiftScene` no longer sets `cursor-pointer` on the whole canvas.
+- `Reveal` adds an `is-inview` class once seen, so CSS-only flourishes
+  inside it can share the reveal beat.
+
+### Fixed
+- `HeroScene3D` guards against a null canvas when attaching its
+  `pointerleave` listener (context lost → fallback swapped in).
+
 ## [0.7.0] — 2026-09-21
 
 The "realism" release — the same scenes, but the things in them are now

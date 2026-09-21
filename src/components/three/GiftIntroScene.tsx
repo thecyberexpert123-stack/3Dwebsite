@@ -8,6 +8,7 @@ import { useQuality } from "@/lib/quality";
 import { clamp01, easeInOutCubic, easeOutBack, easeOutCubic, seg } from "@/lib/intro";
 import { makeHeartGeometry, rnd } from "./geometry";
 import { CrochetFlower, PALETTE } from "./CrochetFlower";
+import { bowLoopGeometry, bowTailGeometry } from "./parts";
 import { AdaptiveCanvas, SoftGround, StudioLights, StudioShadows } from "./Stage";
 import { shared as finish } from "./materials";
 
@@ -201,34 +202,31 @@ function Bow({ untie }: { untie: React.RefObject<number> }) {
     }
   });
 
-  const ribbon = <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />;
+  const satin = finish("satin", PALETTE.strawberry, { side: THREE.DoubleSide });
+  const left = useMemo(() => bowLoopGeometry(-1, 0.11), []);
+  const right = useMemo(() => bowLoopGeometry(1, 0.11), []);
+  const tail = useMemo(() => bowTailGeometry(0.46, 0.1), []);
 
+  // the bow is big on this box (scale 2.3 of the shared ribbon loop) and lies
+  // flat on the lid, loops toward the camera-left/right, tails draping forward
   return (
     <group position={[0, 0.06, 0]}>
-      <group ref={loops}>
-        {/* two fat satin loops */}
-        <mesh position={[-0.2, 0.09, 0]} rotation={[Math.PI / 2, 0, 0.45]} scale={[1, 0.62, 1]}>
-          <torusGeometry args={[0.17, 0.062, 12, 26]} />
-          {ribbon}
-        </mesh>
-        <mesh position={[0.2, 0.09, 0]} rotation={[Math.PI / 2, 0, -0.45]} scale={[1, 0.62, 1]}>
-          <torusGeometry args={[0.17, 0.062, 12, 26]} />
-          {ribbon}
-        </mesh>
+      <group ref={loops} position={[0, 0.06, 0]} rotation={[-Math.PI / 2 + 0.35, 0, 0]} scale={2.3}>
+        <mesh geometry={left} material={satin} rotation={[0, 0, 0.1]} />
+        <mesh geometry={right} material={satin} rotation={[0, 0, -0.1]} />
       </group>
-      <mesh ref={knot} position={[0, 0.09, 0]}>
-        <sphereGeometry args={[0.085, 14, 14]} />
+      {/* knot: a ribbon wrap with a pearl bead */}
+      <mesh ref={knot} position={[0, 0.07, 0]} scale={[1, 0.8, 1]}>
+        <sphereGeometry args={[0.08, 14, 12]} />
+        <primitive object={finish("satin", PALETTE.strawberry)} attach="material" />
+      </mesh>
+      <mesh position={[0, 0.08, 0.075]}>
+        <sphereGeometry args={[0.028, 10, 10]} />
         <primitive object={finish("pearl", PALETTE.white)} attach="material" />
       </mesh>
       {/* tails */}
-      <mesh ref={tailL} position={[-0.09, -0.02, 0.1]} rotation={[0, 0, 0.55]}>
-        <boxGeometry args={[0.09, 0.42, 0.02]} />
-        {ribbon}
-      </mesh>
-      <mesh ref={tailR} position={[0.09, -0.02, 0.1]} rotation={[0, 0, -0.55]}>
-        <boxGeometry args={[0.09, 0.42, 0.02]} />
-        {ribbon}
-      </mesh>
+      <mesh ref={tailL} geometry={tail} material={satin} position={[-0.09, -0.02, 0.1]} rotation={[0, 0, 0.55]} />
+      <mesh ref={tailR} geometry={tail} material={satin} position={[0.09, -0.02, 0.1]} rotation={[0, 0, -0.55]} />
     </group>
   );
 }
@@ -253,11 +251,15 @@ function Gift({
   const untie = useRef(0);
   const [hover, setHover] = useState(false);
   const { gl } = useThree();
+  // arrival: the box is not just *there* — it drops in, lands with a squash
+  // and the ribbon pulls tight. Clock-stamped on the first rendered frame.
+  const arrivedAt = useRef(-1);
 
   useEffect(() => {
-    gl.domElement.style.cursor = hover && phase === "idle" ? "pointer" : "default";
+    if (hover && phase === "idle") gl.domElement.dataset.cursor = "pointer";
+    else delete gl.domElement.dataset.cursor;
     return () => {
-      gl.domElement.style.cursor = "default";
+      delete gl.domElement.dataset.cursor;
     };
   }, [hover, phase, gl]);
 
@@ -268,9 +270,41 @@ function Gift({
     const since = openedAt.current < 0 ? -1 : now - openedAt.current;
     const t = state.clock.elapsedTime;
 
+    // the first frame pays for shader compilation, so the clock starts on the
+    // frame after it — otherwise the drop is half over before it's ever seen
+    if (arrivedAt.current < 0) {
+      if (arrivedAt.current === -1) {
+        // frame 1: hide the box above the frame and let the shaders compile
+        arrivedAt.current = -2;
+        g.position.y = 1.6;
+        g.visible = false;
+        return;
+      }
+      arrivedAt.current = t;
+      g.visible = true;
+    }
+    const age = t - arrivedAt.current;
+
     if (since < 0) {
-      // idle: a slow breath + a little bob; a nudge toward the pointer says "touch me"
       const motion = reduced ? 0 : 1;
+      if (motion && age < 1.6) {
+        // --- arrival (0 → 1.6 s): drop, land, squash, tie ---
+        const drop = seg(age, 0, 0.62);
+        const fall = 1 - easeOutCubic(drop); // 1 → 0
+        // one soft bounce after touchdown
+        const bounce = age > 0.62 && age < 0.98 ? Math.sin(((age - 0.62) / 0.36) * Math.PI) * 0.08 : 0;
+        g.position.y = fall * 1.6 + bounce;
+        // squash on landing, stretch while falling
+        const land = age >= 0.62 && age < 0.9 ? Math.sin(((age - 0.62) / 0.28) * Math.PI) * 0.12 : 0;
+        const stretch = drop < 1 ? (1 - drop) * 0.06 : 0;
+        g.scale.set(1 + land - stretch, 1 - land + stretch * 1.4, 1 + land - stretch);
+        g.rotation.y = -0.35 + easeOutCubic(seg(age, 0, 1.0)) * 0.35;
+        g.rotation.x = 0;
+        // the ribbon is loose when the box lands and pulls tight at 0.9–1.4 s
+        untie.current = 1 - easeOutCubic(seg(age, 0.9, 0.5));
+        return;
+      }
+      // idle: a slow breath + a little bob; a nudge toward the pointer says "touch me"
       const breath = 1 + Math.sin(t * 1.6) * 0.018 * motion;
       const target = hover ? 1.05 : 1;
       const s = damp(g.scale.x, target * breath, 6, dt);
@@ -449,6 +483,12 @@ function Camera({ openedAt, reduced }: { openedAt: React.RefObject<number>; redu
     if (!reduced && since < 0) {
       pos.x += state.pointer.x * 0.12;
       pos.y += state.pointer.y * 0.06;
+    }
+    if (!reduced && since >= 0.25 && since < 0.6) {
+      // the lid pops: one short, decaying kick — the lens *feels* it
+      const k = 1 - seg(since, 0.25, 0.35);
+      pos.y += Math.sin(since * 70) * 0.012 * k;
+      pos.x += Math.cos(since * 55) * 0.008 * k;
     }
     camera.position.x = damp(camera.position.x, pos.x, 6, dt);
     camera.position.y = damp(camera.position.y, pos.y, 6, dt);

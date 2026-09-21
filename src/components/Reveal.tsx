@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion, type Variants } from "framer-motion";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 /** The one easing curve used by every reveal on the page. */
 export const EASE = [0.22, 1, 0.36, 1] as const;
@@ -13,15 +13,19 @@ type RevealProps = {
   y?: number;
 };
 
-/** Soft scroll-reveal that respects prefers-reduced-motion. */
+/** Soft scroll-reveal that respects prefers-reduced-motion.
+ *  Adds `is-inview` once visible so CSS-only flourishes inside (e.g. the
+ *  hand-drawn `.u-hand` underline) can play on the same beat. */
 export function Reveal({ children, className, delay = 0, y = 26 }: RevealProps) {
   const reduce = useReducedMotion();
+  const [seen, setSeen] = useState(false);
 
   return (
     <motion.div
-      className={className}
+      className={`${className ?? ""}${seen ? " is-inview" : ""}`}
       initial={reduce ? false : { opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
+      onViewportEnter={() => setSeen(true)}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.7, delay, ease: EASE }}
     >

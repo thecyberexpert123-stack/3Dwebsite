@@ -424,3 +424,55 @@ scenes, adding dependencies or touching the build.
   `npm ci`, `npm i` puppeteer-core/@sparticuz/chromium in `/tmp/pw`.
 - `npx eslint` without a flat config is a dead end in this repo (v10 +
   legacy .eslintrc); rely on `tsc --noEmit` and `next build`'s lint.
+
+## v0.8.0 — cursor, arrival, stitched type
+
+### Custom cursor: CSS-native beat JS by every metric that mattered
+- Problem: "heart-shaped cursor". Two routes — a JS-driven DOM element that
+  follows `pointermove` (what most "custom cursor" tutorials do) or CSS
+  `cursor: url(data:image/svg+xml,…)` with per-state values.
+- Chosen: CSS. Zero JS, zero layout on move, no lag at low frame rates, no
+  `cursor: none` (so nothing breaks in iframes, over scrollbars or when
+  focus leaves the window), and screen readers / keyboard users are
+  untouched. SVG data-URIs are ~1 KB each; hotspot `5 5`; every declaration
+  ends in a keyword fallback. Limitation accepted: cursor images cannot
+  animate — hover feedback comes from the *elements* (sheen, lift), not the
+  pointer.
+- Gate it with `@media (hover: hover) and (pointer: fine)`. Headless
+  Chromium (and CDP `Emulation.setEmulatedMedia`) reports `pointer: fine`
+  false, so computed styles won't show the heart in Puppeteer. Verify by
+  reading `document.styleSheets` for the media rule and by rasterising the
+  SVGs with sharp — screenshots never include the OS cursor.
+- Root cause of a subtle conflict: R3F scenes wrote `gl.domElement.style
+  .cursor = "pointer"` on hover, and an inline `style` beats any stylesheet
+  rule. Fix: canvases now set `dataset.cursor = "pointer"` and CSS maps
+  `[data-cursor="pointer"]` to the heart. Rule for the future: **3D code
+  signals intent with attributes; the theme decides the visual.**
+- Add a `feDropShadow` to cursor SVGs: on the blush page a flat blush heart
+  loses its edge; a 1 px rose shadow keeps it legible everywhere.
+
+### Arrival beat and the first frame
+- First `useFrame` tick pays for shader compilation (hundreds of ms on the
+  door scene), so a time-based entrance keyed to `clock.elapsedTime` was
+  half over before anyone saw it. Hide the object on frame 1, start the
+  clock on frame 2. Applies to every timed entrance, not just this one.
+- Ribbon "ties itself" = scale the bow loops with a 0→1 `tie` scalar over
+  0.5 s after touchdown. Cheap, and it sells the box as *just wrapped*.
+
+### Stitched type
+- Per-letter clip-reveal + `filter: blur(4px→0)` + a fading `textShadow`
+  glow reads as thread pulled through rather than text fading in. Keep the
+  glyph wrappers `inline-block overflow-hidden` with a little `pb` so
+  descenders of the script face aren't clipped. Same DOM for SSR and
+  reduced motion (variants undefined) — no hydration branch.
+- A hand-drawn underline (`.u-hand::after`, SVG, `clip-path` inset) needs
+  `isolation: isolate` on the parent, otherwise `z-index: -1` drops it
+  behind the section background and it silently disappears.
+- `Reveal` exposes `is-inview` so CSS-only flourishes can ride the same
+  IntersectionObserver instead of adding a second one.
+
+### Process
+- A `[pageerror] Cannot read properties of null (reading 'addEventListener')`
+  appeared once in a tour run and never again — `gl.domElement` was null
+  after a context loss swapped the fallback in during a long headless
+  session. Guard listeners on `gl.domElement`; don't chase it further.

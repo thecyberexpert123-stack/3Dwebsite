@@ -36,6 +36,25 @@ const word: Variants = {
   },
 };
 
+/* the script line is "stitched": letters rise one by one out of a clipping
+   line with a soft blush glow that cools as they settle — thread pulled
+   through, not text faded in. Nested stagger under `wordContainer`. */
+const scriptLine: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.045, delayChildren: 0.55 } },
+};
+const letter: Variants = {
+  hidden: { opacity: 0, y: "70%", rotate: -6, filter: "blur(4px)", textShadow: "0 0 18px rgba(240,124,140,0.9)" },
+  show: {
+    opacity: 1,
+    y: "0%",
+    rotate: 0,
+    filter: "blur(0px)",
+    textShadow: "0 0 0px rgba(240,124,140,0)",
+    transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
 export function Hero() {
   const reduce = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
@@ -110,10 +129,17 @@ export function Hero() {
               ))}
             </span>
             <motion.span
-              variants={!animate ? undefined : word}
-              className="mt-1 block font-script text-[3rem] font-normal leading-[1.15] text-rose-ink md:text-[4.2rem]"
+              variants={!animate ? undefined : scriptLine}
+              className={`u-hand mt-1 block font-script text-[3rem] font-normal leading-[1.15] text-rose-ink md:text-[4.2rem]${show ? " is-inview" : ""}`}
+              aria-label="Big Feelings."
             >
-              Big Feelings.
+              {Array.from("Big Feelings.").map((ch, i) => (
+                <span key={i} className="inline-block overflow-hidden pb-[0.15em] pr-[0.04em] align-bottom" aria-hidden="true">
+                  <motion.span variants={!animate ? undefined : letter} className="inline-block will-change-transform">
+                    {ch === " " ? "\u00A0" : ch}
+                  </motion.span>
+                </span>
+              ))}
             </motion.span>
           </motion.h1>
 

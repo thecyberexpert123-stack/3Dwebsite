@@ -171,6 +171,17 @@ export function LoadingScreen() {
             <p className="mt-1 font-hand text-lg text-cocoa-soft">
               {gift ? "a little something, just for you" : "one stitch at a time."}
             </p>
+            {gift && (
+              // a running stitch that keeps sewing while the gift's shaders compile,
+              // then finishes its seam once the scene is ready — the progress cue.
+              <svg
+                viewBox="0 0 160 10"
+                className={`stitch-loader mt-3 h-2.5 w-40 text-rose-ink ${sceneReady || webgl === false ? "is-done" : ""}`}
+                aria-hidden="true"
+              >
+                <path d="M2 6c26-5 52-5 78 0s52 5 78 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeDasharray="5 4" pathLength="100" />
+              </svg>
+            )}
           </motion.div>
 
           {gift ? (
