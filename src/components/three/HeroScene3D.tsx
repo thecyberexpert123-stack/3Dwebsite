@@ -8,7 +8,8 @@ import { useSectionScrollProgress, useWebGL } from "@/lib/hooks";
 import { useQuality, type Quality } from "@/lib/quality";
 import { markHeroReady, useIntroStarted, seg, easeInOutCubic, easeOutCubic } from "@/lib/intro";
 import { HeroStatic } from "@/components/HeroStatic";
-import { CrochetFlower, PALETTE } from "./CrochetFlower";
+import { PALETTE } from "@/lib/palette";
+import { CrochetFlower } from "./CrochetFlower";
 import {
   FloatingHeart,
   GiftBox,

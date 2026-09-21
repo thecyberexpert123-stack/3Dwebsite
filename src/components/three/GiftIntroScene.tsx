@@ -7,12 +7,13 @@ import * as THREE from "three";
 import { useQuality } from "@/lib/quality";
 import { clamp01, easeInOutCubic, easeOutBack, easeOutCubic, seg } from "@/lib/intro";
 import { makeHeartGeometry, rnd } from "./geometry";
-import { CrochetFlower, PALETTE } from "./CrochetFlower";
+import { PALETTE } from "@/lib/palette";
+import { CrochetFlower } from "./CrochetFlower";
 import { bowLoopGeometry, bowTailGeometry } from "./parts";
 import { AdaptiveCanvas, LowTierToneMapping, StudioLights, StudioShadows } from "./Stage";
 import { Meadow } from "./Meadow";
-import { Post } from "./Post";
-import { shared as finish } from "./materials";
+import { Post, HeroPost } from "./Post";
+import { shared as finish, heroYarn } from "./materials";
 
 const damp = THREE.MathUtils.damp;
 
@@ -561,18 +562,21 @@ export default function GiftIntroScene({
           onReady?.();
         }}
       />
-      {/* outdoor light: the key doubles as the sun (same axis as the disc in
-          Meadow), sky-blue fill from above, warm grass bounce from below */}
-      <StudioLights target={[0, 0.4, 0]} keyIntensity={1.35} shadowSize={2.6} outdoor />
+      {/* cinematic outdoor light with time-of-day warmth */}
+      <StudioLights target={[0, 0.4, 0]} keyIntensity={1.45} shadowSize={3.2} outdoor timeOfDay={0.5} />
       <Camera openedAt={openedAt} reduced={reduced} />
       <LowTierToneMapping enabled={quality.simple} />
       <Meadow density={density} simple={quality.simple} reduced={reduced} />
       <Gift phase={opened ? "opening" : "idle"} openedAt={openedAt} onTap={onTap} reduced={reduced} />
-      <Hearts count={quality.simple ? 8 : 14} openedAt={openedAt} />
-      <Confetti count={Math.round(70 * density)} openedAt={openedAt} />
-      {!quality.simple && <Twinkles count={Math.round(22 * density)} reduced={reduced} />}
+      <Hearts count={quality.simple ? 8 : 16} openedAt={openedAt} />
+      <Confetti count={Math.round(80 * density)} openedAt={openedAt} />
+      {!quality.simple && <Twinkles count={Math.round(28 * density)} reduced={reduced} />}
       {quality.simple && <StudioShadows scale={7} far={1.6} opacity={0.32} resolution={Math.min(384, quality.shadowRes)} />}
-      <Post quality={quality} aoRadius={0.28} aoIntensity={1.8} bloomIntensity={0.6} vignette={0.3} toneMapping />
+      {quality.simple ? (
+        <Post quality={quality} aoRadius={0.28} aoIntensity={1.8} bloomIntensity={0.6} vignette={0.3} toneMapping />
+      ) : (
+        <HeroPost quality={quality} bouquetPosition={new THREE.Vector3(0, 0.72, 0)} />
+      )}
     </AdaptiveCanvas>
   );
 }

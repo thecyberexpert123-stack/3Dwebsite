@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { makeHeartGeometry, makePetalGeometry } from "./geometry";
-import { PALETTE } from "./CrochetFlower";
+import { PALETTE } from "@/lib/palette";
 import { useIntroClock, useWind } from "./Stage";
 import { easeOutBack, easeOutCubic, seg } from "@/lib/intro";
 import { shared as finish } from "./materials";

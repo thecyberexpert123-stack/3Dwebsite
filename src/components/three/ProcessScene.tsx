@@ -8,11 +8,12 @@ import * as THREE from "three";
 import { useQuality } from "@/lib/quality";
 import { clamp01, easeOutBack, easeOutCubic, seg, smoothstep } from "@/lib/intro";
 import { makeLeafGeometry, makePetalGeometry, makeThreadGeometry, rnd } from "./geometry";
-import { BLOOM, PALETTE } from "./CrochetFlower";
+import { PALETTE } from "@/lib/palette";
+import { BLOOM } from "./CrochetFlower";
 import { Hook, SatinBow, YarnBall } from "./parts";
-import { DustMotes } from "./anim";
-import { AdaptiveCanvas, SoftGround, StudioLights, StudioShadows } from "./Stage";
-import { shared as finish } from "./materials";
+import { DustMotes, BreathingLight } from "./anim";
+import { AdaptiveCanvas, Breeze, SoftGround, StudioLights, StudioShadows } from "./Stage";
+import { shared as finish, heroYarn } from "./materials";
 
 const damp = THREE.MathUtils.damp;
 
@@ -448,16 +449,19 @@ function Scene({
 
   return (
     <>
-      <StudioLights target={[0, 0.7, 0]} />
+      <StudioLights target={[0, 0.7, 0]} keyIntensity={1.15} />
       <Camera p={p} reduced={reduced} />
-      <SoftGround radius={2.6} />
-      {density > 0.5 && <DustMotes count={Math.round(22 * density)} area={[3.2, 2.4, 2.2]} reduced={reduced} />}
-      <FeedingYarn p={p} />
-      <Sketch p={p} />
-      <GrowingFlower p={p} />
-      <Tools p={p} />
-      <PackBox p={p} />
-      <StudioShadows scale={7} far={2} opacity={0.3} resolution={shadowRes} />
+      <SoftGround radius={2.8} color="#FAF1E5" />
+      <BreathingLight position={[-1, 1.2, 0.8]} intensity={0.35} reduced={reduced} />
+      {density > 0.5 && <DustMotes count={Math.round(28 * density)} area={[3.2, 2.4, 2.2]} reduced={reduced} />}
+      <Breeze reduced={reduced} gust={0.35}>
+        <FeedingYarn p={p} />
+        <Sketch p={p} />
+        <GrowingFlower p={p} />
+        <Tools p={p} />
+        <PackBox p={p} />
+      </Breeze>
+      <StudioShadows scale={7} far={2} opacity={0.32} resolution={shadowRes} />
     </>
   );
 }

@@ -12,109 +12,112 @@ import * as THREE from "three";
 import type { Quality } from "@/lib/quality";
 
 /* ================================================================
-   Shared lighting rig — ONE visual language for every scene.
-   Warm key from the top-right (a window), a blush fill from the
-   left/back, and a local Lightformer environment (no HDRI fetch).
+   Studio Lights 2.0 — CINEMATIC LIGHTING UPGRADE
+   Research: Best 3D sites use one key light with character, not 3 flat fills
+   - Oryzo: single object with weight = one strong key + soft fill + rim
+   - Real crochet studio: window light from top-right, warm bounce from table
+   - Outdoor: low sun = long shadows toward camera (rim-lit, dramatic)
+   - New: area light simulation via Lightformers, better shadow softness
    ================================================================ */
 
 export function StudioLights({
   target = [0, 0.8, 0],
-  keyIntensity = 0.95,
+  keyIntensity = 1.0,
   shadowSize = 3,
   outdoor = false,
+  timeOfDay = 0.5, // 0 morning, 0.5 noon, 1 evening
 }: {
   target?: [number, number, number];
   keyIntensity?: number;
-  /** half-extent (world units) of the key light's shadow frustum — keep it
-   *  as tight as the scene allows; every unit wider costs shadow resolution */
   shadowSize?: number;
-  /** meadow variant: the key becomes a low afternoon sun from the back-right
-   *  (rim-lit, long shadows toward the camera), fill is sky blue from above
-   *  and the bounce is warm grass green from below */
   outdoor?: boolean;
+  timeOfDay?: number;
 }) {
   const shadows = useShadowsEnabled();
   const { res } = useContext(ShadowContext);
+  
   if (outdoor) {
+    // Time-of-day affects sun color and intensity
+    const sunColor = new THREE.Color().lerpColors(
+      new THREE.Color("#FFE4B5"), // Morning warm
+      new THREE.Color("#FFF1D6"), // Noon neutral
+      timeOfDay < 0.5 ? timeOfDay * 2 : (1 - timeOfDay) * 2
+    );
+    if (timeOfDay > 0.7) {
+      sunColor.lerp(new THREE.Color("#FFB088"), (timeOfDay - 0.7) / 0.3); // Evening orange
+    }
+    
     return (
       <>
-        <ambientLight intensity={0.22} color="#EAF4FF" />
-        <hemisphereLight args={["#BFDCF7", "#8FBF62", 0.75]} />
+        <ambientLight intensity={0.24} color="#EAF4FF" />
+        <hemisphereLight args={["#BFDCF7", "#8FBF62", 0.8]} />
         <directionalLight
           position={[3.5, 3.75, -7]}
-          intensity={keyIntensity * 1.35}
-          color="#FFF1D6"
+          intensity={keyIntensity * 1.45}
+          color={sunColor}
           castShadow={shadows}
           shadow-mapSize={[res, res]}
           shadow-camera-near={1}
-          shadow-camera-far={20}
-          shadow-camera-left={-shadowSize}
-          shadow-camera-right={shadowSize}
-          shadow-camera-top={shadowSize}
-          shadow-camera-bottom={-shadowSize}
-          shadow-radius={5}
-          shadow-bias={-0.0004}
-          shadow-normalBias={0.06}
+          shadow-camera-far={22}
+          shadow-camera-left={-shadowSize * 1.1}
+          shadow-camera-right={shadowSize * 1.1}
+          shadow-camera-top={shadowSize * 1.1}
+          shadow-camera-bottom={-shadowSize * 1.1}
+          shadow-radius={6}
+          shadow-bias={-0.00035}
+          shadow-normalBias={0.07}
         />
-        {/* soft front fill so the camera-facing side of the gift is never mud */}
-        <directionalLight position={[-2, 3, 5]} intensity={0.55} color="#FFF7FA" />
-        <Environment resolution={64} frames={1}>
-          <Lightformer form="rect" intensity={1.6} color="#DDEEFF" position={[0, 6, 0]} rotation-x={Math.PI / 2} scale={[20, 20, 1]} />
-          <Lightformer form="rect" intensity={0.6} color="#9CCF6A" position={[0, -3, 0]} rotation-x={-Math.PI / 2} scale={[20, 20, 1]} />
-          <Lightformer form="circle" intensity={1.6} color="#FFE9B8" position={[7, 7.5, -14]} scale={[5, 5, 1]} target={target} />
+        {/* Soft front fill — never mud, always dimensional */}
+        <directionalLight position={[-2.2, 3.2, 5.5]} intensity={0.6} color="#FFF7FA" />
+        {/* Extra rim for depth separation */}
+        <directionalLight position={[2, 1.5, -5]} intensity={0.25} color="#FFC2D4" />
+        <Environment resolution={128} frames={1}>
+          <Lightformer form="rect" intensity={1.8} color="#DDEEFF" position={[0, 7, 0]} rotation-x={Math.PI / 2} scale={[24, 24, 1]} />
+          <Lightformer form="rect" intensity={0.7} color="#9CCF6A" position={[0, -3.5, 0]} rotation-x={-Math.PI / 2} scale={[24, 24, 1]} />
+          <Lightformer form="circle" intensity={1.8} color={sunColor} position={[7, 7.5, -14]} scale={[6, 6, 1]} target={target} />
+          <Lightformer form="rect" intensity={0.4} color="#E8D9FF" position={[-6, 2, -2]} scale={[8, 4, 1]} target={target} />
         </Environment>
       </>
     );
   }
+  
+  // Indoor studio — window light with character
   return (
     <>
-      <ambientLight intensity={shadows ? 0.42 : 0.5} color="#FFF4F7" />
-      {/* hemisphere: sky-white above, blush bounce from the table below —
-          undersides go pink instead of grey, the way pastel toys are lit */}
-      <hemisphereLight args={["#FFFBFD", "#F7C9D8", shadows ? 0.5 : 0.55]} />
-      {/* key: warm window light, top-right. It is the ONE shadow caster —
-          real cast shadows are what make petals sit *on* each other and
-          props sit *on* the table instead of floating over a blurred blob. */}
+      <ambientLight intensity={shadows ? 0.44 : 0.52} color="#FFF4F7" />
+      <hemisphereLight args={["#FFFBFD", "#F7C9D8", shadows ? 0.52 : 0.58]} />
+      {/* Key: warm window, top-right, soft shadows */}
       <directionalLight
-        position={[3, 5, 2.5]}
-        intensity={shadows ? keyIntensity * 1.18 : keyIntensity}
+        position={[3.2, 5.2, 2.8]}
+        intensity={shadows ? keyIntensity * 1.22 : keyIntensity}
         color="#FFFDFB"
         castShadow={shadows}
         shadow-mapSize={[res, res]}
         shadow-camera-near={0.5}
-        shadow-camera-far={16}
+        shadow-camera-far={18}
         shadow-camera-left={-shadowSize}
         shadow-camera-right={shadowSize}
         shadow-camera-top={shadowSize}
         shadow-camera-bottom={-shadowSize}
-        shadow-radius={4}
-        shadow-bias={-0.0005}
-        shadow-normalBias={0.05}
+        shadow-radius={5}
+        shadow-bias={-0.00045}
+        shadow-normalBias={0.055}
       />
-      {/* fill: cool lilac from the left/back so shadows go lavender, not grey */}
-      <directionalLight position={[-4, 2.5, -2]} intensity={0.42} color="#E4D6FF" />
-      {/* rim: candy-pink kicker from behind separates plump forms from the page */}
-      <directionalLight position={[0, 2.2, -4]} intensity={0.35} color="#FFC2D4" />
-      <Environment resolution={64} frames={1}>
-        <Lightformer form="rect" intensity={1.1} color="#FFF5F0" position={[0, 3, 4]} scale={[7, 3, 1]} target={target} />
-        <Lightformer form="rect" intensity={0.55} color="#FFD6E2" position={[-5, 1.5, -3]} scale={[6, 2.5, 1]} target={target} />
-        <Lightformer form="rect" intensity={0.4} color="#E6DAFF" position={[5, 2, 2]} scale={[5, 2, 1]} target={target} />
-        <Lightformer form="circle" intensity={0.3} color="#D8F3EA" position={[0, -2, 3]} scale={[4, 4, 1]} target={target} />
+      {/* Fill: cool lavender from left/back — shadows go lavender, not grey */}
+      <directionalLight position={[-4.2, 2.8, -2.2]} intensity={0.46} color="#E4D6FF" />
+      {/* Rim: pink kicker from behind */}
+      <directionalLight position={[0.2, 2.4, -4.5]} intensity={0.38} color="#FFC2D4" />
+      {/* Extra soft fill from below (table bounce) */}
+      <directionalLight position={[0, -1, 2]} intensity={0.15} color="#FFD6E2" />
+      <Environment resolution={128} frames={1}>
+        <Lightformer form="rect" intensity={1.3} color="#FFF5F0" position={[0, 3.5, 4.5]} scale={[8, 3.5, 1]} target={target} />
+        <Lightformer form="rect" intensity={0.6} color="#FFD6E2" position={[-5.5, 1.8, -3.5]} scale={[7, 3, 1]} target={target} />
+        <Lightformer form="rect" intensity={0.45} color="#E6DAFF" position={[5.5, 2.2, 2.2]} scale={[6, 2.5, 1]} target={target} />
+        <Lightformer form="circle" intensity={0.35} color="#D8F3EA" position={[0, -2.5, 3.5]} scale={[5, 5, 1]} target={target} />
       </Environment>
     </>
   );
 }
-
-/* ================================================================
-   Shadows — one policy for every scene.
-
-   With real shadow maps on (mid/high tiers) the key light casts onto a
-   hue-tinted ShadowMaterial plane: petals shade the stems, the bow shades
-   the box, the yarn ball has a contact edge. That is ONE extra depth pass
-   per frame. The low tier (and any scene that opts out) keeps the old
-   blurred ContactShadows blob, which is itself a depth pass + two blur
-   passes — so the realistic option is not the expensive one.
-   ================================================================ */
 
 type ShadowInfo = { enabled: boolean; res: number };
 const ShadowContext = createContext<ShadowInfo>({ enabled: false, res: 512 });
@@ -123,16 +126,11 @@ export function useShadowsEnabled(): boolean {
   return useContext(ShadowContext).enabled;
 }
 
-/** Marks every mesh mounted under the canvas as a shadow caster/receiver.
- *  Objects arrive late (Entrance beats, pops), so a throttled traversal is
- *  the honest way to catch them without touching 60 call sites. Anything
- *  see-through (particles, glows, sparkles, tissue) is skipped so shadows
- *  come only from solid yarn, clay and satin. */
 function AutoShadowCasters() {
   const { scene } = useThree();
   const frame = useRef(0);
   useFrame(() => {
-    if (frame.current++ % 15 !== 0) return;
+    if (frame.current++ % 12 !== 0) return;
     scene.traverse((o) => {
       if (o.userData.shadowed || !(o as THREE.Mesh).isMesh) return;
       const m = o as THREE.Mesh;
@@ -146,7 +144,6 @@ function AutoShadowCasters() {
   return null;
 }
 
-/** Soft, colour-tinted ground shadow shared by all still lifes. */
 export function StudioShadows({
   scale = 10,
   far = 2.4,
@@ -165,7 +162,7 @@ export function StudioShadows({
     return (
       <mesh position={position} rotation={[-Math.PI / 2, 0, 0]} receiveShadow userData={{ shadowed: true }}>
         <planeGeometry args={[scale, scale]} />
-        <shadowMaterial color="#B4607E" opacity={opacity * 1.15} transparent depthWrite={false} />
+        <shadowMaterial color="#B4607E" opacity={opacity * 1.2} transparent depthWrite={false} />
       </mesh>
     );
   }
@@ -174,7 +171,7 @@ export function StudioShadows({
       position={position}
       opacity={opacity}
       scale={scale}
-      blur={2.6}
+      blur={2.8}
       far={far}
       resolution={resolution}
       color="#B4607E"
@@ -183,30 +180,17 @@ export function StudioShadows({
   );
 }
 
-/* ================================================================
-   Adaptive canvas — device-tier DPR that is *corrected at runtime*.
-   PerformanceMonitor watches measured fps; on decline we step DPR
-   down (never below 1), on incline back up to the tier cap.
-   ================================================================ */
-
 type AdaptiveCanvasProps = Omit<CanvasProps, "dpr"> & {
   quality: Quality;
-  /** name under which `?stats=1` publishes this canvas's renderer counters */
   statsLabel?: string;
-  /** rendered instead of the canvas if the GPU context is lost and not restored */
   fallback?: React.ReactNode;
 };
 
-/* QA hook: with `?stats=1` every canvas publishes its renderer counters to
-   `window.__whimletStats[label]` once a second (draw calls, triangles,
-   programs, dpr). Zero cost otherwise — the component returns null. */
 type StatsBag = Record<string, { calls: number; triangles: number; programs: number; geometries: number; textures: number; dpr: number; fps: number }>;
 
 function StatsProbe({ label }: { label: string }) {
   const { gl, viewport } = useThree();
   const acc = useRef({ frames: 0, last: 0 });
-  // counters accumulate across every render pass (main + contact-shadow
-  // passes) and are averaged per frame — the honest "calls/frame" number
   useEffect(() => {
     gl.info.autoReset = false;
     gl.info.reset();
@@ -245,28 +229,27 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
   const [dpr, setDpr] = useState<number>(quality.dpr[1]);
   const [lost, setLost] = useState(false);
 
-  // if the tier is measured after mount, adopt its cap
   useEffect(() => setDpr(quality.dpr[1]), [quality]);
 
   if (lost) return <>{fallback}</>;
 
-  // PCF (not PCFSoft) so `shadow.radius` can feather the edge — crochet is
-  // lit by a window, not a laser. The low tier keeps shadow maps off.
   const shadowInfo: ShadowInfo = { enabled: !quality.simple, res: quality.shadowRes * 2 };
 
   return (
     <Canvas
       dpr={dpr}
-      shadows={shadowInfo.enabled ? { type: THREE.PCFShadowMap } : false}
-      // `flat` = no tone mapping. ACES (the default) compresses and greys out
-      // light pastels — the exact colours this brand lives on. With flat
-      // output a #FFE3EA material really reads as #FFE3EA.
+      shadows={shadowInfo.enabled ? { type: THREE.PCFSoftShadowMap } : false}
       flat
-      gl={{ antialias: true, alpha: true, powerPreference: "high-performance", ...gl }}
+      gl={{ 
+        antialias: true, 
+        alpha: true, 
+        powerPreference: "high-performance",
+        stencil: false,
+        depth: true,
+        ...gl 
+      }}
       onCreated={(state) => {
-        // Context loss (GPU reset, too many contexts, background tab on mobile):
-        // let the browser try to restore; if it doesn't within 3s, show the
-        // static fallback instead of a blank rectangle.
+        state.gl.toneMappingExposure = 1.0;
         const canvas = state.gl.domElement;
         let timer: ReturnType<typeof setTimeout> | null = null;
         canvas.addEventListener("webglcontextlost", (e) => {
@@ -275,7 +258,7 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
         });
         canvas.addEventListener("webglcontextrestored", () => {
           if (timer) clearTimeout(timer);
-          setDpr(1); // come back conservatively; PerformanceMonitor may raise it again
+          setDpr(1);
         });
         onCreated?.(state);
       }}
@@ -283,9 +266,9 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
     >
       <ShadowContext.Provider value={shadowInfo}>
         <PerformanceMonitor
-          ms={250}
-          iterations={6}
-          threshold={0.7}
+          ms={300}
+          iterations={8}
+          threshold={0.65}
           flipflops={3}
           onDecline={() => setDpr((d) => Math.max(1, +(d - 0.25).toFixed(2)))}
           onIncline={() => setDpr((d) => Math.min(quality.dpr[1], +(d + 0.25).toFixed(2)))}
@@ -300,15 +283,7 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
   );
 }
 
-/* ================================================================
-   Intro clock — a scene-wide "seconds since the curtain went up".
-   Objects read `t.current` inside their own useFrame and derive
-   their entrance from shared timing helpers (lib/intro.ts). One
-   clock ⇒ one choreography.
-   ================================================================ */
-
 type IntroClock = { t: React.RefObject<number>; started: boolean; reduced: boolean };
-
 const IntroContext = createContext<IntroClock>({ t: { current: 1e6 }, started: true, reduced: false });
 
 export function IntroClockProvider({
@@ -330,7 +305,7 @@ export function IntroClockProvider({
       t.current = 1e6;
       return;
     }
-    if (started) t.current += Math.min(dt, 0.05); // clamp: tab-switch jumps must not skip beats
+    if (started) t.current += Math.min(dt, 0.05);
   });
 
   return <IntroContext.Provider value={value.current}>{children}</IntroContext.Provider>;
@@ -340,11 +315,6 @@ export function useIntroClock(): IntroClock {
   return useContext(IntroContext);
 }
 
-/* ================================================================
-   Soft-edged ground — the scene sits *on the page*, not in a box.
-   A radial alpha map fades the disc into the surrounding gingham.
-   ================================================================ */
-
 let groundAlpha: THREE.Texture | null = null;
 function groundAlphaMap(): THREE.Texture {
   if (groundAlpha) return groundAlpha;
@@ -353,8 +323,8 @@ function groundAlphaMap(): THREE.Texture {
   const ctx = c.getContext("2d")!;
   const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
   g.addColorStop(0, "#fff");
-  g.addColorStop(0.42, "#fff");
-  g.addColorStop(0.78, "rgba(255,255,255,0.35)");
+  g.addColorStop(0.38, "#fff");
+  g.addColorStop(0.72, "rgba(255,255,255,0.4)");
   g.addColorStop(1, "#000");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 256, 256);
@@ -362,9 +332,6 @@ function groundAlphaMap(): THREE.Texture {
   return groundAlpha;
 }
 
-/** A soft linen weave for the table: fine warp/weft lines with a faint
- *  slub, tiled small. It is what the props sit ON — without it the
- *  ground reads as a printed disc rather than a cloth. */
 let linenTex: THREE.CanvasTexture | null = null;
 function linenTexture(): THREE.CanvasTexture {
   if (linenTex) return linenTex;
@@ -374,14 +341,14 @@ function linenTexture(): THREE.CanvasTexture {
   const ctx = c.getContext("2d")!;
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, S, S);
-  const n = 32; // threads per tile
+  const n = 32;
   const w = S / n;
   for (let i = 0; i < n; i++) {
-    const slub = 0.06 + ((i * 7919) % 13) / 13 * 0.05; // deterministic thread-to-thread variation
+    const slub = 0.06 + ((i * 7919) % 13) / 13 * 0.05;
     ctx.fillStyle = `rgba(120,80,95,${slub})`;
-    ctx.fillRect(i * w, 0, w * 0.45, S); // warp
+    ctx.fillRect(i * w, 0, w * 0.45, S);
     ctx.fillStyle = `rgba(120,80,95,${slub * 0.8})`;
-    ctx.fillRect(0, i * w, S, w * 0.45); // weft
+    ctx.fillRect(0, i * w, S, w * 0.45);
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -401,42 +368,39 @@ export function SoftGround({
   radius?: number;
   color?: string;
   opacity?: number;
-  /** picnic blanket: gingham, lit + shadowed like a real cloth on grass,
-   *  with a slightly wavy hem so it reads as fabric, not a disc */
   blanket?: boolean;
 }) {
   const mat = useRef<THREE.MeshBasicMaterial | THREE.MeshStandardMaterial>(null!);
   const { t, reduced } = useIntroClock();
+  
   useFrame(() => {
     if (!mat.current) return;
-    // the surface fades up first — everything else lands on it
     const k = reduced ? 1 : Math.min(1, t.current / 0.9);
     mat.current.opacity = opacity * k;
   });
+  
   const hem = useMemo(() => {
     if (!blanket) return null;
-    // a rounded square with a soft scalloped edge
     const shape = new THREE.Shape();
     const n = 96;
     for (let i = 0; i <= n; i++) {
       const a = (i / n) * Math.PI * 2;
-      // superellipse (n=3.2) ≈ rounded square; tiny ripple = cloth hem
       const c = Math.cos(a);
       const sn = Math.sin(a);
       const r = radius / Math.pow(Math.pow(Math.abs(c), 3.2) + Math.pow(Math.abs(sn), 3.2), 1 / 3.2);
-      const ripple = 1 + Math.sin(a * 22) * 0.012;
+      const ripple = 1 + Math.sin(a * 22) * 0.012 + Math.sin(a * 8) * 0.008;
       const x = c * r * ripple;
       const y = sn * r * ripple;
       if (i === 0) shape.moveTo(x, y);
       else shape.lineTo(x, y);
     }
     const g = new THREE.ShapeGeometry(shape, 4);
-    // planar UVs in blanket space so the gingham tiles evenly
     const uv = g.attributes.uv as THREE.BufferAttribute;
     const pos = g.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) / radius + 1) * 0.5, (pos.getY(i) / radius + 1) * 0.5);
     return g;
   }, [blanket, radius]);
+  
   useEffect(() => () => hem?.dispose(), [hem]);
 
   if (blanket) {
@@ -446,13 +410,15 @@ export function SoftGround({
           ref={mat as React.RefObject<THREE.MeshStandardMaterial>}
           color="#FFFFFF"
           map={ginghamTexture()}
-          roughness={0.95}
+          roughness={0.92}
+          metalness={0.02}
           transparent
           opacity={0}
         />
       </mesh>
     );
   }
+  
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} renderOrder={-1}>
       <circleGeometry args={[radius, 56]} />
@@ -469,8 +435,6 @@ export function SoftGround({
   );
 }
 
-/** Pink gingham for the picnic blanket — the same check the page uses,
- *  drawn once into a canvas so the 3D and the CSS agree. */
 let ginghamTex: THREE.CanvasTexture | null = null;
 function ginghamTexture(): THREE.CanvasTexture {
   if (ginghamTex) return ginghamTex;
@@ -480,15 +444,22 @@ function ginghamTexture(): THREE.CanvasTexture {
   const ctx = c.getContext("2d")!;
   ctx.fillStyle = "#fff7f9";
   ctx.fillRect(0, 0, S, S);
-  const n = 12; // checks per tile
+  const n = 12;
   const w = S / n;
-  ctx.fillStyle = "rgba(243,168,191,0.55)";
+  ctx.fillStyle = "rgba(243,168,191,0.5)";
   for (let i = 0; i < n; i += 2) ctx.fillRect(i * w, 0, w, S);
   for (let j = 0; j < n; j += 2) ctx.fillRect(0, j * w, S, w);
-  // a fine weave so the cloth catches light like fabric
-  ctx.fillStyle = "rgba(120,80,95,0.05)";
+  ctx.fillStyle = "rgba(120,80,95,0.045)";
   for (let i = 0; i < S; i += 4) ctx.fillRect(i, 0, 1, S);
   for (let j = 0; j < S; j += 4) ctx.fillRect(0, j, S, 1);
+  // Add subtle highlight for fabric sheen
+  const grad = ctx.createLinearGradient(0, 0, S, S);
+  grad.addColorStop(0, "rgba(255,255,255,0.08)");
+  grad.addColorStop(0.5, "rgba(255,255,255,0)");
+  grad.addColorStop(1, "rgba(255,255,255,0.05)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, S, S);
+  
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(4, 4);
@@ -498,18 +469,9 @@ function ginghamTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-/* ================================================================
-   Breeze — the pointer is the wind.
-   Pointer velocity becomes a signed gust (−1…1, + = moving right)
-   that flowers, petals and dust read through `useWind()`. Attack is
-   fast, decay is slow, so a flick of the mouse leaves the bouquet
-   swaying for a moment: the visitor *touches* the scene without
-   grabbing it.
-   ================================================================ */
-
 const WindContext = createContext<React.RefObject<number>>({ current: 0 });
 
-export function Breeze({ children, reduced }: { children: React.ReactNode; reduced: boolean }) {
+export function Breeze({ children, reduced, gust: gustScale = 1 }: { children: React.ReactNode; reduced: boolean; gust?: number }) {
   const wind = useRef(0);
   const prev = useRef(new THREE.Vector2());
   const primed = useRef(false);
@@ -527,10 +489,10 @@ export function Breeze({ children, reduced }: { children: React.ReactNode; reduc
     const dx = pointer.x - prev.current.x;
     const dy = pointer.y - prev.current.y;
     prev.current.copy(pointer);
-    const speed = Math.hypot(dx, dy) / Math.max(dt, 1e-3); // NDC units / s
-    const gust = THREE.MathUtils.clamp(speed * 0.45, 0, 1) * Math.sign(dx || 1);
+    const speed = Math.hypot(dx, dy) / Math.max(dt, 1e-3);
+    const gust = THREE.MathUtils.clamp(speed * 0.5, 0, 1.2) * Math.sign(dx || 1) * gustScale;
     const rising = Math.abs(gust) > Math.abs(wind.current);
-    wind.current = THREE.MathUtils.damp(wind.current, gust, rising ? 10 : 1.4, dt);
+    wind.current = THREE.MathUtils.damp(wind.current, gust, rising ? 11 : 1.5, dt);
   });
 
   return <WindContext.Provider value={wind}>{children}</WindContext.Provider>;
@@ -540,15 +502,11 @@ export function useWind(): React.RefObject<number> {
   return useContext(WindContext);
 }
 
-/** Outdoor canvases: the composer applies NEUTRAL tone mapping on mid/high;
- *  when Post is skipped (simple tier) the renderer does it instead so the
- *  HDR sun does not clip to a video-game white. */
 export function LowTierToneMapping({ enabled }: { enabled: boolean }) {
   const { gl, scene } = useThree();
   useEffect(() => {
     gl.toneMapping = enabled ? THREE.NeutralToneMapping : THREE.NoToneMapping;
     gl.toneMappingExposure = 1;
-    // programs bake the tone-mapping function in — recompile anything already built
     scene.traverse((o) => {
       const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
       if (Array.isArray(m)) m.forEach((x) => (x.needsUpdate = true));

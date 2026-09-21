@@ -6,7 +6,7 @@ import { Float, RoundedBox } from "@react-three/drei";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { makeHeartGeometry } from "./geometry";
-import { PALETTE } from "./CrochetFlower";
+import { PALETTE } from "@/lib/palette";
 import { SatinBow } from "./parts";
 import { BreathingLight, DustMotes, HeartBurst, Sway } from "./anim";
 import { AdaptiveCanvas, Breeze, StudioLights, StudioShadows } from "./Stage";

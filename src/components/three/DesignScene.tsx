@@ -511,17 +511,17 @@ export default function DesignScene({ config }: { config: DesignConfig }) {
       camera={{ position: [0.6, 1.7, 4.6], fov: 33 }}
       aria-hidden="true"
     >
-      <StudioLights target={[0, 0.8, 0]} keyIntensity={1.05} />
-      <Breeze reduced={!!reduce}>
+      <StudioLights target={[0, 0.8, 0]} keyIntensity={1.18} />
+      <Breeze reduced={!!reduce} gust={0.45}>
         <Scene config={config} reduced={!!reduce} />
-        <DustMotes count={Math.round(16 * quality.density)} area={[4.5, 2.6, 2.5]} size={0.035} reduced={!!reduce} />
-        {!quality.simple && <FallingPetals count={Math.max(3, Math.round(5 * quality.density))} area={[3.2, 2.6, 1.8]} reduced={!!reduce} />}
+        <DustMotes count={Math.round(20 * quality.density)} area={[4.5, 2.6, 2.5]} size={0.035} reduced={!!reduce} />
+        {!quality.simple && <FallingPetals count={Math.max(3, Math.round(6 * quality.density))} area={[3.2, 2.6, 1.8]} reduced={!!reduce} />}
       </Breeze>
       <Rig reduced={!!reduce} />
       <group position={[0, -0.15, 0]}>
-        <SoftGround radius={2.2} color="#FFE9EF" />
+        <SoftGround radius={2.6} color="#FFF0F3" />
       </group>
-      <StudioShadows position={[0, -0.15, 0]} opacity={0.28} scale={8} far={2.5} resolution={quality.shadowRes} />
+      <StudioShadows position={[0, -0.15, 0]} opacity={0.32} scale={8} far={2.5} resolution={quality.shadowRes} />
     </AdaptiveCanvas>
   );
 }

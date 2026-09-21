@@ -6,27 +6,8 @@ import * as THREE from "three";
 import { makeLeafGeometry, makePetalGeometry, makeStemCurve, makeStemGeometry, rnd } from "./geometry";
 import { useWind } from "./Stage";
 import { create as createMat } from "./materials";
-
-/** Whimlet yarn palette — shared across all 3D scenes. */
-export const PALETTE = {
-  blush: "#F9C6D3",
-  blushDeep: "#F3A8BF",
-  cream: "#FFF1E6",
-  rose: "#E07A9A",
-  dusty: "#D16A7C",
-  white: "#FFFBFC",
-  lavender: "#DCCCF5",
-  lavenderDeep: "#B89BE6",
-  sage: "#B7D8C4",
-  sageDeep: "#7FAE92",
-  mint: "#D4F1EA",
-  sky: "#D8ECFB",
-  butter: "#FFE9A8",
-  peach: "#FFD4C2",
-  wood: "#C9A27E",
-  ivory: "#FFF6F8",
-  strawberry: "#F07C8C",
-} as const;
+import { PALETTE } from "@/lib/palette";
+export { PALETTE } from "@/lib/palette";
 
 /** The shared "soft clay" finish: matte but with a hint of sheen so pastel
  *  forms read as plump toys rather than dusty plaster. */

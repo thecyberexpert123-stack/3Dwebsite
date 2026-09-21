@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
-import { PALETTE } from "./CrochetFlower";
+import { PALETTE } from "@/lib/palette";
 import { shared as finish } from "./materials";
 import { CrochetFlower } from "./CrochetFlower";
 import { FloatingHeart, GiftBox, Hook, Sparkle3D, YarnBall, RibbonSpool, Scissors } from "./parts";
