@@ -150,6 +150,7 @@ export function StudioApp() {
       </div>
 
       {/* ---------- top bar ---------- */}
+      <h1 className="sr-only">Whimlet 3D Design Studio</h1>
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-3 md:p-5">
         <div className="pointer-events-auto flex items-center gap-2">
           <Link href="/" className="btn btn-glass btn-sm" aria-label="Back to Whimlet">
@@ -157,7 +158,7 @@ export function StudioApp() {
           </Link>
           <span className="glass-pill hidden items-center gap-2 md:inline-flex">
             <SparkleDoodle className="h-3.5 w-3.5 text-rose-ink" />
-            <span className="font-hand text-lg leading-none text-rose-ink">3D Design Studio</span>
+            <span className="font-hand text-lg leading-none text-rose-ink" aria-hidden="true">3D Design Studio</span>
             <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-cocoa-soft">{options} options live</span>
           </span>
         </div>
@@ -336,7 +337,7 @@ export function StudioApp() {
             <button type="button" onClick={() => fileInput.current?.click()} className="btn btn-glass btn-sm" title="Open a .whimlet.json file (or drop it anywhere)">
               ⤒ Open
             </button>
-            <input ref={fileInput} type="file" accept=".json,application/json" className="hidden" onChange={(e) => { openFile(e.target.files?.[0]); e.currentTarget.value = ""; }} />
+            <input ref={fileInput} type="file" accept=".json,application/json" className="hidden" aria-label="Open a Whimlet design file" tabIndex={-1} onChange={(e) => { openFile(e.target.files?.[0]); e.currentTarget.value = ""; }} />
             <button type="button" onClick={snapshot} className="btn btn-glass btn-sm hidden md:inline-flex" title="Download a PNG of the preview">
               ◎ Snapshot
             </button>

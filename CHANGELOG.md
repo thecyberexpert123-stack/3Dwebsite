@@ -261,6 +261,23 @@ touch).
 - Studio tour through all groups and presets, admin spec sheet with the
   Starlit Night sample, phone drawer, and the door open-lid frames captured
   in `docs/qa/v0.12.0-*.jpg`.
+- End-to-end flow scripted in headless Chromium: preset → bloom/extras
+  edits → tag text → undo ×2 / redo → share code (≈180 chars) → Save file
+  (captured JSON) → pasted into `/admin` → spec sheet + parts / exploded /
+  x-ray / grid; homepage teaser → **Open full studio** reopens the exact
+  design. Reduced motion: renders, no errors. **No WebGL:** studio shows the
+  fallback message with all 43 controls, summary and WhatsApp working;
+  admin shows the spec sheet without a canvas.
+- Accessibility pass on `/studio`: every icon/swatch button labelled, 32
+  `aria-pressed` states, one `aria-live` summary, landmarks
+  header/nav/main/footer/aside, a page `h1`, hidden file input labelled;
+  tab order starts Back → backdrops → turning → step rail.
+- Renderer counters (`?stats=1`, SwiftShader, 1440×900): default flower on
+  the low tier 63 calls / 11.4k tris / 14 programs; the 9-flower *Starlit
+  Night* bouquet 256 calls / 193k tris — that includes the contact-shadow
+  depth pass, so ≈128 / 96k per pass (the v0.10 hero was ~105k). High-tier
+  numbers were not trustworthy here (< 1 fps at dpr 1.75 on a CPU
+  rasteriser) and are left unmeasured.
 - Not verified in a real browser: pinch/orbit feel on touch, drag-drop of
   files on iOS/Android, and real-GPU frame rates (SwiftShader only here).
 
