@@ -43,6 +43,13 @@ export function LoadingScreen() {
   const [mode, setMode] = useState<"gift" | "quick">("gift");
   const [opened, setOpened] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
+  // honest loading stages: the 3D chunk arriving (dynamic import resolved ⇒
+  // the scene component mounted), then shaders compiling (first frame), then
+  // the meadow fades in. `pct` is what the ring shows; it only ever moves
+  // forward, and it eases toward each stage's ceiling while we wait so a slow
+  // network never looks frozen.
+  const [stage, setStage] = useState<0 | 1 | 2>(0);
+  const [pct, setPct] = useState(0);
   const reduce = useReducedMotion();
   const webgl = useWebGL();
   const override = useRef<ReturnType<typeof introOverride>>(null);
@@ -64,6 +71,31 @@ export function LoadingScreen() {
     setMounted(true);
     setVisible(true);
   }, []);
+
+  // progress ring: creep toward the current stage's ceiling; jump on stage change
+  useEffect(() => {
+    if (!mounted || gone) return;
+    const ceiling = stage === 0 ? 0.38 : stage === 1 ? 0.86 : 1;
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      setPct((p) => {
+        if (p >= ceiling - 0.001) return stage === 2 ? 1 : p;
+        // ease-out toward the ceiling: fast at first, slower as it nears
+        const next = p + (ceiling - p) * (stage === 2 ? 6 : 0.9) * dt;
+        return Math.min(ceiling, next);
+      });
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [mounted, gone, stage]);
+
+  useEffect(() => {
+    if (sceneReady) setStage(2);
+  }, [sceneReady]);
 
   // lock the page while the door is closed
   useEffect(() => {
@@ -145,7 +177,7 @@ export function LoadingScreen() {
           aria-modal={gift ? true : undefined}
           aria-label={gift ? "Welcome — unwrap to enter Whimlet" : undefined}
           aria-hidden={gift ? undefined : true}
-          className={`fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden ${gift && webgl !== false ? "bg-[#e4eef6]" : "candy"}`}
+          className="candy fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden"
           exit={
             reduce
               ? { opacity: 0, transition: { duration: 0.25 } }
@@ -157,10 +189,9 @@ export function LoadingScreen() {
           }
           style={{ clipPath: "circle(150% at 50% 52%)" }}
         >
-          {/* soft dot texture over the candy wash (drawn fallback only) */}
-          {!(gift && webgl !== false) && (
-            <div className="polka pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" aria-hidden="true" />
-          )}
+          {/* soft dot texture over the candy wash — the loading backdrop; the
+              meadow fades in over it once its first frame is painted */}
+          <div className="polka pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" aria-hidden="true" />
 
           {/* the meadow fills the whole door; the mark and the invitation float over it */}
           {gift && webgl !== false && (
@@ -168,6 +199,7 @@ export function LoadingScreen() {
               <GiftIntroScene
                 opened={opened}
                 onTap={unwrap}
+                onMount={() => setStage((st) => (st < 1 ? 1 : st))}
                 onReady={() => setSceneReady(true)}
                 reduced={!!reduce}
               />
@@ -181,37 +213,93 @@ export function LoadingScreen() {
           <motion.div
             className="relative z-10 flex flex-col items-center"
             initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: opened ? 0 : 1, y: opened ? -14 : 0 }}
+            animate={{ opacity: opened || (gift && webgl !== false && !sceneReady) ? 0 : 1, y: opened ? -14 : 0 }}
             transition={{ duration: opened ? 0.35 : 0.6, delay: opened ? 0 : 0.2 }}
           >
             <p className="font-script text-5xl text-cocoa md:text-6xl">Whimlet</p>
             <p className="mt-1 font-hand text-lg text-cocoa-soft">
               {gift ? "a little something, just for you" : "one stitch at a time."}
             </p>
-            {gift && (
-              // a running stitch that keeps sewing while the gift's shaders compile,
-              // then finishes its seam once the scene is ready — the progress cue.
-              <svg
-                viewBox="0 0 160 10"
-                className={`stitch-loader mt-3 h-2.5 w-40 text-rose-ink ${sceneReady || webgl === false ? "is-done" : ""}`}
-                aria-hidden="true"
-              >
-                <path d="M2 6c26-5 52-5 78 0s52 5 78 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeDasharray="5 4" pathLength="100" />
-              </svg>
-            )}
           </motion.div>
+
+          {/* ---- the loading card: a glass tag hanging in the middle of the door
+               while the meadow arrives. Real progress (chunk → shaders → first
+               frame), a running stitch around a heart, and one line that says
+               what is happening. It irises away once the scene is up. ---- */}
+          {gift && webgl !== false && (
+            <AnimatePresence>
+              {!sceneReady && (
+                <motion.div
+                  key="loading-card"
+                  role="status"
+                  aria-live="polite"
+                  className="glass-panel absolute left-1/2 top-1/2 z-20 flex w-[min(86vw,22rem)] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-4 px-8 py-8 text-center"
+                  initial={{ opacity: 0, scale: 0.94, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 1.04, filter: "blur(6px)", transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } }}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+                >
+                  <SparkleDoodle aria-hidden="true" className="absolute -right-2 -top-2 h-7 w-7 animate-twinkle text-lavender-deep" />
+                  <SparkleDoodle aria-hidden="true" className="absolute -left-2 bottom-6 h-5 w-5 animate-twinkle text-rose-ink [animation-delay:0.9s]" />
+                  <div className="relative h-24 w-24">
+                    {/* progress ring: a stitched seam that closes as we load */}
+                    <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full -rotate-90" aria-hidden="true">
+                      <circle cx="50" cy="50" r="44" fill="none" stroke="rgb(255 255 255 / 0.55)" strokeWidth="3" />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="44"
+                        fill="none"
+                        stroke="var(--color-rose)"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeDasharray="3.2 3.2"
+                        pathLength="100"
+                        style={{ strokeDashoffset: 0, strokeDasharray: `${pct * 100} 100`, transition: "stroke-dasharray 0.25s linear" }}
+                      />
+                    </svg>
+                    {/* the heart in the middle beats a little faster as it fills */}
+                    <svg viewBox="0 0 24 24" className="absolute inset-0 m-auto h-9 w-9 text-rose-ink" aria-hidden="true">
+                      <path
+                        d="M12 20.2C7.6 17.4 3.4 13.9 3.4 9.6 3.4 6.9 5.5 5 8 5c1.6 0 3 .8 4 2.1C13 5.8 14.4 5 16 5c2.5 0 4.6 1.9 4.6 4.6 0 4.3-4.2 7.8-8.6 10.6z"
+                        fill="rgb(240 124 140 / 0.18)"
+                        stroke="currentColor"
+                        strokeWidth="1.3"
+                        strokeLinecap="round"
+                        strokeDasharray="120"
+                        strokeDashoffset={reduce ? 0 : 120}
+                        style={reduce ? undefined : { animation: "draw 0.9s ease-out forwards" }}
+                        className={reduce ? undefined : "origin-center animate-heartbeat"}
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-hand text-xl text-cocoa">
+                      {stage === 0 ? "wrapping your gift…" : stage === 1 ? "tying the bow…" : "ready!"}
+                    </p>
+                    <p className="mt-1 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-cocoa-soft">
+                      <span className="tabular-nums">{Math.round(pct * 100)}</span>%
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={lift}
+                    className="text-[0.68rem] font-semibold uppercase tracking-[0.25em] text-cocoa-soft/80 underline-offset-4 transition-colors hover:text-rose-ink hover:underline"
+                  >
+                    skip the intro
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
 
           {gift ? (
             <>
               {/* the drawn gift stands in until the meadow's first frame (or for good without WebGL);
                   once the 3D is up this box is just the spacer the copy is laid out around */}
               <div className="pointer-events-none relative z-0 mt-2 h-[52vh] min-h-[300px] w-full max-w-3xl md:h-[56vh]">
-                {(webgl === false || !sceneReady) && (
-                  <div
-                    className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${
-                      webgl === false ? "opacity-100" : sceneReady ? "opacity-0" : "opacity-100"
-                    }`}
-                  >
+                {webgl === false && (
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <motion.button
                       type="button"
                       onClick={unwrap}
@@ -232,8 +320,9 @@ export function LoadingScreen() {
               <motion.div
                 className="relative z-10 -mt-2 flex flex-col items-center gap-3"
                 initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: opened ? 0 : 1, y: opened ? 10 : 0 }}
-                transition={{ duration: 0.5, delay: opened ? 0 : 0.7 }}
+                animate={{ opacity: opened || !(sceneReady || webgl === false) ? 0 : 1, y: opened ? 10 : 0 }}
+                transition={{ duration: 0.5, delay: opened ? 0 : 0.35 }}
+                style={{ pointerEvents: opened || !(sceneReady || webgl === false) ? "none" : "auto" }}
               >
                 <button type="button" onClick={unwrap} className="btn btn-primary btn-lg min-w-48">
                   Unwrap

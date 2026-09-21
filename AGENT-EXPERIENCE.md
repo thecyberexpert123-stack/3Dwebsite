@@ -546,3 +546,18 @@ scenes, adding dependencies or touching the build.
   `quality=mid`, small viewports, `protocolTimeout` ≥ 10 min in puppeteer,
   and long waits — otherwise `captureScreenshot` times out and looks like a
   page crash. Always check `[pageerror]` separately before concluding.
+
+## v0.9.1 — honest progress, more air in the glass
+
+- "Loading screen" progress must be tied to real milestones or it is a
+  lie users can feel: `dynamic()` chunk resolved ⇒ component mounted
+  (`onMount`), first `useFrame` ⇒ shaders compiled (`onReady`). Between
+  milestones, ease toward a *ceiling* (38 % / 86 %) rather than fake a
+  linear bar; the jump on each milestone is what makes it feel responsive.
+- Glass that reads as glass needs more transparency than feels safe in
+  a mock-up: tint alpha ≈ 0.1–0.2 with `saturate(1.7)` on the backdrop.
+  Legibility then comes from the bevel rims + `brightness(1.05)`, not from
+  the fill. White-text buttons (WhatsApp) are the exception — they need
+  ≥ 0.6 tint to keep contrast.
+- Keep the loading backdrop the brand wash and fade the opaque canvas in
+  over it; a flat sky-blue first paint read as a broken page.

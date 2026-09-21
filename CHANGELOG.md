@@ -174,6 +174,29 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.9.1] — 2026-09-21
+
+### Added
+- **Loading card**: while the meadow's chunk downloads and its shaders
+  compile, a liquid-glass tag hangs in the centre of the candy door with a
+  stitched progress ring around a drawn heart, a real three-stage readout
+  ("wrapping your gift…" → "tying the bow…" → "ready!", with a percentage
+  that only moves forward and eases toward each stage's ceiling), and a
+  "skip the intro" link. It blurs away the moment the first frame paints;
+  the meadow fades in behind it, then the mark and the Unwrap invitation
+  arrive. `role="status"` / `aria-live="polite"`.
+- `.glass-panel` — the same liquid-glass optics as the buttons, for panels.
+- `GiftIntroScene` reports `onMount` (chunk arrived) in addition to
+  `onReady` (first frame).
+
+### Changed
+- Buttons are markedly more **translucent**: base tint alpha 0.14 (primary
+  0.22, outline 0.08), a stronger bevel so the thickness reads, and the
+  page/grass/gingham behind visibly shows through.
+- The door background is the candy wash again during loading (the meadow
+  paints over it), so the first paint is never a flat blue.
+- Removed the small running-stitch loader under the mark (superseded).
+
 ## [0.9.0] — 2026-09-21
 
 The door moves outdoors, every button becomes liquid glass, and the 3D gets

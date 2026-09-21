@@ -512,6 +512,7 @@ export type GiftIntroHandle = { open: () => void };
 export default function GiftIntroScene({
   opened,
   onTap,
+  onMount,
   onReady,
   reduced,
 }: {
@@ -519,6 +520,8 @@ export default function GiftIntroScene({
   opened: boolean;
   /** the visitor tapped the box */
   onTap: () => void;
+  /** the chunk has arrived and the component mounted (shaders not yet built) */
+  onMount?: () => void;
   /** first frame painted (the loader can hide its placeholder) */
   onReady?: () => void;
   reduced: boolean;
@@ -526,6 +529,11 @@ export default function GiftIntroScene({
   const quality = useQuality();
   const openedAt = useRef(-1);
   const readyOnce = useRef(false);
+
+  useEffect(() => {
+    onMount?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (opened && openedAt.current < 0) openedAt.current = performance.now() / 1000;
