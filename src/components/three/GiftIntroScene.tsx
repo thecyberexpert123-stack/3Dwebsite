@@ -9,7 +9,9 @@ import { clamp01, easeInOutCubic, easeOutBack, easeOutCubic, seg } from "@/lib/i
 import { makeHeartGeometry, rnd } from "./geometry";
 import { CrochetFlower, PALETTE } from "./CrochetFlower";
 import { bowLoopGeometry, bowTailGeometry } from "./parts";
-import { AdaptiveCanvas, SoftGround, StudioLights, StudioShadows } from "./Stage";
+import { AdaptiveCanvas, StudioLights, StudioShadows } from "./Stage";
+import { Meadow } from "./Meadow";
+import { Post } from "./Post";
 import { shared as finish } from "./materials";
 
 const damp = THREE.MathUtils.damp;
@@ -338,7 +340,7 @@ function Gift({
       glow.current.scale.setScalar(0.05 + easeOutCubic(p) * 1.1);
       glowMat.current.opacity = 0.75 * (1 - p);
     }
-    if (light.current) light.current.intensity = easeOutCubic(seg(since, 0.3, 0.5)) * 6;
+    if (light.current) light.current.intensity = easeOutCubic(seg(since, 0.3, 0.5)) * 3.2;
     if (bloom.current) {
       // the surprise inside: a little bouquet springs up past the rim just as
       // the lens pushes in — the same bouquet the hero then grows in full.
@@ -386,9 +388,9 @@ function Gift({
       {/* the warm surprise inside */}
       <mesh ref={glow} position={[0, 0.45, 0]} visible={false}>
         <sphereGeometry args={[0.5, 20, 20]} />
-        <meshBasicMaterial ref={glowMat} color="#FFF1C9" transparent opacity={0} depthWrite={false} />
+        <meshBasicMaterial ref={glowMat} color="#FFE3C4" transparent opacity={0} depthWrite={false} />
       </mesh>
-      <pointLight ref={light} position={[0, 0.6, 0]} color="#FFE1A6" intensity={0} distance={3} decay={2} />
+      <pointLight ref={light} position={[0, 0.6, 0]} color="#FFD9B0" intensity={0} distance={1.4} decay={2} />
       {/* what was inside all along — each child is scaled on its own beat */}
       <group ref={bloom} position={[0, 0.12, 0]} visible={false}>
         <CrochetFlower position={[0, 0, 0]} height={1.25} color={PALETTE.blush} seed={7} scale={0.4} tilt={[0.04, 0, 0.1]} sway={false} />
@@ -465,12 +467,12 @@ function Twinkles({ count, reduced }: { count: number; reduced: boolean }) {
 
 /* ---------- camera: still, then pushes into the opening ---------- */
 
-const CAM_IDLE = new THREE.Vector3(0, 0.95, 2.55);
+const CAM_IDLE = new THREE.Vector3(0, 1.05, 3.9);
 // the push-in frames the WHOLE bouquet standing in the open box (head of the
 // tallest stem ≈ y 0.95): close enough to feel the lean-in, far enough to read
-const CAM_IN = new THREE.Vector3(0.14, 1.1, 2.75);
-const LOOK = new THREE.Vector3(0, 0.42, 0);
-const LOOK_IN = new THREE.Vector3(0, 0.78, 0);
+const CAM_IN = new THREE.Vector3(0.14, 1.2, 3.6);
+const LOOK = new THREE.Vector3(0, 0.3, 0);
+const LOOK_IN = new THREE.Vector3(0, 0.72, 0);
 
 function Camera({ openedAt, reduced }: { openedAt: React.RefObject<number>; reduced: boolean }) {
   const { camera } = useThree();
@@ -480,6 +482,10 @@ function Camera({ openedAt, reduced }: { openedAt: React.RefObject<number>; redu
     const since = openedAt.current < 0 ? -1 : performance.now() / 1000 - openedAt.current;
     const push = since < 0 ? 0 : easeInOutCubic(seg(since, 0.5, 1.1));
     pos.lerpVectors(CAM_IDLE, CAM_IN, push);
+    // portrait phones: the frame is narrow, so back off until the box (0.9 wide)
+    // takes ~45% of the width instead of bleeding past both edges
+    const aspect = state.viewport.aspect;
+    if (aspect < 1) pos.z *= THREE.MathUtils.clamp(1 / aspect, 1, 1.9);
     if (!reduced && since < 0) {
       pos.x += state.pointer.x * 0.12;
       pos.y += state.pointer.y * 0.06;
@@ -533,6 +539,8 @@ export default function GiftIntroScene({
       quality={quality}
       className="!absolute inset-0"
       camera={{ position: CAM_IDLE.toArray(), fov: 34 }}
+      gl={{ alpha: false }}
+      scene={{ fog: new THREE.Fog("#cfe2f4", 7, 22) }}
       aria-hidden="true"
       onCreated={() => {
         /* handled in Ready below (needs a rendered frame) */
@@ -545,17 +553,40 @@ export default function GiftIntroScene({
           onReady?.();
         }}
       />
-      <StudioLights target={[0, 0.4, 0]} keyIntensity={1.0} />
+      {/* outdoor light: the key doubles as the sun (same axis as the disc in
+          Meadow), sky-blue fill from above, warm grass bounce from below */}
+      <StudioLights target={[0, 0.4, 0]} keyIntensity={1.35} shadowSize={2.6} outdoor />
       <Camera openedAt={openedAt} reduced={reduced} />
+      <LowTierToneMapping enabled={quality.simple} />
+      <Meadow density={density} simple={quality.simple} reduced={reduced} />
       <Gift phase={opened ? "opening" : "idle"} openedAt={openedAt} onTap={onTap} reduced={reduced} />
       <Hearts count={quality.simple ? 8 : 14} openedAt={openedAt} />
       <Confetti count={Math.round(70 * density)} openedAt={openedAt} />
       {!quality.simple && <Twinkles count={Math.round(22 * density)} reduced={reduced} />}
-      {/* soft-edged stage that melts into the candy wash */}
-      <SoftGround radius={2.4} color="#FFE6ED" />
-      <StudioShadows scale={7} far={1.6} opacity={0.32} resolution={Math.min(384, quality.shadowRes)} />
+      {quality.simple && <StudioShadows scale={7} far={1.6} opacity={0.32} resolution={Math.min(384, quality.shadowRes)} />}
+      <Post quality={quality} aoRadius={0.28} aoIntensity={1.8} bloomIntensity={0.6} vignette={0.3} toneMapping />
     </AdaptiveCanvas>
   );
+}
+
+/** The low tier has no post stack (so no ToneMapping pass) — give the outdoor
+ *  scene the renderer's own neutral curve instead of a hard clip at 1.0. */
+function LowTierToneMapping({ enabled }: { enabled: boolean }) {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    gl.toneMapping = enabled ? THREE.NeutralToneMapping : THREE.NoToneMapping;
+    gl.toneMappingExposure = 1;
+    // programs bake the tone-mapping function in — recompile anything already built
+    scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(m)) m.forEach((x) => (x.needsUpdate = true));
+      else if (m) m.needsUpdate = true;
+    });
+    return () => {
+      gl.toneMapping = THREE.NoToneMapping;
+    };
+  }, [gl, scene, enabled]);
+  return null;
 }
 
 function Ready({ onReady }: { onReady: () => void }) {

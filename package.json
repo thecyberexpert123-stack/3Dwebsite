@@ -1,8 +1,8 @@
 {
   "name": "whimlet",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
-  "description": "Whimlet \u2014 handmade crochet products & custom crochet orders. Boutique 3D marketing site.",
+  "description": "Whimlet — handmade crochet products & custom crochet orders. Boutique 3D marketing site.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,8 +13,11 @@
   "dependencies": {
     "@react-three/drei": "^10.7.0",
     "@react-three/fiber": "^9.3.0",
+    "@react-three/postprocessing": "^3.1.1",
     "framer-motion": "^12.23.0",
+    "n8ao": "^2.0.1",
     "next": "^15.5.4",
+    "postprocessing": "^6.39.5",
     "react": "~19.2.0",
     "react-dom": "~19.2.0",
     "three": "^0.180.0"

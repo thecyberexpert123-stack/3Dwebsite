@@ -21,15 +21,51 @@ export function StudioLights({
   target = [0, 0.8, 0],
   keyIntensity = 0.95,
   shadowSize = 3,
+  outdoor = false,
 }: {
   target?: [number, number, number];
   keyIntensity?: number;
   /** half-extent (world units) of the key light's shadow frustum — keep it
    *  as tight as the scene allows; every unit wider costs shadow resolution */
   shadowSize?: number;
+  /** meadow variant: the key becomes a low afternoon sun from the back-right
+   *  (rim-lit, long shadows toward the camera), fill is sky blue from above
+   *  and the bounce is warm grass green from below */
+  outdoor?: boolean;
 }) {
   const shadows = useShadowsEnabled();
   const { res } = useContext(ShadowContext);
+  if (outdoor) {
+    return (
+      <>
+        <ambientLight intensity={0.22} color="#EAF4FF" />
+        <hemisphereLight args={["#BFDCF7", "#8FBF62", 0.75]} />
+        <directionalLight
+          position={[3.5, 3.75, -7]}
+          intensity={keyIntensity * 1.35}
+          color="#FFF1D6"
+          castShadow={shadows}
+          shadow-mapSize={[res, res]}
+          shadow-camera-near={1}
+          shadow-camera-far={20}
+          shadow-camera-left={-shadowSize}
+          shadow-camera-right={shadowSize}
+          shadow-camera-top={shadowSize}
+          shadow-camera-bottom={-shadowSize}
+          shadow-radius={5}
+          shadow-bias={-0.0004}
+          shadow-normalBias={0.06}
+        />
+        {/* soft front fill so the camera-facing side of the gift is never mud */}
+        <directionalLight position={[-2, 3, 5]} intensity={0.55} color="#FFF7FA" />
+        <Environment resolution={64} frames={1}>
+          <Lightformer form="rect" intensity={1.6} color="#DDEEFF" position={[0, 6, 0]} rotation-x={Math.PI / 2} scale={[20, 20, 1]} />
+          <Lightformer form="rect" intensity={0.6} color="#9CCF6A" position={[0, -3, 0]} rotation-x={-Math.PI / 2} scale={[20, 20, 1]} />
+          <Lightformer form="circle" intensity={1.6} color="#FFE9B8" position={[7, 7.5, -14]} scale={[5, 5, 1]} target={target} />
+        </Environment>
+      </>
+    );
+  }
   return (
     <>
       <ambientLight intensity={shadows ? 0.42 : 0.5} color="#FFF4F7" />

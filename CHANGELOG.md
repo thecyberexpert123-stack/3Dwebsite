@@ -174,6 +174,49 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.9.0] — 2026-09-21
+
+The door moves outdoors, every button becomes liquid glass, and the 3D gets
+a real finishing pass (ambient occlusion, HDR bloom, filmic tone mapping,
+MSAA). Two dependencies added — `postprocessing` and
+`@react-three/postprocessing` (+ its `n8ao` peer) — the established R3F
+post stack; nothing hand-rolled.
+
+### Added
+- **Meadow door** (`three/Meadow.tsx`): rolling hills from a two-octave
+  height field with a flat "picnic spot" under the gift, vertex-coloured
+  olive→yellow-green grass (never neon), ~9 000 instanced blades bent from
+  the root by a two-wave wind in a tiny `onBeforeCompile` vertex patch,
+  wildflower heads, drifting pollen motes, a gradient sky dome (shader,
+  not a texture), an HDR sun disc that blooms, distance fog to the sky
+  colour, and the existing puffy clouds placed far and large. The canvas
+  is now opaque and full-screen; the mark and invitation float over it.
+- **Post stack** (`three/Post.tsx`): N8AO ambient occlusion (half-res on
+  mid), mipmap Bloom with a threshold of 1.0 (only emitters bloom, pastels
+  never), Neutral tone mapping for outdoor scenes, a soft vignette, 2×/4×
+  MSAA in the composer. Off entirely on the low tier, which instead gets
+  the renderer's own Neutral tone-mapping for the meadow.
+- **Outdoor lighting rig**: `StudioLights outdoor` — low afternoon sun from
+  the back-right (long shadows toward the camera), sky-blue hemisphere fill
+  with warm grass bounce, a soft front fill, and a Lightformer environment
+  with a sky plane, a ground plane and the sun.
+- **Liquid-glass buttons** (`.btn-primary`, `.btn-outline`, `.btn-whatsapp`,
+  new `.btn-glass`): frosted, saturated backdrop; a bevel rim (two inset
+  rims + inner shadow); a specular lens that follows the pointer (`--mx/--my`
+  written by `<GlassDefs/>` on `pointermove`, fine pointers only); and on
+  Chromium a real refraction through an SVG `feDisplacementMap`
+  (`#glass-bend`) whose map ramps only at the edges, so the middle stays flat
+  and the rim bends what's behind it. Safari/Firefox get the identical
+  frosted version without the bend; engines without `backdrop-filter` get a
+  solid pastel fallback.
+- Portrait framing for the door camera (backs off with `1/aspect`).
+
+### Changed
+- The door canvas is opaque (`alpha: false`) with `Fog`; `SoftGround` and
+  `StudioShadows` are no longer used there (real cast shadows on the hill).
+- The gift's inner glow is warmer and shorter-range so it doesn't paint
+  the grass lime.
+
 ## [0.8.0] — 2026-09-21
 
 Polish pass: a heart-shaped cursor, a more *directed* first minute (gift

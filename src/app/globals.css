@@ -213,55 +213,126 @@
   .btn:hover { transform: translateY(-2px); }
   .btn:active { transform: translateY(1px) scale(0.985); }
 
-  /* primary = soft clay: inflated, pressable, hue-tinted shadow */
-  .btn-primary {
+  /* ---------- liquid glass ----------
+     Real glass has (1) a refracted, slightly magnified backdrop, (2) a
+     bright specular rim where the bevel catches the light, (3) a soft
+     inner shadow on the far edge, (4) a highlight that moves with the
+     viewer. Layers, bottom → top:
+       element background  = frosted, saturated backdrop (backdrop-filter)
+       ::before            = bevel: two inset rims + inner shadow
+       ::after             = moving specular lens, positioned by --mx/--my
+     Chromium additionally bends the backdrop through an SVG
+     feDisplacementMap (#glass-bend, injected by <GlassDefs/>); Safari and
+     Firefox get the frosted version — identical layout, no distortion. */
+  .btn-primary,
+  .btn-outline,
+  .btn-whatsapp,
+  .btn-glass {
     position: relative;
-    overflow: hidden;
     isolation: isolate;
-    background: linear-gradient(180deg, #fcd3dd 0%, var(--color-blush) 55%, #f5b9c9 100%);
+    --glass-tint: 255 255 255;
+    --glass-alpha: 0.28;
+    --rim: 255 255 255;
     color: var(--color-cocoa);
-    box-shadow: var(--shadow-clay-sm);
+    background:
+      radial-gradient(120% 160% at var(--mx, 30%) var(--my, 20%), rgb(255 255 255 / 0.32), transparent 55%),
+      linear-gradient(180deg, rgb(var(--glass-tint) / calc(var(--glass-alpha) + 0.14)), rgb(var(--glass-tint) / var(--glass-alpha)));
+    -webkit-backdrop-filter: blur(14px) saturate(1.6) brightness(1.06);
+    backdrop-filter: blur(14px) saturate(1.6) brightness(1.06);
+    border: 1px solid rgb(255 255 255 / 0.55);
+    box-shadow:
+      0 18px 40px -18px rgb(224 122 154 / 0.45),
+      0 2px 6px -3px rgb(74 50 56 / 0.18),
+      inset 0 1px 0 rgb(255 255 255 / 0.9),
+      inset 0 -1px 0 rgb(255 255 255 / 0.35);
+    overflow: hidden;
   }
-  .btn-primary:hover {
-    background: linear-gradient(180deg, #fbc9d6 0%, var(--color-blush-deep) 60%, #efa2b8 100%);
-    box-shadow: var(--shadow-clay);
-  }
-  /* satin sheen that sweeps across on hover — the "ribbon catching light" */
-  .btn-primary::after {
+  /* bevel — rim light along the top-left, a cool inner shadow bottom-right */
+  .btn-primary::before,
+  .btn-outline::before,
+  .btn-whatsapp::before,
+  .btn-glass::before {
     content: "";
     position: absolute;
-    inset: -40% auto -40% -60%;
-    width: 40%;
-    z-index: -1;
-    background: linear-gradient(100deg, transparent 0%, rgb(255 255 255 / 0.55) 50%, transparent 100%);
-    transform: skewX(-18deg) translateX(-20%);
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+    box-shadow:
+      inset 1.5px 1.5px 2px -1px rgb(var(--rim) / 0.95),
+      inset -1.5px -2px 3px -1.5px rgb(255 255 255 / 0.55),
+      inset 0 -6px 12px -8px rgb(224 122 154 / 0.35),
+      inset 0 10px 18px -12px rgb(255 255 255 / 0.9);
+    -webkit-mask: linear-gradient(#000, #000);
+    mask: linear-gradient(#000, #000);
+  }
+  /* specular lens that follows the pointer (JS sets --mx/--my) */
+  .btn-primary::after,
+  .btn-outline::after,
+  .btn-whatsapp::after,
+  .btn-glass::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(60px 40px at var(--mx, 50%) var(--my, 0%), rgb(255 255 255 / 0.55), rgb(255 255 255 / 0) 70%);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.35s ease;
   }
-  .btn-primary:hover::after { animation: sheen 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 1; }
-  @keyframes sheen {
-    from { transform: skewX(-18deg) translateX(-40%); }
-    to { transform: skewX(-18deg) translateX(520%); }
+  .btn-primary:hover::after,
+  .btn-outline:hover::after,
+  .btn-whatsapp:hover::after,
+  .btn-glass:hover::after { opacity: 1; }
+  .btn-primary > *, .btn-outline > *, .btn-whatsapp > *, .btn-glass > * { position: relative; z-index: 2; }
+  .btn-primary:hover,
+  .btn-outline:hover,
+  .btn-glass:hover {
+    box-shadow:
+      0 26px 50px -20px rgb(224 122 154 / 0.5),
+      0 3px 8px -3px rgb(74 50 56 / 0.2),
+      inset 0 1px 0 rgb(255 255 255 / 1),
+      inset 0 -1px 0 rgb(255 255 255 / 0.45);
+    -webkit-backdrop-filter: blur(16px) saturate(1.8) brightness(1.1);
+    backdrop-filter: blur(16px) saturate(1.8) brightness(1.1);
   }
-
-  .btn-outline {
-    border: 1.5px solid var(--color-rose-ink);
-    color: var(--color-rose-ink);
-    background: rgb(255 253 249 / 0.65);
+  .btn-primary:active,
+  .btn-outline:active,
+  .btn-glass:active {
+    -webkit-backdrop-filter: blur(10px) saturate(1.5) brightness(1.0);
+    backdrop-filter: blur(10px) saturate(1.5) brightness(1.0);
   }
-  .btn-outline:hover {
-    background: var(--color-blush-soft);
-    box-shadow: var(--shadow-soft);
+  /* Chromium only (html.glass-bend is set by <GlassDefs/> after a UA check —
+     Safari accepts the syntax but renders nothing, Firefox is inconsistent):
+     refract the backdrop through the bevel map for the real lens bend */
+  .glass-bend .btn-primary:not(:active),
+  .glass-bend .btn-outline:not(:active),
+  .glass-bend .btn-whatsapp:not(:active),
+  .glass-bend .btn-glass:not(:active) {
+    -webkit-backdrop-filter: url(#glass-bend) blur(10px) saturate(1.6) brightness(1.06);
+    backdrop-filter: url(#glass-bend) blur(10px) saturate(1.6) brightness(1.06);
   }
-
+  /* primary keeps a blush glass tint so it still reads as *the* action */
+  .btn-primary { --glass-tint: 249 198 211; --glass-alpha: 0.42; }
+  .btn-primary:hover { --glass-alpha: 0.5; }
+  /* outline = clear glass with a rose rim */
+  .btn-outline { --glass-alpha: 0.18; border-color: rgb(224 122 154 / 0.55); color: var(--color-rose-ink); }
+  .btn-outline:hover { --glass-alpha: 0.3; }
+  /* whatsapp = green glass */
   .btn-whatsapp {
-    background: #22c55e;
+    --glass-tint: 34 197 94;
+    --glass-alpha: 0.78;
     color: #fff;
-    box-shadow: 0 18px 40px -18px rgb(34 197 94 / 0.55);
+    border-color: rgb(255 255 255 / 0.5);
+    box-shadow: 0 18px 40px -18px rgb(34 197 94 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.55);
   }
-  .btn-whatsapp:hover {
-    background: #16a34a;
-    box-shadow: 0 26px 50px -20px rgb(34 197 94 / 0.6);
+  .btn-whatsapp:hover { --glass-alpha: 0.88; box-shadow: 0 26px 50px -20px rgb(34 197 94 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.7); }
+  /* no backdrop-filter at all (very old engines): a solid pastel fallback */
+  @supports not (backdrop-filter: blur(1px)) {
+    .btn-primary { background: linear-gradient(180deg, #fcd3dd, #f5b9c9); }
+    .btn-outline { background: rgb(255 253 249 / 0.85); }
+    .btn-whatsapp { background: #22c55e; }
   }
 
   .btn-md { padding: 0.85rem 1.7rem; font-size: 0.95rem; }

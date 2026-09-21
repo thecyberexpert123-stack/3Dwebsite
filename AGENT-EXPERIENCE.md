@@ -476,3 +476,73 @@ scenes, adding dependencies or touching the build.
   appeared once in a tour run and never again — `gl.domElement` was null
   after a context loss swapped the fallback in during a long headless
   session. Guard listeners on `gl.domElement`; don't chase it further.
+
+## v0.9.0 — outdoors, glass, and a real finishing pass
+
+### Post-processing over a transparent canvas is a trap
+- Problem: adding the same `EffectComposer` (N8AO + Bloom) to the hero,
+  whose canvas is `alpha: true` over the page, made the *bouquet vanish* —
+  only the cone, yarn ball and thread survived, and every draw call on the
+  page's pastel background went grey-washed.
+- Root cause: the composer renders to an opaque HalfFloat target, and N8AO
+  composites with its own beauty pass; alpha is not carried through the
+  chain the way `MeshStandardMaterial` over a cleared-to-transparent
+  default framebuffer is. Anything relying on the transparent framebuffer
+  (and the cast-shadow-only-in-alpha trick) breaks.
+- Decision: post stack **only on opaque canvases** (the meadow door). The
+  hero, desk, process and studio canvases stay composer-free; they get
+  their "AAA" from shadows, sheen/clearcoat materials and the environment.
+  If a transparent canvas ever needs AO, render it opaque over a
+  colour-matched backdrop plane instead.
+
+### Outdoor light that reads as a photograph, not a game
+- The user's reference (a "toon meadow" hero) *looked* saturated because of
+  a filmic curve on a bright HDR sun — not because the greens were neon.
+  Neon vertex colours + a hard clip at 1.0 is exactly what reads as
+  "game NPC colour". Fix = restrained albedo (`#4e7a3b → #b5cf78`), a sun
+  above 1.0, `ToneMappingMode.NEUTRAL` in the composer, bloom threshold 1.0
+  so only the sun blooms. Same materials, far more natural.
+- Programs bake the tone-mapping function in. Switching `gl.toneMapping` at
+  runtime (low tier without a composer) requires `material.needsUpdate`
+  on everything already compiled, or half the scene stays clipped.
+- Sky dome: `ShaderMaterial` with `toneMapped = false` and `fog = false`,
+  `BackSide`, `depthWrite: false`, `renderOrder −2`. Fog colour must equal
+  the horizon colour or the hills get a visible seam against the sky.
+- Camera framing must respond to aspect: a box that fills 45 % of a 16:9
+  frame bleeds off both sides of a 9:19 phone. Multiply `z` by
+  `clamp(1/aspect, 1, 1.9)` in portrait.
+
+### Instanced grass for one draw call
+- `InstancedMesh` + `onBeforeCompile` patch in `<begin_vertex>`: bend by
+  `uv.y²` (root stays put), phase from the instance matrix translation,
+  two sine waves = gusts. `customProgramCacheKey` so three doesn't share the
+  patched program with unpatched standard materials. Blades are
+  `receiveShadow` only and `userData.noShadow` — 9 000 shadow casters would
+  cost more than the entire rest of the scene.
+- Don't set `vertexColors: true` when the *geometry* has no `color`
+  attribute — three reads garbage; `instanceColor` is picked up on its own.
+- Keep a clear radius under the lens (z > 1.7 for a camera at z ≈ 3.9);
+  blades that intersect the near plane read as black shards.
+
+### Liquid glass in CSS
+- Layers that work: backdrop-filter `blur(14px) saturate(1.6)` (the
+  frosting) + a `::before` with *two* inset rims (top-left bright, bottom-
+  right dimmer) and a pale inner shadow (the bevel) + a `::after` radial
+  highlight positioned by `--mx/--my` (the moving specular). The bevel is
+  what sells it; blur alone is 2015 glassmorphism.
+- Real refraction = `backdrop-filter: url(#svg-filter)` with an
+  `feDisplacementMap` whose map is built from two `feImage` gradients
+  (R ramps at the left/right edges, G at top/bottom, flat 0.5 elsewhere)
+  summed with `feComposite arithmetic`. Chromium only. Safari *parses*
+  it and renders nothing, so `@supports` is useless — gate by UA
+  (`userAgentData.brands` → fallback regex) via `html.glass-bend`.
+  Headless Chromium confirmed: computed `backdrop-filter` shows the url()
+  and the button renders; the bend itself can't be judged from stills.
+- `.btn > * { position: relative; z-index: 2 }` keeps text above the
+  pseudo layers; `isolation: isolate` keeps `::before/::after` inside.
+
+### Process
+- SwiftShader + EffectComposer is *very* slow (≈1–2 fps at 960×600). Use
+  `quality=mid`, small viewports, `protocolTimeout` ≥ 10 min in puppeteer,
+  and long waits — otherwise `captureScreenshot` times out and looks like a
+  page crash. Always check `[pageerror]` separately before concluding.

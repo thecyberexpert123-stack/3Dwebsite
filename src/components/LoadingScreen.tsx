@@ -145,7 +145,7 @@ export function LoadingScreen() {
           aria-modal={gift ? true : undefined}
           aria-label={gift ? "Welcome — unwrap to enter Whimlet" : undefined}
           aria-hidden={gift ? undefined : true}
-          className="candy fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden"
+          className={`fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden ${gift && webgl !== false ? "bg-[#e4eef6]" : "candy"}`}
           exit={
             reduce
               ? { opacity: 0, transition: { duration: 0.25 } }
@@ -157,8 +157,25 @@ export function LoadingScreen() {
           }
           style={{ clipPath: "circle(150% at 50% 52%)" }}
         >
-          {/* soft dot texture over the candy wash */}
-          <div className="polka pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" aria-hidden="true" />
+          {/* soft dot texture over the candy wash (drawn fallback only) */}
+          {!(gift && webgl !== false) && (
+            <div className="polka pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" aria-hidden="true" />
+          )}
+
+          {/* the meadow fills the whole door; the mark and the invitation float over it */}
+          {gift && webgl !== false && (
+            <div className={`absolute inset-0 transition-opacity duration-700 ${sceneReady ? "opacity-100" : "opacity-0"}`}>
+              <GiftIntroScene
+                opened={opened}
+                onTap={unwrap}
+                onReady={() => setSceneReady(true)}
+                reduced={!!reduce}
+              />
+              {/* legibility: a soft light veil at the top and bottom edges only */}
+              <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-white/55 to-transparent" />
+              <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white/25 to-transparent" />
+            </div>
+          )}
 
           {/* the mark */}
           <motion.div
@@ -186,18 +203,9 @@ export function LoadingScreen() {
 
           {gift ? (
             <>
-              {/* the gift: 3D when we can, drawn when we can't */}
-              <div className="relative z-0 mt-2 h-[52vh] min-h-[300px] w-full max-w-3xl md:h-[56vh]">
-                {webgl !== false && (
-                  <div className={`absolute inset-0 transition-opacity duration-500 ${sceneReady ? "opacity-100" : "opacity-0"}`}>
-                    <GiftIntroScene
-                      opened={opened}
-                      onTap={unwrap}
-                      onReady={() => setSceneReady(true)}
-                      reduced={!!reduce}
-                    />
-                  </div>
-                )}
+              {/* the drawn gift stands in until the meadow's first frame (or for good without WebGL);
+                  once the 3D is up this box is just the spacer the copy is laid out around */}
+              <div className="pointer-events-none relative z-0 mt-2 h-[52vh] min-h-[300px] w-full max-w-3xl md:h-[56vh]">
                 {(webgl === false || !sceneReady) && (
                   <div
                     className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${
@@ -208,7 +216,7 @@ export function LoadingScreen() {
                       type="button"
                       onClick={unwrap}
                       aria-label="Unwrap the gift"
-                      className="relative text-rose-ink"
+                      className="pointer-events-auto relative text-rose-ink"
                       animate={opened ? { scale: [1, 1.12, 0], rotate: [0, -6, 8] } : { y: [0, -8, 0] }}
                       transition={opened ? { duration: 0.6 } : { duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
                     >
