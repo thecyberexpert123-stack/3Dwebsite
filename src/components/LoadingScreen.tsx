@@ -116,7 +116,7 @@ export function LoadingScreen() {
     // the lid pops at 0.25s, the burst at 0.4s, the bouquet springs up 0.4–0.95s,
     // the camera pushes in from 0.55s — the curtain irises out once the bouquet
     // has been *seen* (≈0.5s of hold), landing on the hero that grows it in full.
-    const t = setTimeout(lift, webgl === false ? 700 : 1500);
+    const t = setTimeout(lift, webgl === false ? 700 : 1900);
     return () => clearTimeout(t);
   }, [opened, lift, webgl]);
 
@@ -176,7 +176,7 @@ export function LoadingScreen() {
           {gift ? (
             <>
               {/* the gift: 3D when we can, drawn when we can't */}
-              <div className="relative z-0 mt-2 h-[46vh] min-h-[280px] w-full max-w-3xl md:h-[50vh]">
+              <div className="relative z-0 mt-2 h-[52vh] min-h-[300px] w-full max-w-3xl md:h-[56vh]">
                 {webgl !== false && (
                   <div className={`absolute inset-0 transition-opacity duration-500 ${sceneReady ? "opacity-100" : "opacity-0"}`}>
                     <GiftIntroScene

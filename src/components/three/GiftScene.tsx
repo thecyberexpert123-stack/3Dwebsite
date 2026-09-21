@@ -164,6 +164,7 @@ export default function GiftScene({
 
   return (
     <AdaptiveCanvas
+      statsLabel="gift"
       quality={quality}
       className="!absolute inset-0 cursor-pointer"
       camera={{ position: [0.15, 0.95, 2.75], fov: 36 }}

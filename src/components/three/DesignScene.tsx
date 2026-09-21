@@ -7,10 +7,11 @@ import * as THREE from "three";
 import { makePetalGeometry, makePointedPetalGeometry, makeCustomPetalGeometry, rnd } from "./geometry";
 import { BLOOM } from "./CrochetFlower";
 import { MIX_PALETTE, type DesignConfig } from "@/lib/design";
-import { DustMotes } from "./anim";
-import { AdaptiveCanvas, StudioLights, StudioShadows } from "./Stage";
+import { DustMotes, FallingPetals } from "./anim";
+import { AdaptiveCanvas, Breeze, SoftGround, StudioLights, StudioShadows } from "./Stage";
 import { useQuality } from "@/lib/quality";
 import { create as createMat, syncSheen } from "./materials";
+import { SatinBow } from "./parts";
 
 const damp = THREE.MathUtils.damp;
 
@@ -300,15 +301,14 @@ function BouquetWrap({ ribbonColor }: { ribbonColor: string }) {
 
   return (
     <group>
-      <mesh position={[0, 0.36, 0]} material={cream}>
-        <cylinderGeometry args={[0.42, 0.16, 0.72, 18, 1, true]} />
+      {/* kraft cone gathered tight at the neck — stems emerge at radius ≈ 0.12 */}
+      <mesh position={[0, 0.38, 0]} material={cream}>
+        <cylinderGeometry args={[0.36, 0.13, 0.76, 18, 1, true]} />
       </mesh>
-      <mesh position={[0, 0.44, 0]} rotation={[Math.PI / 2, 0, 0]} material={ribbon}>
-        <torusGeometry args={[0.33, 0.035, 10, 28]} />
+      <mesh position={[0, 0.46, 0]} rotation={[Math.PI / 2, 0, 0]} material={ribbon}>
+        <torusGeometry args={[0.27, 0.03, 10, 28]} />
       </mesh>
-      <mesh position={[0, 0.44, 0.33]} material={ribbon}>
-        <sphereGeometry args={[0.045, 10, 10]} />
-      </mesh>
+      <SatinBow position={[0, 0.5, 0.31]} rotation={[0.55, 0, 0]} scale={0.8} color={ribbonColor} />
     </group>
   );
 }
@@ -380,11 +380,11 @@ function SpinGroup({ children, reduced }: { children: React.ReactNode; reduced: 
 /** Framing (scale + y offset) so single blooms and bouquets both sit nicely. */
 function framingFor(config: DesignConfig): { scale: number; y: number } {
   if (config.type === "bouquet") {
-    return { scale: config.bouquetCount === 7 ? 0.95 : 1.05, y: 0 };
+    return { scale: config.bouquetCount === 7 ? 0.9 : 0.98, y: -0.05 };
   }
-  if (config.stem === "tall") return { scale: 0.85, y: 0 };
-  if (config.stem === "short") return { scale: 1.4, y: 0.05 };
-  return { scale: 2.1, y: 0.2 }; // floating bloom
+  if (config.stem === "tall") return { scale: 1.05, y: -0.05 };
+  if (config.stem === "short") return { scale: 1.5, y: 0.05 };
+  return { scale: 2.2, y: 0.25 }; // floating bloom
 }
 
 function Scene({ config, reduced }: { config: DesignConfig; reduced: boolean }) {
@@ -421,15 +421,15 @@ function Scene({ config, reduced }: { config: DesignConfig; reduced: boolean }) 
       ];
     }
     const n = config.bouquetCount;
-    const radius = n <= 3 ? 0.26 : n <= 5 ? 0.36 : 0.44;
-    const base = config.stem === "tall" ? 1.32 : 0.95;
+    // real bouquets are *gathered*: stems meet inside the wrap's neck
+    // (radius ≈ 0.1) and fan outward so the heads spread into a dome
+    const radius = n <= 3 ? 0.07 : n <= 5 ? 0.1 : 0.12;
+    const headRing = n <= 3 ? 0.24 : n <= 5 ? 0.32 : 0.4;
+    const base = config.stem === "tall" ? 1.25 : 0.95;
     return Array.from({ length: n }).map((_, i) => {
       const a = (i / n) * Math.PI * 2 + 0.4;
-      const headY = base + rnd(i + 41) * 0.35;
-      // lean each stem inward (real bouquets gather into the wrap),
-      // so heads converge to ~55% of the ring radius
-      const headRing = radius * 0.55;
-      const tilt = Math.atan2(radius - headRing, headY);
+      const headY = base + rnd(i + 41) * 0.3;
+      const tilt = -Math.atan2(headRing - radius, headY); // negative = lean outward
       return {
         key: `b${i}`,
         a,
@@ -486,10 +486,10 @@ function Rig({ reduced }: { reduced: boolean }) {
   const { camera, pointer } = useThree();
   useFrame((_, dt) => {
     if (!reduced) {
-      camera.position.x = damp(camera.position.x, 0.7 + pointer.x * 0.35, 2, dt);
-      camera.position.y = damp(camera.position.y, 1.9 + pointer.y * 0.18, 2, dt);
+      camera.position.x = damp(camera.position.x, 0.6 + pointer.x * 0.35, 2, dt);
+      camera.position.y = damp(camera.position.y, 1.7 + pointer.y * 0.18, 2, dt);
     }
-    camera.lookAt(0, 0.85, 0);
+    camera.lookAt(0, 0.9, 0);
   });
   return null;
 }
@@ -505,15 +505,22 @@ export default function DesignScene({ config }: { config: DesignConfig }) {
 
   return (
     <AdaptiveCanvas
+      statsLabel="studio"
       quality={quality}
       className="!absolute inset-0 cursor-grab active:cursor-grabbing"
-      camera={{ position: [0.7, 1.9, 5.2], fov: 33 }}
+      camera={{ position: [0.6, 1.7, 4.6], fov: 33 }}
       aria-hidden="true"
     >
       <StudioLights target={[0, 0.8, 0]} keyIntensity={1.05} />
-      <Scene config={config} reduced={!!reduce} />
-      <DustMotes count={Math.round(16 * quality.density)} area={[4.5, 2.6, 2.5]} size={0.035} reduced={!!reduce} />
+      <Breeze reduced={!!reduce}>
+        <Scene config={config} reduced={!!reduce} />
+        <DustMotes count={Math.round(16 * quality.density)} area={[4.5, 2.6, 2.5]} size={0.035} reduced={!!reduce} />
+        {!quality.simple && <FallingPetals count={Math.max(3, Math.round(5 * quality.density))} area={[3.2, 2.6, 1.8]} reduced={!!reduce} />}
+      </Breeze>
       <Rig reduced={!!reduce} />
+      <group position={[0, -0.15, 0]}>
+        <SoftGround radius={2.2} color="#FFE9EF" />
+      </group>
       <StudioShadows position={[0, -0.15, 0]} opacity={0.28} scale={8} far={2.5} resolution={quality.shadowRes} />
     </AdaptiveCanvas>
   );

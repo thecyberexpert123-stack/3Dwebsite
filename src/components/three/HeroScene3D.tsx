@@ -49,12 +49,14 @@ type FlowerConfig = {
   at: number;
 };
 
+/* stems gather at the bottom of the wrap and fan outward — a real bouquet —
+   so nothing pokes through the paper */
 const FLOWERS_FULL: FlowerConfig[] = [
-  { position: [-0.3, 0, 0.12], height: 1.55, color: PALETTE.blush, seed: 1, tilt: [0.05, 0, -0.08], at: 1.55 },
-  { position: [0.12, 0, -0.22], height: 1.32, color: PALETTE.cream, seed: 2, tilt: [-0.04, 0, 0.1], at: 1.75 },
-  { position: [0.3, 0, 0.24], height: 1.14, color: PALETTE.rose, seed: 3, tilt: [0.1, 0, 0.06], at: 1.92 },
-  { position: [-0.08, 0, 0.32], height: 0.98, color: PALETTE.lavender, seed: 4, tilt: [0.14, 0, 0], at: 2.08 },
-  { position: [0.02, 0, -0.34], height: 1.42, color: PALETTE.white, seed: 5, tilt: [-0.06, 0, -0.06], at: 2.2 },
+  { position: [-0.1, 0, 0.04], height: 1.55, color: PALETTE.blush, seed: 1, tilt: [0.06, 0, 0.14], at: 1.55 },
+  { position: [0.04, 0, -0.08], height: 1.32, color: PALETTE.cream, seed: 2, tilt: [-0.1, 0, -0.07], at: 1.75 },
+  { position: [0.1, 0, 0.08], height: 1.14, color: PALETTE.rose, seed: 3, tilt: [0.15, 0, -0.19], at: 1.92 },
+  { position: [-0.03, 0, 0.11], height: 0.98, color: PALETTE.lavender, seed: 4, tilt: [0.22, 0, 0.06], at: 2.08 },
+  { position: [0.01, 0, -0.12], height: 1.42, color: PALETTE.white, seed: 5, tilt: [-0.16, 0, -0.02], at: 2.2 },
 ];
 
 const FLOWERS_SIMPLE: FlowerConfig[] = [FLOWERS_FULL[0], FLOWERS_FULL[2], FLOWERS_FULL[1]];
@@ -252,16 +254,22 @@ function Bouquet({
           <CrochetFlower {...f} sway={!reduced} />
         </Entrance>
       ))}
-      {/* cream paper wrap + rose ribbon band */}
+      {/* the wrap: kraft cone, a blush tissue collar folded over it, a satin
+          band and a real bow at the front — it reads as a *gift*, not a pot */}
       <Entrance at={BEAT.wrap} duration={0.7} kind="drop" height={0.6}>
-        <mesh position={[0, 0.38, 0]}>
-          <cylinderGeometry args={[0.4, 0.17, 0.75, 18, 1, true]} />
+        <mesh position={[0, 0.42, 0]}>
+          <cylinderGeometry args={[0.4, 0.15, 0.84, 20, 1, true]} />
           <primitive object={finish("paper", "#F6EBDA", { side: THREE.DoubleSide })} attach="material" />
         </mesh>
-        <mesh position={[0, 0.46, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.31, 0.035, 10, 28]} />
+        <mesh position={[0, 0.74, 0]} rotation={[0, 0.4, 0]}>
+          <cylinderGeometry args={[0.52, 0.36, 0.34, 7, 1, true]} />
+          <primitive object={finish("paper", PALETTE.blush, { side: THREE.DoubleSide })} attach="material" />
+        </mesh>
+        <mesh position={[0, 0.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.31, 0.03, 10, 28]} />
           <primitive object={finish("satin", PALETTE.rose)} attach="material" />
         </mesh>
+        <SatinBow position={[0, 0.56, 0.4]} rotation={[0.55, 0, 0]} scale={0.95} color={PALETTE.rose} />
       </Entrance>
       {/* invisible tap target so clicks between petals still count */}
       <mesh position={[0, 1.1, 0]} visible={false}>
@@ -407,6 +415,7 @@ export default function HeroScene3D({ active = true }: { active?: boolean }) {
 
   return (
     <AdaptiveCanvas
+      statsLabel="hero"
       quality={quality}
       fallback={<HeroStatic />}
       className="!absolute inset-0"

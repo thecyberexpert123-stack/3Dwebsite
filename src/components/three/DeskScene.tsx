@@ -111,6 +111,7 @@ export default function DeskScene({ active = true }: { active?: boolean }) {
   const quality = useQuality();
   return (
     <AdaptiveCanvas
+      statsLabel="desk"
       quality={quality}
       className="!absolute inset-0"
       frameloop={active ? "always" : "never"}

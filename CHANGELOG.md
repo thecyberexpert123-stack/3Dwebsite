@@ -174,6 +174,57 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.6.0] — 2026-09-21
+
+The "one bloom" release — every crochet flower on the site now comes from the
+same petal system, the entrance gift actually *blooms*, and the hero bouquet
+reads as a wrapped gift. Draw calls went down while the scenes got richer.
+
+### Added
+- **`three/materials.ts` finish system** — `finish(kind, hex)` returns shared
+  `yarn` / `clay` / `satin` / `paper` / `pearl` materials (knit bump map
+  generated once, cached per hex); `create()`/`syncSheen()` for the few
+  materials that must lerp colour per instance (Design Studio).
+- **Shared `BLOOM` petal system** (`CrochetFlower.tsx`): one set of open-rose
+  proportions (outer ring tilt 1.18 / inner 0.8, lens petals ~2× longer than
+  wide, head leaning `face` 0.5 rad toward the viewer). Hero, gift door,
+  Design Studio and Process scene all read the same numbers, so a flower
+  looks like the *same* flower everywhere.
+- **`SatinBow`** (`parts.tsx`): plump two-loop satin bow with pearl knot and
+  tails — used on the hero wrap, Design Studio bouquet wrap and the process
+  gift lid.
+- **Staged bouquet reveal in the gift door** (`GiftIntroScene.tsx`): after the
+  lid pops, five stems spring up on staggered beats (`BLOOM_BEATS`), each with
+  its own overshoot, while the camera pushes in and holds on the full bloom
+  before the curtain irises open.
+- **`?stats=1` renderer probe** (`Stage.tsx`): every `AdaptiveCanvas` publishes
+  averaged draw calls / triangles / programs / dpr / fps per frame to
+  `window.__whimletStats[label]` — zero cost when the flag is absent.
+
+### Changed
+- **Instanced petals** — each flower's outer/inner ring is one
+  `InstancedMesh`; falling petals are one instanced draw. Hero: 136 → 53
+  calls/frame at the time of the change (now ~96 with the wrap, bow and
+  richer bouquet — still well under the 0.5.0 figure of 175).
+- Petal geometry is tapered and cupped (`geometry.ts`) instead of a flat lens;
+  knit bump softened (`bumpScale` 0.12, repeat 5) so petals read as yarn, not
+  corrugated card.
+- Hero bouquet: stems gathered at the wrap neck and fanned outward, kraft cone
+  + blush tissue collar + satin band + forward-facing bow.
+- Design Studio: bouquet stems gather at the neck and fan out (was a wide ring
+  leaning *inward*, which put stems outside the wrap); solo blooms framed
+  larger; falling petals and a soft ground disc tie it to the hero's world.
+- Process scene: the flower now lays *inside* the box in step 5 (root moved to
+  the box's left wall — a −90° roll maps +y to +x, so the old right-wall root
+  swung the head out of frame).
+- Falling petal size 0.32–0.62; loader door lift 1.5 → 1.9 s so the bloom is
+  seen before the iris.
+
+### Fixed
+- Bouquet wrap no longer intersected by stems (hero + studio).
+- Gift-door bouquet was cropped by the top of the stage — camera pulled back
+  (`CAM_IN` z 2.4, `LOOK_IN` y 0.72) and the stage grew to 52/56 vh.
+
 ## [0.5.0] — 2026-09-20
 
 The "girly & cute" release — a strawberry-milk palette, clay UI chrome, a

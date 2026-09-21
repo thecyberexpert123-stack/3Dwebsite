@@ -120,7 +120,9 @@ function GrowingFlower({ p: pr }: { p: P }) {
       const lay = easeOutCubic(seg(pack, 0.35, 0.65));
       const sc = 1 - lay * 0.28;
       root.current.scale.setScalar(sc);
-      root.current.position.set(lay * 0.42, lay * 0.14, 0);
+      // rotation.z → -90° maps the stem's +y onto +x, so the root must sit
+      // at the box's LEFT wall for the head to land inside (0.9 long, box 1.0)
+      root.current.position.set(-lay * 0.44, lay * 0.14, 0);
       root.current.rotation.z = lay * -(Math.PI / 2 - 0.08) + (grow > 0.999 && lay < 0.01 ? Math.sin(t * 0.7) * 0.015 : 0);
       root.current.rotation.y = lay * 0.35;
       root.current.visible = grow > 0.001;
@@ -471,6 +473,7 @@ export default function ProcessScene({
   const quality = useQuality();
   return (
     <AdaptiveCanvas
+      statsLabel="process"
       quality={quality}
       className="!absolute inset-0"
       frameloop={active ? "always" : "never"}

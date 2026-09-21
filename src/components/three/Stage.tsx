@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { Canvas, useFrame, type CanvasProps } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, type CanvasProps } from "@react-three/fiber";
 import {
   ContactShadows,
   Environment,
@@ -82,11 +82,57 @@ export function StudioShadows({
 
 type AdaptiveCanvasProps = Omit<CanvasProps, "dpr"> & {
   quality: Quality;
+  /** name under which `?stats=1` publishes this canvas's renderer counters */
+  statsLabel?: string;
   /** rendered instead of the canvas if the GPU context is lost and not restored */
   fallback?: React.ReactNode;
 };
 
-export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreated, ...rest }: AdaptiveCanvasProps) {
+/* QA hook: with `?stats=1` every canvas publishes its renderer counters to
+   `window.__whimletStats[label]` once a second (draw calls, triangles,
+   programs, dpr). Zero cost otherwise — the component returns null. */
+type StatsBag = Record<string, { calls: number; triangles: number; programs: number; geometries: number; textures: number; dpr: number; fps: number }>;
+
+function StatsProbe({ label }: { label: string }) {
+  const { gl, viewport } = useThree();
+  const acc = useRef({ frames: 0, last: 0 });
+  // counters accumulate across every render pass (main + contact-shadow
+  // passes) and are averaged per frame — the honest "calls/frame" number
+  useEffect(() => {
+    gl.info.autoReset = false;
+    gl.info.reset();
+    return () => {
+      gl.info.autoReset = true;
+    };
+  }, [gl]);
+  useFrame(({ clock }) => {
+    const a = acc.current;
+    a.frames++;
+    const t = clock.elapsedTime;
+    if (t - a.last < 1) return;
+    const w = window as Window & { __whimletStats?: StatsBag };
+    w.__whimletStats ??= {};
+    w.__whimletStats[label] = {
+      calls: Math.round(gl.info.render.calls / a.frames),
+      triangles: Math.round(gl.info.render.triangles / a.frames),
+      programs: gl.info.programs?.length ?? 0,
+      geometries: gl.info.memory.geometries,
+      textures: gl.info.memory.textures,
+      dpr: viewport.dpr,
+      fps: Math.round(a.frames / (t - a.last)),
+    };
+    gl.info.reset();
+    a.frames = 0;
+    a.last = t;
+  });
+  return null;
+}
+
+function statsEnabled(): boolean {
+  return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("stats") === "1";
+}
+
+export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreated, statsLabel, ...rest }: AdaptiveCanvasProps) {
   const [dpr, setDpr] = useState<number>(quality.dpr[1]);
   const [lost, setLost] = useState(false);
 
@@ -131,6 +177,7 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
         onFallback={() => setDpr(1)}
       >
         {children}
+        {statsLabel && statsEnabled() && <StatsProbe label={statsLabel} />}
       </PerformanceMonitor>
     </Canvas>
   );

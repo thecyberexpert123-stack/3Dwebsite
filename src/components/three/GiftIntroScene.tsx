@@ -34,6 +34,9 @@ const damp = THREE.MathUtils.damp;
 
 type Phase = "idle" | "opening";
 
+/** seconds after the tap when each stem of the hidden bouquet springs up */
+const BLOOM_BEATS = [0.42, 0.5, 0.56, 0.63, 0.7];
+
 /* ---------- confetti: one instanced draw call ---------- */
 
 const CONFETTI_COLORS = [
@@ -298,18 +301,24 @@ function Gift({
     if (glow.current && glowMat.current) {
       const p = seg(since, 0.35, 0.9);
       glow.current.visible = p > 0;
-      glow.current.scale.setScalar(0.05 + easeOutCubic(p) * 1.4);
-      glowMat.current.opacity = 0.9 * (1 - p * 0.7);
+      glow.current.scale.setScalar(0.05 + easeOutCubic(p) * 1.1);
+      glowMat.current.opacity = 0.75 * (1 - p);
     }
     if (light.current) light.current.intensity = easeOutCubic(seg(since, 0.3, 0.5)) * 6;
     if (bloom.current) {
       // the surprise inside: a little bouquet springs up past the rim just as
-      // the lens pushes in — the same bouquet the hero then grows in full
-      const b = easeOutBack(seg(since, 0.4, 0.55), 1.25);
+      // the lens pushes in — the same bouquet the hero then grows in full.
+      // Each stem has its own beat (see BLOOM_BEATS) so the bunch *unfolds*.
+      const b = easeOutBack(seg(since, 0.4, 0.5), 1.1);
       bloom.current.visible = b > 0.002;
-      bloom.current.scale.setScalar(Math.max(0.001, b));
-      bloom.current.position.y = 0.1 + b * 0.12;
-      bloom.current.rotation.y = -0.3 + seg(since, 0.4, 1.2) * 0.35;
+      bloom.current.position.y = 0.1 + b * 0.14;
+      bloom.current.rotation.y = -0.35 + seg(since, 0.4, 1.4) * 0.45;
+      for (let i = 0; i < bloom.current.children.length; i++) {
+        const c = bloom.current.children[i];
+        const k = easeOutBack(seg(since, BLOOM_BEATS[i] ?? 0.4, 0.55), 1.35);
+        c.scale.setScalar(Math.max(0.001, k));
+        c.visible = k > 0.002;
+      }
     }
   });
 
@@ -346,12 +355,13 @@ function Gift({
         <meshBasicMaterial ref={glowMat} color="#FFF1C9" transparent opacity={0} depthWrite={false} />
       </mesh>
       <pointLight ref={light} position={[0, 0.6, 0]} color="#FFE1A6" intensity={0} distance={3} decay={2} />
-      {/* what was inside all along */}
-      <group ref={bloom} position={[0, 0.12, 0]} scale={0.001} visible={false}>
-        <CrochetFlower position={[0, 0, 0]} height={1.05} color={PALETTE.blush} seed={7} scale={0.6} sway={false} />
-        <CrochetFlower position={[0.1, 0, -0.08]} height={0.95} color={PALETTE.lavender} seed={8} scale={0.55} tilt={[-0.05, 0, -0.16]} sway={false} />
-        <CrochetFlower position={[-0.1, 0, 0.04]} height={0.9} color={PALETTE.white} seed={9} scale={0.55} tilt={[0.06, 0, 0.18]} sway={false} />
-        <CrochetFlower position={[0.02, 0, 0.1]} height={0.84} color={PALETTE.rose} seed={10} scale={0.5} tilt={[0.16, 0, 0.02]} sway={false} />
+      {/* what was inside all along — each child is scaled on its own beat */}
+      <group ref={bloom} position={[0, 0.12, 0]} visible={false}>
+        <CrochetFlower position={[0, 0, 0]} height={1.25} color={PALETTE.blush} seed={7} scale={0.4} tilt={[0.04, 0, 0.1]} sway={false} />
+        <CrochetFlower position={[0.06, 0, -0.06]} height={1.05} color={PALETTE.lavender} seed={8} scale={0.37} tilt={[-0.08, 0, -0.24]} sway={false} />
+        <CrochetFlower position={[-0.06, 0, 0.03]} height={0.98} color={PALETTE.white} seed={9} scale={0.37} tilt={[0.08, 0, 0.26]} sway={false} />
+        <CrochetFlower position={[0.02, 0, 0.08]} height={0.86} color={PALETTE.rose} seed={10} scale={0.35} tilt={[0.26, 0, 0.02]} sway={false} />
+        <CrochetFlower position={[-0.03, 0, -0.09]} height={1.15} color={PALETTE.cream} seed={11} scale={0.34} tilt={[-0.24, 0, 0.04]} sway={false} />
       </group>
       {/* lid: pops off and floats away */}
       <group ref={lid} position={[0, 0.36 + 0.31 - 0.31, 0]}>
@@ -422,7 +432,9 @@ function Twinkles({ count, reduced }: { count: number; reduced: boolean }) {
 /* ---------- camera: still, then pushes into the opening ---------- */
 
 const CAM_IDLE = new THREE.Vector3(0, 0.95, 2.55);
-const CAM_IN = new THREE.Vector3(0, 1.15, 1.9);
+// the push-in frames the WHOLE bouquet standing in the open box (head of the
+// tallest stem ≈ y 0.95): close enough to feel the lean-in, far enough to read
+const CAM_IN = new THREE.Vector3(0.14, 1.05, 2.4);
 const LOOK = new THREE.Vector3(0, 0.42, 0);
 const LOOK_IN = new THREE.Vector3(0, 0.72, 0);
 
@@ -432,7 +444,7 @@ function Camera({ openedAt, reduced }: { openedAt: React.RefObject<number>; redu
   const look = useMemo(() => new THREE.Vector3(), []);
   useFrame((state, dt) => {
     const since = openedAt.current < 0 ? -1 : performance.now() / 1000 - openedAt.current;
-    const push = since < 0 ? 0 : easeInOutCubic(seg(since, 0.55, 0.75));
+    const push = since < 0 ? 0 : easeInOutCubic(seg(since, 0.5, 1.1));
     pos.lerpVectors(CAM_IDLE, CAM_IN, push);
     if (!reduced && since < 0) {
       pos.x += state.pointer.x * 0.12;
@@ -477,6 +489,7 @@ export default function GiftIntroScene({
 
   return (
     <AdaptiveCanvas
+      statsLabel="door"
       quality={quality}
       className="!absolute inset-0"
       camera={{ position: CAM_IDLE.toArray(), fov: 34 }}

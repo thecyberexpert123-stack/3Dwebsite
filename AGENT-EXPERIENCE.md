@@ -303,3 +303,75 @@ scenes, adding dependencies or touching the build.
   effect cleanup. Measured hero: 190 → 175 calls/frame; the remaining cost
   is the flowers (one mesh per petal) — the next merge candidate if a real
   low-tier device struggles.
+
+## v0.6.0 — one bloom, instancing, measured
+
+### The sandbox can also revert the *working tree* mid-session
+- **Problem:** history and `node_modules` vanished again, and once the tree
+  silently reverted to an older commit while the memory said edits existed.
+  **Fix:** at every turn start run `git log -3`, `git status`, and compare
+  `git write-tree` with the remote tree before touching anything; recover
+  with `git fetch origin +refs/heads/<b>:refs/remotes/origin/<b>` →
+  `git reset --hard` → `npm ci` → rebuild. Push with the explicit refspec
+  `git push origin HEAD:<branch>` (upstream config does not survive).
+- The GitHub token can expire mid-session (`could not read Username`); the
+  work is still in local commits — report it and keep going.
+
+### Instancing petals: what actually changed
+- One `InstancedMesh` per petal ring (outer/inner) instead of a mesh per
+  petal took the hero from 136 to 53 calls/frame with identical visuals.
+  Petal animation moved from per-mesh `scale` to `writeRing()` rewriting
+  instance matrices — the same helper drives idle sway and the grow-in, so
+  there is no second animation path to keep in sync.
+- Shared materials via `finish(kind, hex)` collapsed program count as well;
+  only the studio flower keeps `create()`-owned materials because it lerps
+  colour per instance (and disposes them on unmount).
+
+### Petal proportions come from product photos, not from taste
+- First attempts (thick `scaleY 0.46`, or very wide `tilt 1.26`) read as
+  blobs / dinner plates in screenshots. Measuring the real Whimlet crochet
+  roses gave: petal ≈ 2× longer than wide, outer ring opened ≈ 68°, inner
+  ring ≈ 46°, head leaning ≈ 0.5 rad toward the camera. Encoding that once
+  as `BLOOM` and reusing it everywhere is why the four scenes now match.
+
+### Bouquets gather at the neck, then fan out
+- A ring of stems leaning *inward* looks right from above and wrong from
+  the front: stems pierce the cone. Real bouquets do the opposite — stems
+  meet inside the wrap (radius ≈ 0.1) and heads fan outward. The math is
+  `tilt = -atan2(headRing - neckRadius, headY)`. Same fix applied to the
+  hero and the studio.
+
+### Rotations move the *root*: check where the head lands
+- Laying the process flower down with `rotation.z = -90°` maps its +y onto
+  +x, so a root at the box's right wall swings the head *out* of the box.
+  Rule: when rolling a hierarchy, place the pivot on the side the tip will
+  swing away from. Cheap to catch in a per-stage screenshot sequence
+  (`/tmp/pw/proc.mjs` scrolls to 5 fractions of the section).
+
+### Measuring, not guessing
+- `gl.info` resets every frame by default and counts *every* render pass,
+  so reading it once shows 1 call (the last shadow pass). Set
+  `info.autoReset = false`, accumulate for a second and divide by frames —
+  that is the `?stats=1` probe in `Stage.tsx`. Keep it behind a URL flag so
+  production pays nothing.
+- SwiftShader fps numbers (1–6) are meaningless for real devices; the
+  draw-call and triangle counts are the transferable metric.
+
+### Screenshot discipline (additions)
+- Never run two Chromium captures in parallel and never start one while
+  `rebuild.sh` is restarting the server — both produce a stale frame of the
+  *old* build and cost a debugging loop.
+- `?intro=hold` + click "Unwrap" + timed captures at 0.6/1.2/2/3.5 s is the
+  only way to review the staged door bloom; a single late shot misses it.
+- Framer `whileInView` sections stay blank in full-page captures — capture
+  per section with `scrollTo` + a wait, not one tall screenshot.
+- `python3` here has no PIL; crop/montage with the repo's `sharp`.
+
+### 2026 trend research, applied not copied
+- "Cute-alism" / "Snug Simple" / "Human Scribble" (Vistaprint, Ginger IT
+  2026 trend round-ups) match what Whimlet already does — pastel blocks,
+  rounded clay UI, handwritten stickers — so the overhaul refined the
+  system instead of restyling it. The best-Three.js-sites round-ups agree
+  on one confident, well-lit centrepiece with scroll as the narrative
+  device; that is why effort went into *one* bloom system and directed
+  beats rather than more props.
