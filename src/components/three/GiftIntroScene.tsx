@@ -530,6 +530,7 @@ export default function GiftIntroScene({
   const quality = useQuality();
   const openedAt = useRef(-1);
   const readyOnce = useRef(false);
+  const bouquetPos = useMemo(() => new THREE.Vector3(0, 0.72, 0), []);
 
   useEffect(() => {
     onMount?.();
@@ -575,7 +576,7 @@ export default function GiftIntroScene({
       {quality.simple ? (
         <Post quality={quality} aoRadius={0.28} aoIntensity={1.8} bloomIntensity={0.6} vignette={0.3} toneMapping />
       ) : (
-        <HeroPost quality={quality} bouquetPosition={useMemo(() => new THREE.Vector3(0, 0.72, 0), [])} />
+        <HeroPost quality={quality} bouquetPosition={bouquetPos} />
       )}
     </AdaptiveCanvas>
   );

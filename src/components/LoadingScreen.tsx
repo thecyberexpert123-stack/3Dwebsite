@@ -165,6 +165,18 @@ export function LoadingScreen() {
     return () => window.removeEventListener("keydown", onKey);
   }, [visible, mode, unwrap]);
 
+  // HARD FAILSAFE: always lift after 12s even if 3D fails — never block the site
+  useEffect(() => {
+    if (!mounted || gone) return;
+    const t = setTimeout(() => {
+      if (!lifted.current) {
+        console.warn("[Whimlet] LoadingScreen failsafe lift after 12s");
+        lift();
+      }
+    }, 12000);
+    return () => clearTimeout(t);
+  }, [mounted, gone, lift]);
+
   if (!mounted || gone) return null;
 
   const gift = mode === "gift" && !reduce;
