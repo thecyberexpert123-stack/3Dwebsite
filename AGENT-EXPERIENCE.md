@@ -759,3 +759,62 @@ scenes, adding dependencies or touching the build.
   shared, but pinch-vs-stroke arbitration on real devices is untested),
   and `.glb` files opened in Blender (the exporter output is standard
   `GLTFExporter` binary; only its download was observed).
+
+## v0.14.0 — the engine: measure the stall, then move it, don't hide it
+
+- **Problem / context.** "Runs anywhere without a single lag, without
+  modifying the website's code." The site had 7 canvases, each with its own
+  R3F loop, each compiling shaders on its first rendered frame. The user's
+  perception of lag was the *entry hitch* of each section, not steady-state
+  fps.
+- **Hypothesis.** The studio teaser's mount was the worst offender.
+  **Evidence:** a CDP CPU profile attributed ~6.5 s self time to
+  `WebGLRenderer.setSize` — misleading; instrumenting `canvas.width` setters
+  vs `getProgramParameter`/`getShaderInfoLog` showed the stall is three's
+  *deferred link* (`onFirstUse` → `getUniforms`) executing on the first
+  draw, plus `checkShaderErrors` round-trips. `setSize` only looked
+  expensive because the profile lumped the first frame under it. **Lesson:
+  attribute by instrumenting the GL calls themselves, not by the top of the
+  JS stack.**
+- **Root cause.** `compile()`/`compileAsync()` create programs but three
+  still pays link status + uniform reflection on the first draw
+  (`WebGLProgram.onFirstUse`). `compileAsync` alone doesn't help on drivers
+  without `KHR_parallel_shader_compile` (SwiftShader, several mobile GPUs)
+  — and worse, its readiness poll dereferences `currentProgram` on each
+  material it saw and **throws if React swapped a material meanwhile**
+  (seen: `Cannot read properties of undefined (reading 'isReady')`). Own
+  guarded poll, same algorithm.
+- **What worked.** (1) Warm-up in idle slices: `renderer.compile()` →
+  poll `isReady()` → call `program.getUniforms()` one program per
+  `requestIdleCallback` → one off-screen priming frame. (2) A pre-mount
+  ring 1100 px ahead so warm-up has time. (3) One scheduler for all roots
+  with visibility gating and a frame budget. A/B on the same build
+  (`?engine=off`): link/reflection time inside rAF 26.1 s → 5.3 s, worst
+  single call 1.9 s → 0.7 s (SwiftShader, relative). **Confidence: high**
+  that the mechanism moves the cost off the visible path; **medium** on
+  real-device magnitude (not measured on a GPU here).
+- **Trap: never gate a *visible* scene on warm-up.** First version held
+  every root paused until warm — a section the user was already looking
+  at stayed blank for seconds. A hitch beats a blank: warm-up only helps
+  scenes mounted ahead of time; visible ones render immediately.
+- **Trap: R3F `advance(t)` timestamps are seconds.** In `frameloop="never"`
+  R3F writes the timestamp straight into `clock.elapsedTime`, which every
+  `useFrame(({clock}))` reads as seconds. Passing rAF milliseconds made
+  every idle animation run 1000× fast. Divide first; on the first frame
+  and after any >250 ms gap set `elapsedTime = t − 1/60` so deltas stay
+  sane (springs/lerps/intros continue instead of snapping).
+- **Trap: SVG `className` is an `SVGAnimatedString`.** The animation
+  pauser matched nothing on the doodles until it used
+  `getAttribute("class")`. Verify with `document.getAnimations()` →
+  `playState` per element, not by eye.
+- **Design rule honoured: instrument the seams, not the scenes.** The whole
+  engine attaches through `AdaptiveCanvas`, `useInViewport` and the root
+  layout; scene files are byte-identical except the hero's
+  `enginePriority`. Their existing `frameloop` props are still the source
+  of truth (mapped to run/pause hints), so any future scene written the old
+  way is automatically governed.
+- **Server side reality.** `output: "standalone"` + `engine/pack.sh` was
+  verified end-to-end (extract to a clean dir, `node server.js`, 200s,
+  cache headers, gzip). Docker/Caddy/systemd files are authored and
+  reviewed against current docs but **not executed** — no daemon in the
+  sandbox. Said so in the README rather than implying otherwise.

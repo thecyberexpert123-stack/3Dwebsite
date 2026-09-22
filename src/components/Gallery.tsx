@@ -115,7 +115,7 @@ export function Gallery() {
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.4, delay: Math.min(i * 0.04, 0.3) }}
-                  className="group relative overflow-hidden rounded-[1.5rem] shadow-card transition-all duration-500 hover:-translate-y-1 hover:rotate-[0.5deg] hover:shadow-lift"
+                  className="group relative overflow-hidden rounded-[1.5rem] shadow-card transition-[transform,box-shadow] duration-500 hover:-translate-y-1 hover:rotate-[0.5deg] hover:shadow-lift"
                   style={{ rotate: `${((i % 3) - 1) * 0.4}deg` }}
                 >
                   <button

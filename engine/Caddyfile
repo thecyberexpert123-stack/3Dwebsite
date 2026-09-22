@@ -1,0 +1,32 @@
+# Whimlet Engine — edge in front of the Node server.
+#
+# Set SITE_ADDRESS to your domain (e.g. whimlet.example.com) and Caddy obtains
+# and renews TLS automatically. Use ":80" for plain HTTP behind another proxy.
+
+{$SITE_ADDRESS::80} {
+	# compress everything textual (JS/CSS/HTML/JSON/SVG); zstd first, then br, then gzip
+	encode zstd br gzip
+
+	# hashed build assets never change → cache forever at the edge and in the browser
+	@immutable path /_next/static/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	# hand-named assets: a day fresh, a week stale-while-revalidate
+	@assets path /images/* /icon.svg /favicon.ico /apple-icon.png
+	header @assets Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+
+	header {
+		# the site opens no third-party frames; keep it out of others'
+		X-Frame-Options SAMEORIGIN
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		# WebGL + share links need nothing more than same-origin; camera/mic off
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	reverse_proxy {$UPSTREAM:web:3000} {
+		health_uri /api/health
+		health_interval 30s
+	}
+}

@@ -1,0 +1,32 @@
+# Whimlet Engine — systemd unit for a bare VPS (no Docker).
+#
+#   sudo cp engine/whimlet.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now whimlet
+#
+# Expects the standalone build at /srv/whimlet (see engine/README.md,
+# "Bare VPS"). Put Caddy/nginx in front for TLS + compression.
+
+[Unit]
+Description=Whimlet — Next.js standalone server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=whimlet
+WorkingDirectory=/srv/whimlet
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3000
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=3
+# hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/srv/whimlet
+
+[Install]
+WantedBy=multi-user.target

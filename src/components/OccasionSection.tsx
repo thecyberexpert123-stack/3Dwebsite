@@ -87,7 +87,7 @@ export function OccasionSection() {
               <Reveal key={o.id} delay={pinned ? 0 : (i % 3) * 0.06} className="snap-start">
                 <TiltCard max={5}>
                   <article
-                    className="group relative aspect-[4/5] w-[17rem] overflow-hidden rounded-[2rem] shadow-card transition-all duration-500 hover:-translate-y-1.5 hover:shadow-lift md:w-[19.5rem]"
+                    className="group relative aspect-[4/5] w-[17rem] overflow-hidden rounded-[2rem] shadow-card transition-[transform,box-shadow] duration-500 hover:-translate-y-1.5 hover:shadow-lift md:w-[19.5rem]"
                     style={{ rotate: `${TILT[i % TILT.length]}deg` }}
                   >
                     <Image

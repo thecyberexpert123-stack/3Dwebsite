@@ -460,6 +460,7 @@ export default function HeroScene3D({ active = true }: { active?: boolean }) {
   return (
     <AdaptiveCanvas
       statsLabel="hero"
+      enginePriority={1}
       quality={quality}
       fallback={<HeroStatic />}
       className="!absolute inset-0"

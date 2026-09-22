@@ -164,6 +164,19 @@ then run `npm run optimize:images`. Guidance for real photography:
   because images are pre-optimized at authoring time. On platforms with
   built-in optimization (e.g. Vercel) you may remove that flag.
 
+### Whimlet Engine — Docker / VPS
+
+```bash
+docker compose -f engine/compose.yml up -d --build          # HTTP :80
+SITE_ADDRESS=whimlet.example.com docker compose -f engine/compose.yml up -d --build   # auto-HTTPS
+npm run engine:pack                                         # bare VPS: whimlet-standalone.tar.gz + engine/whimlet.service
+```
+
+`engine/README.md` explains both halves of the engine: the client-side
+scheduler/warm-up that keeps every 3D scene smooth (and how to A/B it with
+`?engine=off`), and the server packaging (standalone build, Caddy edge with
+zstd/brotli + immutable caching, `/api/health`).
+
 ### GitHub Pages
 
 The whole site also builds as a static export:

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { HeartTrail } from "@/components/HeartTrail";
+import { EngineProvider } from "@/lib/engine/EngineProvider";
 import { GlassDefs } from "@/components/GlassDefs";
 import { site } from "@/data/site";
 import { faqs } from "@/data/faqs";
@@ -123,6 +124,7 @@ export default function RootLayout({
         {children}
         <HeartTrail />
         <GlassDefs />
+        <EngineProvider />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

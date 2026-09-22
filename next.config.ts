@@ -12,12 +12,23 @@ import type { NextConfig } from "next";
  *     custom domain leaves it empty). `trailingSlash` makes every route a
  *     `folder/index.html`, which is what Pages' static file server expects.
  *
+ *  3. Whimlet Engine / VPS — `NEXT_STANDALONE=1 npm run build` emits a
+ *     self-contained server in `.next/standalone` (Node only, no
+ *     node_modules) that `engine/Dockerfile` ships behind Caddy. See
+ *     `engine/README.md`.
+ *
  * Images are pre-optimized at authoring time via `npm run optimize:images`
- * (ImageMagick: resize + recompress); runtime optimization is off so both
+ * (ImageMagick: resize + recompress); runtime optimization is off so all
  * shapes need zero native dependencies.
  */
 const isExport = process.env.NEXT_EXPORT === "1";
+const isStandalone = process.env.NEXT_STANDALONE === "1" && !isExport;
 const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "");
+
+/** One year, immutable — for content that is versioned by its file name. */
+const IMMUTABLE = "public, max-age=31536000, immutable";
+/** A day at the edge, a week stale-while-revalidate — for hand-named assets. */
+const ASSET = "public, max-age=86400, stale-while-revalidate=604800";
 
 const nextConfig: NextConfig = {
   images: { unoptimized: true },
@@ -27,7 +38,18 @@ const nextConfig: NextConfig = {
         trailingSlash: true,
         ...(basePath ? { basePath, assetPrefix: basePath } : {}),
       }
-    : {}),
+    : {
+        ...(isStandalone ? { output: "standalone" as const } : {}),
+        // Node/VPS shape: cache policy for the static payload. `/_next/static`
+        // is already immutable by default; these cover `public/`. (Static
+        // export has no server — GitHub Pages / Caddy set headers there.)
+        async headers() {
+          return [
+            { source: "/images/:path*", headers: [{ key: "Cache-Control", value: ASSET }] },
+            { source: "/_next/static/:path*", headers: [{ key: "Cache-Control", value: IMMUTABLE }] },
+          ];
+        },
+      }),
   env: {
     // make the base path visible to client code (withBasePath helper)
     NEXT_PUBLIC_BASE_PATH: basePath,

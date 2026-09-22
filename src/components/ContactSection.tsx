@@ -75,7 +75,7 @@ export function ContactSection() {
           <Reveal delay={0.2} className="flex flex-col items-start gap-3">
             <a
               href={`tel:${PHONE_TEL}`}
-              className="group flex items-center gap-2.5 rounded-full bg-white/60 px-5 py-2.5 font-semibold text-cocoa shadow-card transition-all hover:-translate-y-0.5 hover:shadow-soft"
+              className="group flex items-center gap-2.5 rounded-full bg-white/60 px-5 py-2.5 font-semibold text-cocoa shadow-card transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-soft"
             >
               <PhoneDoodle className="h-4.5 w-4.5 text-rose-ink transition-transform group-hover:rotate-12" />
               {PHONE_DISPLAY}

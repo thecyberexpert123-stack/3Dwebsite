@@ -174,6 +174,77 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.14.0] — 2026-09-22
+
+The **Whimlet Engine** — a runtime layer that carries the site from a phone
+to a VPS without touching the site's own components: one scheduler for every
+3D canvas, shader warm-up off the visible path, off-screen animations paused,
+and a portable server build. Full notes in `engine/README.md`.
+
+### Added — client engine (`src/lib/engine/`)
+- `scheduler.ts` — one `requestAnimationFrame` for all canvases. Per frame:
+  off-screen roots are not rendered (they stay mounted, so context and
+  compiled shaders survive); the largest visible canvas is primary and
+  renders every frame; other visible canvases drop to half rate when the
+  measured frame time exceeds an 18 ms budget; a scene's own
+  `frameloop="never"` is honoured as a pause hint. Pure decision logic,
+  covered by `npm run test:engine` (21 checks).
+- `EngineRoot.tsx` — mounted by `AdaptiveCanvas`, so every scene gets it
+  with no per-scene edits. Compiles the scene's programs on mount
+  (`renderer.compile`, parallel where `KHR_parallel_shader_compile`
+  exists), pulls three's per-program **link stalls into
+  `requestIdleCallback` slices** one program at a time, then renders one
+  off-screen priming frame — so the first *visible* frame is a normal
+  frame. Rewinds the clock on resume so lerps/springs/intros never jump
+  after a pause. Disables `debug.checkShaderErrors` in production (each
+  `getShaderInfoLog` is a blocking GPU round-trip).
+- `useInViewport` gains a **pre-mount ring** ~1100 px ahead of each section:
+  the scene mounts in an idle slice, warms up, and is ready before the user
+  arrives. Leaving the ring unmounts again (unchanged memory behaviour).
+- `EngineProvider.tsx` (root layout) pauses decorative infinite CSS
+  animations (`animate-float/twinkle/heartbeat/…`) while off-screen and
+  resumes them 160 px before they return (measured: 23 of 25 paused while
+  at the gallery, previously all ticking).
+- QA: `?engine=off` restores the stock R3F loop for A/B on one build;
+  `window.__engine.stats()`; User Timing marks `engine:<id>:compile|warm|primed`.
+
+### Added — server engine (`engine/`)
+- `next.config.ts`: `NEXT_STANDALONE=1` → `output: "standalone"`; Node shape
+  gets `Cache-Control` headers (`/_next/static` immutable 1 y, `/images`
+  1 d + stale-while-revalidate 7 d).
+- `engine/Dockerfile` (multi-stage, non-root, `HEALTHCHECK`),
+  `engine/compose.yml` (`web` + Caddy), `engine/Caddyfile` (auto-TLS,
+  HTTP/3, `encode zstd br gzip`, immutable caching, security headers,
+  upstream health checks), `engine/whimlet.service` (systemd, hardened),
+  `engine/pack.sh` → `npm run engine:pack` builds `whimlet-standalone.tar.gz`
+  for a bare VPS (Node only, no install step). `.dockerignore`.
+- `GET /api/health` liveness endpoint (`{ ok, service, version }`).
+- Scripts: `engine:build`, `engine:pack`, `engine:start`, `test:engine`
+  (`npm test` runs all three suites).
+
+### Fixed — animations
+- The **studio teaser / desk / process / gift scenes no longer hitch on
+  entry**: before, three compiled and linked every shader on the first
+  rendered frame — measured as a 4–7 s synchronous stall on a slow
+  CPU/GPU, a visible hitch on real hardware, once per scene down the page.
+  A/B on the same build (headless, relative): GPU link/reflection time
+  inside animation frames **26.1 s → 5.3 s**, worst single call 1.9 s →
+  0.7 s; the remainder now runs in idle callbacks.
+- Scenes resuming after a scroll-away or a hidden tab no longer receive a
+  giant delta (petal breathing, camera glides and grow-ins continued from
+  where they were instead of snapping).
+- Hover/scroll transitions on the navbar, gallery and occasion cards, the
+  process timeline cards and the contact chips narrowed from
+  `transition-all` to the properties that actually change
+  (`transform`, `box-shadow`, `opacity`, navbar padding/colours), so the
+  frosted navbar and the cards never animate layout-affecting properties.
+
+### Changed
+- `AdaptiveCanvas` accepts `enginePriority` (hero = 1); it now always
+  renders with `frameloop="never"` and lets the engine drive it. Nothing
+  else in any scene changed.
+- Version 0.14.0.
+
 ## [0.13.0] — 2026-09-22
 
 A second, very different 3D tool — the **Whimlet Maker** at `/maker`, a

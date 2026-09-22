@@ -10,6 +10,8 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import type { Quality } from "@/lib/quality";
+import { EngineRoot } from "@/lib/engine/EngineRoot";
+import type { RootHint } from "@/lib/engine/scheduler";
 
 /* ================================================================
    Shared lighting rig — ONE visual language for every scene.
@@ -195,6 +197,8 @@ type AdaptiveCanvasProps = Omit<CanvasProps, "dpr"> & {
   statsLabel?: string;
   /** rendered instead of the canvas if the GPU context is lost and not restored */
   fallback?: React.ReactNode;
+  /** engine priority when several canvases are visible (default 0; the hero uses 1) */
+  enginePriority?: number;
 };
 
 /* QA hook: with `?stats=1` every canvas publishes its renderer counters to
@@ -241,9 +245,17 @@ function statsEnabled(): boolean {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("stats") === "1";
 }
 
-export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreated, statsLabel, ...rest }: AdaptiveCanvasProps) {
+let canvasSeq = 0;
+
+export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreated, statsLabel, enginePriority = 0, frameloop, ...rest }: AdaptiveCanvasProps) {
   const [dpr, setDpr] = useState<number>(quality.dpr[1]);
   const [lost, setLost] = useState(false);
+  // stable id for the engine scheduler (label when given, else a counter)
+  const engineId = useRef<string>("");
+  if (!engineId.current) engineId.current = statsLabel ?? `canvas-${++canvasSeq}`;
+  // A scene's own `frameloop="never"` becomes an engine *hint*: the canvas
+  // stays mounted (context + shaders kept warm) but is skipped by the loop.
+  const hint: RootHint = frameloop === "never" ? "pause" : "run";
 
   // if the tier is measured after mount, adopt its cap
   useEffect(() => setDpr(quality.dpr[1]), [quality]);
@@ -257,6 +269,7 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
   return (
     <Canvas
       dpr={dpr}
+      frameloop="never"
       shadows={shadowInfo.enabled ? { type: THREE.PCFShadowMap } : false}
       // `flat` = no tone mapping. ACES (the default) compresses and greys out
       // light pastels — the exact colours this brand lives on. With flat
@@ -288,6 +301,7 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
       {...rest}
     >
       <ShadowContext.Provider value={shadowInfo}>
+        <EngineRoot id={engineId.current} hint={hint} priority={enginePriority} />
         <PerformanceMonitor
           ms={250}
           iterations={6}

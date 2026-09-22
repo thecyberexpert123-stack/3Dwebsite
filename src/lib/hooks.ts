@@ -91,12 +91,60 @@ export function useInViewport<T extends Element>(
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
-      rootMargin: margin,
-    });
-    io.observe(el);
-    return () => io.disconnect();
+    let idle = 0;
+    let nearIn = false;
+    let warmIn = false;
+    const cancelIdle = () => {
+      if (!idle) return;
+      if ("cancelIdleCallback" in window) window.cancelIdleCallback(idle);
+      else clearTimeout(idle);
+      idle = 0;
+    };
+    const sync = () => setInView(nearIn || warmIn);
+    // Near: the section's own margin — mount/activate right away.
+    const near = new IntersectionObserver(
+      ([entry]) => {
+        nearIn = entry.isIntersecting;
+        if (nearIn) cancelIdle();
+        sync();
+      },
+      { rootMargin: margin }
+    );
+    // Warm-up ring (engine): one viewport further out, mount during an idle
+    // slice so the scene's shaders compile *before* it scrolls in. The engine
+    // scheduler keeps an off-screen canvas from rendering, so this only costs
+    // the compile — exactly the cost we want off the visible path. Leaving the
+    // ring unmounts again (memory), same as before.
+    const engineOn = new URLSearchParams(window.location.search).get("engine") !== "off";
+    const warm = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) {
+          cancelIdle();
+          warmIn = false;
+          sync();
+          return;
+        }
+        if (idle || warmIn) return;
+        const fire = () => {
+          idle = 0;
+          warmIn = true;
+          sync();
+        };
+        idle = "requestIdleCallback" in window ? window.requestIdleCallback(fire, { timeout: 2500 }) : (setTimeout(fire, 400) as unknown as number);
+      },
+      { rootMargin: WARM_MARGIN }
+    );
+    near.observe(el);
+    if (engineOn) warm.observe(el);
+    return () => {
+      cancelIdle();
+      near.disconnect();
+      warm.disconnect();
+    };
   }, [ref, margin]);
 
   return inView;
 }
+
+/** How far ahead (px) the engine pre-mounts a scene to warm its shaders. */
+const WARM_MARGIN = "1100px 0px";

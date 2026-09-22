@@ -157,7 +157,7 @@ export function ProcessTimeline() {
 
                     <Reveal>
                       <div
-                        className={`card flex flex-col gap-2.5 p-6 transition-all duration-500 ${
+                        className={`card flex flex-col gap-2.5 p-6 transition-[transform,box-shadow,opacity] duration-500 ${
                           isActive ? "-translate-y-1 shadow-soft ring-1 ring-blush-deep/50" : "opacity-80"
                         }`}
                       >

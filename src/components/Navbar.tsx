@@ -54,7 +54,7 @@ export function Navbar() {
       <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5 md:pt-4">
         <nav
           aria-label="Primary"
-          className={`wrap mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-full border px-4 shadow-card backdrop-blur-md transition-all duration-500 md:px-6 ${
+          className={`wrap mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-full border px-4 shadow-card backdrop-blur-md transition-[padding,background-color,border-color,box-shadow] duration-500 md:px-6 ${
             scrolled ? "border-white/80 bg-white/80 shadow-soft" : "border-white/60 bg-white/55"
           } ${compact ? "py-2" : "py-3 md:py-3.5"}`}
         >
