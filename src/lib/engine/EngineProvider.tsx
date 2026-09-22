@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { engineEnabled } from "./EngineRoot";
+import { installAndroidShim } from "./android";
 
 /**
  * Whimlet Engine — page-level governor. Mounted once in the root layout.
@@ -19,12 +20,20 @@ import { engineEnabled } from "./EngineRoot";
  *  - New elements (modals, lazy sections) are picked up by a MutationObserver,
  *    batched per animation frame.
  *
+ *  - The Android shim (`android.ts`): hardware Back closes overlays, visual
+ *    viewport → `--vvh` for keyboard-safe sheets, `html.pwa` when installed.
+ *
  * `?engine=off` disables it along with the rest of the engine, for A/B.
  */
 
 const DECORATIVE = /\banimate-(?:float|float-slow|sway|heartbeat|bounce-soft|twinkle|wiggle|marquee)\b/;
 
 export function EngineProvider() {
+  useEffect(() => {
+    if (!engineEnabled()) return;
+    return installAndroidShim();
+  }, []);
+
   useEffect(() => {
     if (!engineEnabled()) return;
     if (typeof IntersectionObserver === "undefined") return;

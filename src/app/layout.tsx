@@ -83,12 +83,26 @@ export const metadata: Metadata = {
     images: [heroImage],
   },
   robots: { index: true, follow: true },
+  // Android / PWA surface. The manifest route (src/app/manifest.ts) is
+  // basePath-aware; Next adds the <link rel="manifest"> from this field.
+  manifest: withBasePath("/manifest.webmanifest"),
+  applicationName: "Whimlet",
+  appleWebApp: { capable: true, title: "Whimlet", statusBarStyle: "default" },
+  icons: {
+    icon: [{ url: withBasePath("/icon.svg"), type: "image/svg+xml" }, { url: withBasePath("/icons/icon-192.png"), sizes: "192x192", type: "image/png" }],
+    apple: [{ url: withBasePath("/icons/apple-touch-icon.png"), sizes: "180x180" }],
+  },
+  formatDetection: { telephone: true },
 };
 
 export const viewport: Viewport = {
   themeColor: "#FFF6F8",
   width: "device-width",
   initialScale: 1,
+  // Android/iOS: draw under the status/gesture bars (safe-area insets are
+  // applied in globals.css) and keep the layout stable when the keyboard opens
+  viewportFit: "cover",
+  interactiveWidget: "resizes-visual",
 };
 
 /* Structured data — facts only: brand, description, contact number. */

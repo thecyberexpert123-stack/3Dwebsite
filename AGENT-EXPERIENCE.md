@@ -818,3 +818,48 @@ scenes, adding dependencies or touching the build.
   cache headers, gzip). Docker/Caddy/systemd files are authored and
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
+
+## v0.15.0 — Android without touching the components
+
+- **Audit before assuming.** A Pixel-class emulated walk (390 px, touch,
+  Android UA, DPR 3) of every section + `/studio` + `/maker` showed the
+  layout already held: no horizontal overflow, 3D scenes gated and
+  low-tier, glass sheets stacked for phones. What was *missing* was the
+  platform layer: manifest/icons, safe areas, hardware Back, keyboard
+  handling, tap/overscroll hygiene. That is where the work went.
+- **Hardware Back is the one behaviour Android users notice.** Every
+  overlay already closed on `Escape` via a window listener, so the shim
+  pushes a history entry per open `[role=dialog][aria-modal]` and turns
+  `popstate` into a synthetic `Escape` — zero component edits. Verified:
+  menu, product sheet and lightbox close on Back and the page stays;
+  closing with × consumes the entry (`history.back()` from the observer).
+  Exclude the welcome door: Back there must still leave.
+- **Trap: the Next app router rewrites `history.state` on popstate**
+  (`replaceState` right after our pop), so never rely on reading our flag
+  *after* navigation — decide from the pop event's own `state` and from the
+  live set of open dialogs. A first version that read `history.state`
+  afterwards was flaky (closed on 1 of 3 runs).
+- **Trap: `history.length` never shrinks** — test the flag in `state`, not
+  the length.
+- **Trap: SVG `className` again** (see v0.14.0) — the same
+  `getAttribute("class")` rule applies to any DOM scan.
+- **Hit areas via pseudo-elements, but not on the glass buttons.**
+  `.btn-glass` already spends `::before/::after` on bevel and specular; a
+  generic `button::before` hit-area rule would have replaced the bevel.
+  Scope the rule to the small controls (`button[aria-pressed]:not(.btn)`)
+  and verify the glass still renders.
+- **Android compositing:** a `mix-blend-mode` fixed layer over the page
+  forces a full re-composite per scroll on mobile GPUs; at 3–5 % alpha a
+  plain layer is visually identical. Also switch off `text-size-adjust`
+  or Chrome's font boosting inflates paragraph copy in narrow columns.
+- **Manifest via the metadata route, not a static file:** `manifest.ts`
+  can call `withBasePath()`, so the same source serves `/` on the VPS and
+  `/3Dwebsite/` on Pages (verified in `out/`). `.well-known/assetlinks.json`
+  must be at the *origin* root — a project Pages site can't host it for a
+  TWA; the README says so instead of pretending.
+- **Skipped a service worker deliberately.** Chrome's install criteria no
+  longer need one, and a cached WebGL bundle that outlives a deploy is a
+  support nightmare (chunk-load errors we already met in dev). Revisit only
+  with a network-first, hash-scoped strategy and a kill switch.
+- **Not verified:** the real install prompt, TWA build, and any real-device
+  GPU behaviour — no Android toolchain or device here; emulation only.

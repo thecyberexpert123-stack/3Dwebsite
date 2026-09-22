@@ -174,6 +174,54 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.15.0] — 2026-09-22
+
+**Android.** The whole site as a phone experience, an installable app, and a
+Play-Store-ready shell — without changing any component. Notes in
+`android/README.md`.
+
+### Added — Android / touch runtime
+- `src/app/globals.css` "Android / touch runtime" block (coarse pointers
+  only): safe-area insets (`--sat/--sab/--sal/--sar`) on the fixed navbar
+  and bottom sheets, no tap highlight, no pull-to-refresh against the
+  smoother, no long-press save sheet on canvases/decorations, text-size
+  adjust off, non-blended grain (a blended fixed layer re-composites the
+  page on every Android scroll), invisible 44 px hit areas on the small
+  option controls, installed-mode header spacing, keyboard-safe sheets
+  (`html.kbd-open` + `--vvh`).
+- `src/lib/engine/android.ts` (mounted by `EngineProvider`): **hardware
+  Back closes overlays** — product sheet, gallery lightbox, mobile menu each
+  push one history entry while open; Back pops it and dispatches the
+  `Escape` the component already handles; closing with × consumes the
+  entry; the welcome door is excluded. Visual viewport → `--vvh`,
+  `html.pwa` when running installed. Verified in Android emulation
+  (menu, product sheet, lightbox: Back closes and stays on the site).
+- Viewport: `viewport-fit=cover`, `interactive-widget=resizes-visual`.
+
+### Added — installable app (PWA)
+- `src/app/manifest.ts` → `/manifest.webmanifest` (basePath-aware): id,
+  name, `standalone`, blush theme/background, 192/512 icons + maskable
+  variants, shortcuts to Studio and Maker. `public/icons/*` generated from
+  the site's own heart icon. `<link rel=manifest>`, apple-touch-icon,
+  `mobile-web-app-capable` via the metadata API.
+- No service worker by design (3D app that needs the network; a stale
+  bundle would break it after deploys; not required for Chrome install).
+
+### Added — Play Store (Trusted Web Activity)
+- `android/twa-manifest.json` (Bubblewrap project descriptor with domain
+  placeholders), `public/.well-known/assetlinks.json` (Digital Asset Links
+  template), `android/.gitignore` (keys/builds never committed),
+  `android/README.md` with the exact `bubblewrap init/build` steps, the
+  App-signing-key vs upload-key fingerprint trap, and the origin-root
+  requirement (project Pages sites need a custom domain for the TWA).
+- `npm run test:engine` now also covers the Back-button decision logic
+  (29 checks total).
+
+### Not verified
+- No Android device, emulator or SDK in the sandbox: layers were verified
+  with Chrome's Android emulation and the served manifest/icons; the
+  install prompt and the TWA build were not executed.
+
 ## [0.14.0] — 2026-09-22
 
 The **Whimlet Engine** — a runtime layer that carries the site from a phone

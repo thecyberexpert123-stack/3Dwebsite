@@ -730,3 +730,78 @@
   .cursor-zoom-in { cursor: zoom-in; }
   .cursor-crosshair { cursor: crosshair; }
 }
+
+/* ============================================================
+   ANDROID / TOUCH RUNTIME  (engine layer — no component changes)
+   Applies on coarse-pointer devices and inside the installed app.
+   ============================================================ */
+:root {
+  /* safe-area insets: 0 in a browser tab, the notch/gesture bar when
+     installed (viewport-fit=cover) or on phones with a display cutout */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+html {
+  /* Android Chrome inflates text in some blocks ("font boosting") and
+     the layout was designed at exact sizes */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (pointer: coarse) {
+  html, body {
+    /* no grey flash on tap; the buttons have their own :active state */
+    -webkit-tap-highlight-color: transparent;
+    /* no pull-to-refresh / rubber-band while the smoother or a sheet scrolls */
+    overscroll-behavior-y: none;
+  }
+  /* long-press on decorative images/canvases must not open the save sheet */
+  canvas, img[aria-hidden="true"], .u-hand {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* a blended fixed layer makes Android re-composite the whole page on
+     every scroll; at 5 % opacity the grain reads the same without it */
+  body::after { mix-blend-mode: normal; opacity: 0.035; }
+
+  /* Fixed chrome keeps clear of the status bar and the gesture bar */
+  header.fixed { padding-top: max(0.75rem, var(--sat)); }
+  .studio-page { padding-left: var(--sal); padding-right: var(--sar); }
+  .studio-page > .glass-sheet.bottom-3,
+  .studio-page > [class*="bottom-3"] { bottom: calc(0.75rem + var(--sab)); }
+
+  /* Touch targets: the small option controls (backdrop dots, preset and
+     tab chips, 20–38 px) get an invisible 44 px hit area without moving a
+     pixel. The .btn / .btn-glass family already uses ::before/::after for
+     its glass bevel + specular and is ≥ 35 px tall with generous padding,
+     so it is left alone. */
+  button[aria-pressed]:not(.btn):not(.btn-glass), [role="tab"]:not(.btn):not(.btn-glass) { position: relative; }
+  button[aria-pressed]:not(.btn):not(.btn-glass)::before, [role="tab"]:not(.btn):not(.btn-glass)::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+    border-radius: inherit;
+  }
+}
+
+/* Installed app (Android home-screen / TWA): the address bar is gone, so
+   give the top a touch more breathing room under the status bar */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  header.fixed { padding-top: max(1rem, calc(var(--sat) + 0.25rem)); }
+  .fixed.bottom-6, .fixed.bottom-5 { bottom: calc(1.5rem + var(--sab)); }
+}
+
+/* Soft keyboard open (engine sets html.kbd-open from the visual viewport):
+   bottom-anchored glass sheets in the studio/maker would otherwise sit
+   behind the keyboard while the visitor names a design */
+html.kbd-open .studio-page .glass-sheet[class*="bottom-"] {
+  bottom: calc(100dvh - var(--vvh, 100dvh) + 0.75rem);
+}

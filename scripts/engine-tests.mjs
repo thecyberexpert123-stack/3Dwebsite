@@ -15,6 +15,7 @@ if (!outDir) {
 }
 const require = createRequire(import.meta.url);
 const { decide, smoothFrameMs, FRAME_BUDGET_MS } = require(resolve(outDir, "scheduler.js"));
+const { decideBack, shouldPushEntry } = require(resolve(outDir, "android.js"));
 
 let pass = 0;
 let fail = 0;
@@ -87,6 +88,23 @@ console.log("engine: frame-time smoothing");
   let a = 0;
   for (let i = 0; i < 200; i++) a = smoothFrameMs(a, 33);
   check("converges toward the steady frame time", Math.abs(a - 33) < 0.01);
+}
+
+console.log("engine: android back button");
+{
+  check("no dialog open → Back leaves as usual", decideBack(0) === "leave");
+  check("a dialog open → Back closes it", decideBack(1) === "close-dialog");
+  check("stacked dialogs → Back closes (the top one)", decideBack(3) === "close-dialog");
+  // minimal Element stand-ins (no DOM in node)
+  const el = (attrs, classes = []) => ({ getAttribute: (k) => attrs[k] ?? null, classList: { contains: (c) => classes.includes(c) } });
+  const tracked = new WeakSet();
+  const modal = el({ role: "dialog", "aria-modal": "true" });
+  check("modal dialog gets a history entry", shouldPushEntry(modal, tracked) === true);
+  tracked.add(modal);
+  check("never twice for the same element", shouldPushEntry(modal, tracked) === false);
+  check("non-modal dialog is ignored", shouldPushEntry(el({ role: "dialog" }), tracked) === false);
+  check("plain element is ignored", shouldPushEntry(el({}), tracked) === false);
+  check("the welcome door (.candy) is excluded", shouldPushEntry(el({ role: "dialog", "aria-modal": "true" }, ["candy"]), tracked) === false);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

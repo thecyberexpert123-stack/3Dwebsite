@@ -177,6 +177,13 @@ scheduler/warm-up that keeps every 3D scene smooth (and how to A/B it with
 `?engine=off`), and the server packaging (standalone build, Caddy edge with
 zstd/brotli + immutable caching, `/api/health`).
 
+### Android
+
+The site is installable from Android Chrome (manifest + icons, "Add to Home
+screen") and ships a Trusted Web Activity descriptor for the Play Store —
+see `android/README.md`. The engine's Android shim makes the hardware Back
+button close overlays instead of leaving the app.
+
 ### GitHub Pages
 
 The whole site also builds as a static export:
