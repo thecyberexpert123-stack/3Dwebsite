@@ -134,6 +134,26 @@ export default function RootLayout({
       lang="en"
       className={`${parisienne.variable} ${caveat.variable} ${quicksand.variable}`}
     >
+      <head>
+        {/* GitHub Pages cannot send HTTP security headers, so ship the policy
+            as reachable as a <meta> tag. A meta CSP is a weaker guarantee
+            than the header (no frame-ancestors / report-uri) but still stops
+            third-party script injection and mixed content — the meaningful
+            XSS surface for a fully static site that embeds zero third-party
+            scripts. `connect-src` https: + wss: already admits Supabase
+            (REST/Realtime) for the upcoming sign-in work. */}
+        <meta
+          httpEquiv="Content-Security-Policy"
+          content={
+            "base-uri 'self'; object-src 'none'; form-action 'self' https://wa.me https://api.whatsapp.com; " +
+            "img-src * data: blob:; frame-src 'none'; " +
+            "connect-src 'self' https: wss:; " +
+            "default-src 'self' 'unsafe-inline' 'unsafe-eval'"
+          }
+        />
+        {/* GitHub Pages cannot send the Referrer-Policy header either. */}
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+      </head>
       <body className="gingham min-h-screen">
         {children}
         <HeartTrail />
@@ -141,7 +161,7 @@ export default function RootLayout({
         <EngineProvider />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
         />
       </body>
     </html>

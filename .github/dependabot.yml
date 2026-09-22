@@ -1,0 +1,30 @@
+# Keep dependencies patched automatically. Dependabot opens PRs against main
+# and the Arena working branch; the CI workflow below runs `npm audit` on
+# every push so a vulnerable dependency cannot silently ship.
+version: 2
+updates:
+  # npm — production + dev dependencies, weekly, grouped to reduce noise.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      security:
+        applies-to: "security-updates"
+        patterns: ["*"]
+    # security updates are always enabled separately by GitHub; enable both.
+    versioning-strategy: "increase-if-necessary"
+
+  # GitHub Actions — workflow actions themselves get CVEs too.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    labels: ["dependencies", "ci"]

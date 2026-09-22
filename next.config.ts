@@ -47,6 +47,20 @@ const nextConfig: NextConfig = {
           return [
             { source: "/images/:path*", headers: [{ key: "Cache-Control", value: ASSET }] },
             { source: "/_next/static/:path*", headers: [{ key: "Cache-Control", value: IMMUTABLE }] },
+            {
+              source: "/:path*",
+              headers: [
+                { key: "X-Content-Type-Options", value: "nosniff" },
+                { key: "X-Frame-Options", value: "SAMEORIGIN" },
+                { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+                { key: "X-DNS-Prefetch-Control", value: "on" },
+                { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
+                // HSTS is only valid over HTTPS; GitHub Pages / Caddy own the
+                // TLS edge (Caddyfile already sets its own headers), so keep
+                // the app-level value conservative for local/dev.
+                { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+              ],
+            },
           ];
         },
       }),

@@ -819,6 +819,54 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.19.0 — "attack-proof" isn't a feature, it's a posture; scope it to the host
+
+**Problem.** Owner asked to make the site "attack proof" and add sign-in +
+an advanced admin panel. The trap: promising "attack proof" (no such thing)
+and bolting auth onto a host that can't support it.
+
+**Findings (evidence).**
+- `npm audit` on v0.18.2 reported **1 high + 1 moderate**, both the `postcss`
+  bundled inside Next 15.5.25 (8.4.31): an attacker-controlled
+  `sourceMappingURL` arbitrary-file-read family (CVE-2026-45623 /
+  GHSA-6g55-p6wh-862q + incomplete-fix follow-ups) and a stringify XSS
+  (CVE-2026-41305). Both are **build-time only** for this repo (Tailwind runs
+  at build; no user CSS is parsed at runtime) — real, but non-breaking to fix
+  with one `overrides: { "postcss": "8.5.23" }`. Do NOT reach for
+  `npm audit fix --force` (downgrades/can break Next).
+- Next 15.5.25 was a patch behind **15.5.26** (the final 15.5.x), which
+  carries the RSC cache-poisoning, image-DoS and Windows-RCE (CVE-2026-75604)
+  fixes — a non-breaking `next@15.5.26` pin was the right sized move (no 16.x
+  major migration during a feature push).
+- **GitHub Pages cannot set HTTP response headers** (long-standing, confirmed
+  by GitHub staff in community threads and by their own docs): no CSP, HSTS,
+  X-Frame-Options. The legitimate mitigations are (a) a **meta CSP + meta
+  referrer** in the exported HTML (weaker — no frame-ancestors/report-uri —
+  but non-zero) and (b) full header-grade policy at the *edge* (the Caddyfile
+  in the VPS engine), not (c) pretending a `_headers`/`next.config.headers()`
+  file will be honored by Pages.
+- App layer was already clean: all 11 `target="_blank"` links have
+  `rel="noopener noreferrer"`; the only `dangerouslySetInnerHTML` is the
+  JSON-LD block; no secrets/`.env` tracked; `.gitignore` covers `.env*.local`.
+
+**Mechanism (reusable).** Treat "attack proof" as: pin deps to *verified
+patched* versions (check the npm registry dist-tags, not the advisory page
+alone), add an **automated gate** (`npm audit --audit-level=high` in CI) so it
+*stays* fixed, ship the strongest CSP the *host* actually supports, and
+never invent client-side "security" (localStorage passwords) as a substitute
+for a real auth backend.
+
+**Also learned (architecture).** Auth + an admin panel on a *static* Pages
+site only has two honest paths: a browser-callable BaaS (**Supabase** —
+anon key is designed to ship in the browser, protection comes from RLS not
+secrecy) or **adding a Node server** (the engine VPS already exists, or
+Vercel). Any "sign-in" written purely in client JS against localStorage is
+obfuscation, not security.
+
+**Confidence.** High on the postcss/next facts (registry + advisory DB +
+lockfile verified); high that meta-CSP is the correct Pages posture (GitHub
+official); medium on real-device CSP interactions (not measurable here).
+
 ## v0.18.2 — the whole word writes, not a single clip
 
 **Problem.** The v0.18.1 write-on was honest but a little flat: one clip

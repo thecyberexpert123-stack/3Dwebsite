@@ -174,6 +174,34 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.19.0] — 2026-09-22
+
+### Security — first hardening pass (see AGENT-EXPERIENCE v0.19.0)
+
+- **Dependency pins to patched releases.** `next` 15.5.25 → **15.5.26** (the
+  last 15.5.x, carrying every recent advisory fix: RSC cache poisoning, the
+  image-optimizer DoS, and the Windows-RCE CVE-2026-75604); `react` /
+  `react-dom` → **19.2.8**; and the `postcss` bundled inside Next.js is
+  forced to **8.5.23** via an npm `overrides` entry, fixing the high
+  arbitrary-file-read family (CVE-2026-45623, GHSA-6g55-p6wh-862q) and the
+  stringify XSS (CVE-2026-41305). `npm audit` now reports **0
+  vulnerabilities**. All resolved versions verified in the lockfile; full
+  domain test suite (82/58/91) and both build shapes pass.
+- **Security headers.** The VPS/Node shape (next.config `headers()`) now
+  sends `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`,
+  `Referrer-Policy`, `Permissions-Policy` (no camera/mic/geo) and `HSTS`.
+- **GitHub Pages can't send headers**, so the static export now ships a
+  **meta CSP** (`base-uri 'self'; object-src 'none'; form-action 'self'
+  + WhatsApp; frame-src 'none'; connect-src 'self' https: wss:`) and a meta
+  `referrer` — the best reachable equivalent; documented honestly.
+- **Engine/Caddy edge**: the `Caddyfile` gains header-grade HSTS + a real
+  CSP (incl. `frame-ancestors 'self'` and Supabase-scoped `connect-src`).
+- **JSON-LD hardened**: the injected structured-data blob now escapes `<` so
+  no `</script>` breakout is possible even with future user-authored content.
+- **Dependabot** config added (weekly npm + GitHub-Actions updates), and the
+  **CI workflow gains a security gate** — `npm audit --audit-level=high`
+  fails the build on any high/severe advisory.
+
 ## [0.18.2] — 2026-09-22
 
 ### Changed — the letter intro signs itself, and fits any device
