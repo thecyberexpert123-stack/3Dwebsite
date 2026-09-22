@@ -3,15 +3,20 @@ name: Deploy to GitHub Pages
 # Static export of the whole site (home, /studio, /maker, /admin, sitemap,
 # robots) served from GitHub Pages at https://<owner>.github.io/3Dwebsite/.
 #
-# One-time setup by a human: repository Settings → Pages → Source:
-# "GitHub Actions". Then every push to `main` (or a manual run) publishes.
+# Deploys on every push to `main` and, until the Arena branch is merged, on
+# pushes to that branch too (the `github-pages` environment already allows
+# it). Remove the arena branch from the list after merging.
+#
+# If Pages is still set to "Deploy from a branch", the first successful
+# run of `actions/deploy-pages` switches the source to GitHub Actions; it
+# can also be set by hand under Settings → Pages → Source.
 #
 # Custom domain / user site? Set NEXT_PUBLIC_BASE_PATH to "" and
 # NEXT_PUBLIC_SITE_URL to the domain in the env block below.
 
 on:
   push:
-    branches: [main]
+    branches: [main, arena/01a0bf4f-3dwebsite]
   workflow_dispatch: {}
 
 permissions:
@@ -34,6 +39,9 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
 
       - name: Set up Node 22
         uses: actions/setup-node@v4
