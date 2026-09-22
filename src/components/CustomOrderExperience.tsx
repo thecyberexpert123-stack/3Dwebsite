@@ -23,6 +23,7 @@ import {
 } from "./Decorations";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { withBasePath } from "@/lib/paths";
 
 /* The "customization desk" — a gentle 3D still life (desktop, WebGL only).
    On mobile or without WebGL, a lovely static image takes its place. */
@@ -150,7 +151,7 @@ export function CustomOrderExperience() {
               <DeskScene active={deskNear} />
             ) : (
               <Image
-                src="/images/hero-fallback.jpg"
+                src={withBasePath("/images/hero-fallback.jpg")}
                 alt="A crochet customization desk with a bouquet, pastel yarn balls, a wooden hook, ribbon and a small gift box"
                 fill
                 sizes="(min-width: 1024px) 40vw, 92vw"

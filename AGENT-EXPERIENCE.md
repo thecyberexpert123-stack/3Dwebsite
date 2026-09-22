@@ -691,3 +691,71 @@ scenes, adding dependencies or touching the build.
   answering 404 after a rebuild (`EADDRINUSE` in the new server's log);
   background `setsid nohup` from the bash tool does not survive the call.
   Use the managed process tool and stop/start it around every rebuild.
+
+## v0.13.0 — a second tool, not a bigger one; and a site that also lives on Pages
+
+- **"Blender-like" for non-experts means Blender's *structure*, not its
+  surface.** Research (the Blender manual's Object / Sculpt mode split,
+  hotkey sheets, the sculpt falloff/symmetry pages; Womp, Tinkercad,
+  SculptGL, Spline for what browsers actually ship) converged on: two
+  modes with different pointer semantics, a small vocabulary of soft
+  primitives, a gizmo *and* the G/R/S keys, brushes with radius / strength
+  / falloff / mirror, and export. Nobody needs dyntopo or booleans to
+  describe a crochet bear; everybody needs undo and a clear "what did I
+  make" sentence. The Maker is a *separate page* from the guided studio
+  because the two answer different questions ("which flower?" vs "what
+  shape?") — merging them would have made both worse. Confidence: high.
+- **Sculpting on fixed topology is what makes a portable file possible.**
+  Primitives are built once, *welded on position only* (`mergeVertices`
+  hashes every attribute, so UV seams and hard-edge normals survive unless
+  you delete them first — an unwelded sphere tears at the seam under a
+  brush). With a fixed vertex count per kind, sculpt detail is just "offset
+  per vertex" and the document stays a few KB. Verified: a stroke on the
+  bear's head → 674 verts × sparse int16 → 1.1 KB, reopens identically.
+- **Store sculpt offsets sparsely.** The first codec wrote every vertex
+  (757 × 6 B = 4.5 KB → 6 KB base64 per part) and the very first sculpt
+  overflowed the 6000-char share-link budget. Brushes touch a few percent
+  of a mesh: (uint16 index, 3 × int16) records made the same stroke 1.1 KB
+  and links carry sculpt again. The test suite had encoded the wrong
+  assumption ("one sculpted part cannot fit") — tests should encode the
+  *design goal* (a typical sculpt fits), not the current implementation.
+- **drei `<Outlines>` prop names lie.** `screenspace={false}` is the
+  pixel-constant branch and divides by a `size` uniform that was (0,0) in
+  this scene → infinite offsets → a spiky halo (seen in QA, not reasoned
+  out). `screenspace` pushes vertices along the normal in *object units*,
+  deterministic; divide the thickness by the part's mean scale for an even
+  rim. Applicability: any drei helper with a `size` uniform on a canvas
+  whose context is created before the helper mounts.
+- **Stroke spacing along the path, not per event.** Dabbing N times at the
+  last sample (the first version) made fast flicks pile up into a blob at
+  the end and slow drags draw nothing in between. Blender's spacing model
+  — interpolate the pointer in screen space, re-project each step onto the
+  surface — costs a few raycasts and makes speed irrelevant to the result.
+- **Unicode glyphs are not icons.** ✥ ⟳ ⤢ ▦ ◈ ↶ ← rendered as tofu in the
+  site's fonts (Quicksand/Caveat have no dingbats) — every rail button was
+  a box in the first screenshot. Inline SVG, always; screenshots before
+  reasoning.
+- **Two deployment shapes from one config.** `output: "export"` gated by
+  `NEXT_EXPORT=1` keeps the Node deployment untouched (per-link OG metadata
+  on `/studio`). What the docs say and what breaks: `next/link`, the router
+  and the metadata API honour `basePath`; **`next/image` with
+  `unoptimized` does not**, nor do raw `<img>`, hand-built share URLs,
+  JSON-LD, or sitemap/robots — 12 render sites + 5 helpers needed
+  `withBasePath()`. `generateMetadata` may exist in export mode as long as
+  it never *awaits* `searchParams`. Verified by serving `out/` under
+  `/3Dwebsite/` with a 404 fallback and walking home / studio / maker in a
+  real browser (33 images, 0 failed requests) — the only trustworthy check
+  for a sub-path deploy.
+- **Phones get the tools in the sheet, not on the edges.** A left rail and
+  a right drawer both open on a 390 px screen buried the model behind
+  glass. The phone layout keeps the table clear: tool strip + add grid
+  inside the bottom sheet, properties drawer closed until asked (N), the
+  WhatsApp button full-width and never inside a horizontal scroll row.
+- **Not verified in this round:** real-GPU frame rate for sculpting
+  (SwiftShader makes every stroke ~5 s; the per-dab work is O(touched
+  vertices) with `computeVertexNormals` over the whole part, ~750–1700
+  verts, which should be far under a frame on a phone GPU but was not
+  measured), touch sculpting with a finger (the pointer code path is
+  shared, but pinch-vs-stroke arbitration on real devices is untested),
+  and `.glb` files opened in Blender (the exporter output is standard
+  `GLTFExporter` binary; only its download was observed).

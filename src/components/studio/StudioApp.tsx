@@ -177,6 +177,9 @@ export function StudioApp() {
           <Link href="/" className="btn btn-glass btn-sm" aria-label="Back to Whimlet">
             ← Whimlet
           </Link>
+          <Link href="/maker" className="btn btn-glass btn-sm hidden sm:inline-flex" title="Free-form 3D: build anything from soft shapes">
+            Maker →
+          </Link>
           <span className="glass-pill hidden items-center gap-2 md:inline-flex">
             <SparkleDoodle className="h-3.5 w-3.5 text-rose-ink" />
             <span className="font-hand text-lg leading-none text-rose-ink" aria-hidden="true">3D Design Studio</span>

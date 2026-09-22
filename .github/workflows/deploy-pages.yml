@@ -1,0 +1,68 @@
+name: Deploy to GitHub Pages
+
+# Static export of the whole site (home, /studio, /maker, /admin, sitemap,
+# robots) served from GitHub Pages at https://<owner>.github.io/3Dwebsite/.
+#
+# One-time setup by a human: repository Settings → Pages → Source:
+# "GitHub Actions". Then every push to `main` (or a manual run) publishes.
+#
+# Custom domain / user site? Set NEXT_PUBLIC_BASE_PATH to "" and
+# NEXT_PUBLIC_SITE_URL to the domain in the env block below.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Static export
+    runs-on: ubuntu-latest
+    env:
+      NEXT_EXPORT: "1"
+      NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+      NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies (npm ci — lockfile-exact)
+        run: npm ci
+
+      - name: Domain tests (design + maker)
+        run: npm test
+
+      - name: Export static site
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

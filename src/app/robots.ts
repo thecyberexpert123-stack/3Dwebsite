@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
+import { absoluteUrl, withBasePath } from "@/lib/paths";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+// static: also emitted by the GitHub Pages export (`output: "export"`)
+export const dynamic = "force-static";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [{ userAgent: "*", allow: "/", disallow: ["/admin"] }],
-    sitemap: `${siteUrl}/sitemap.xml`,
+    rules: [{ userAgent: "*", allow: withBasePath("/"), disallow: [withBasePath("/admin")] }],
+    sitemap: absoluteUrl("/sitemap.xml"),
   };
 }

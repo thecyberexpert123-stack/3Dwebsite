@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
 import { Reveal, TextReveal } from "./Reveal";
 import { HeartDoodle, SparkleDoodle, StitchDoodle } from "./Decorations";
+import { withBasePath } from "@/lib/paths";
 
 const VALUES = [
   { icon: StitchDoodle, label: "hours of happy stitching" },
@@ -38,7 +39,7 @@ export function StorySection() {
           <motion.div style={{ clipPath: clip }} className="relative aspect-[4/3] -rotate-1 overflow-hidden rounded-[2.5rem] shadow-lift">
             <motion.div style={{ scale: imgScale }} className="absolute inset-0">
               <Image
-                src="/images/story-hands.jpg"
+                src={withBasePath("/images/story-hands.jpg")}
                 alt="A half-finished blush pink crochet flower resting on linen, with a wooden crochet hook mid-stitch and a strand of yarn trailing away"
                 fill
                 sizes="(min-width: 1024px) 46vw, 92vw"

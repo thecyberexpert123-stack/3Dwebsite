@@ -9,6 +9,7 @@ import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
 import { TiltCard } from "./TiltCard";
 import { HeartDoodle, SquiggleDoodle } from "./Decorations";
+import { withBasePath } from "@/lib/paths";
 
 /* each card leans a different way so the strip reads like photos laid on a
    table, not a carousel */
@@ -90,7 +91,7 @@ export function OccasionSection() {
                     style={{ rotate: `${TILT[i % TILT.length]}deg` }}
                   >
                     <Image
-                      src={o.image}
+                      src={withBasePath(o.image)}
                       alt={o.alt}
                       fill
                       sizes="(min-width: 768px) 312px, 272px"

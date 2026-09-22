@@ -7,6 +7,7 @@ import { productCategoryLabel, type Product } from "@/data/products";
 import { waLink, waMessages } from "@/lib/whatsapp";
 import { HeartDoodle, SparkleDoodle, WhatsAppGlyph } from "./Decorations";
 import { lockScroll, unlockScroll } from "@/lib/scroll";
+import { withBasePath } from "@/lib/paths";
 
 /**
  * Product detail dialog: image, story, customization notes and a WhatsApp
@@ -83,7 +84,7 @@ export function ProductModal({
               className="relative aspect-[4/3] overflow-hidden rounded-t-[2rem] sm:aspect-auto sm:min-h-[440px] sm:rounded-l-[2rem] sm:rounded-tr-none"
             >
               <Image
-                src={product.image}
+                src={withBasePath(product.image)}
                 alt={product.alt}
                 fill
                 sizes="(min-width: 640px) 50vw, 100vw"

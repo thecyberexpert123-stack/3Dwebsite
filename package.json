@@ -1,14 +1,17 @@
 {
   "name": "whimlet",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "private": true,
-  "description": "Whimlet — handmade crochet products & custom crochet orders. Boutique 3D marketing site.",
+  "description": "Whimlet \u2014 handmade crochet products & custom crochet orders. Boutique 3D marketing site.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "test:design": "tsc --module commonjs --target es2020 --skipLibCheck --outDir node_modules/.design-test src/lib/design.ts src/lib/sketch.ts && node scripts/design-tests.mjs node_modules/.design-test",
-    "optimize:images": "node scripts/optimize-images.mjs"
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "test:maker": "tsc --module commonjs --target es2020 --skipLibCheck --outDir node_modules/.maker-test src/lib/maker.ts src/lib/sculpt.ts && node scripts/maker-tests.mjs node_modules/.maker-test",
+    "test": "npm run test:design && npm run test:maker",
+    "build:pages": "NEXT_EXPORT=1 next build"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.0",

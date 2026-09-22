@@ -15,6 +15,7 @@ import {
   PhoneDoodle,
   WhatsAppGlyph,
 } from "./Decorations";
+import { withBasePath } from "@/lib/paths";
 
 const GiftScene = dynamic(() => import("./three/GiftScene"), { ssr: false });
 
@@ -99,7 +100,7 @@ export function ContactSection() {
               <GiftScene open={open} onToggle={() => setOpen((o) => !o)} />
             ) : (
               <Image
-                src="/images/products/gift-set.jpg"
+                src={withBasePath("/images/products/gift-set.jpg")}
                 alt="A little gift box of hand-crocheted yarn pieces in cream tissue paper"
                 fill
                 sizes="(min-width: 1024px) 34vw, 92vw"

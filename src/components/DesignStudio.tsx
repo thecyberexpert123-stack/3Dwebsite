@@ -24,6 +24,7 @@ import { SparkleDoodle, WhatsAppGlyph } from "./Decorations";
 import { PetalSketch } from "./PetalSketch";
 import { ControlGroup, Segmented, Swatches, ToggleSwitch } from "./studio/controls";
 import { useDesign } from "./studio/useDesign";
+import { withBasePath } from "@/lib/paths";
 
 const DesignScene = dynamic(() => import("./three/DesignScene"), {
   ssr: false,
@@ -34,7 +35,7 @@ function SceneFallback() {
   return (
     <div className="relative h-full w-full">
       <Image
-        src="/images/products/bouquet-blush.jpg"
+        src={withBasePath("/images/products/bouquet-blush.jpg")}
         alt="A hand-crocheted blush and cream yarn flower bouquet"
         fill
         sizes="(min-width: 1024px) 42vw, 92vw"
@@ -264,6 +265,11 @@ export function DesignStudio() {
                       full studio
                     </Link>{" "}
                     adds yarn types, petal size and openness, centre styles, leaf shapes, fillers, wrap styles, tags, butterflies, charms, a vase or pot, and a design file you can save — your choices here carry over.
+                    Not a flower at all? The{" "}
+                    <Link href="/maker" className="font-semibold text-rose-ink underline decoration-blush-deep decoration-2 underline-offset-4">
+                      Maker
+                    </Link>{" "}
+                    is a free-form table: soft shapes you can move, mirror and sculpt into anything.
                   </p>
                 </>
               )}

@@ -23,6 +23,7 @@ export const footerNav: NavItem[] = [
   { label: "Shop", href: "#shop" },
   { label: "Custom Orders", href: "#custom" },
   { label: "3D Design Studio", href: "/studio" },
+  { label: "Whimlet Maker", href: "/maker" },
   { label: "Our Story", href: "#story" },
   { label: "Gallery", href: "#gallery" },
   { label: "Contact", href: "#contact" },

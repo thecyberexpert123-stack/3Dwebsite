@@ -174,6 +174,82 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.13.0] — 2026-09-22
+
+A second, very different 3D tool — the **Whimlet Maker** at `/maker`, a
+small friendly Blender for crochet — plus a **GitHub Pages** build of the
+whole site.
+
+### Added — Whimlet Maker (`/maker`)
+- **Free-form editor** for pieces the guided studio cannot describe: build
+  from ten crochet-shaped primitives (ball, egg, tube, cone, ring, heart,
+  petal, leaf, cube, disc — welded, fixed topology, 1 unit = 5 cm), up to
+  40 parts per piece. Each part has a name, position/rotation/size (numeric
+  fields in cm and degrees), one of 16 yarn colours, a finish (cotton /
+  velvet / fuzzy / satin / pearl), visibility and a **mirror twin** across
+  the centre line.
+- **Arrange mode** (Blender's Object Mode): click to select (rose rim
+  outline), drei `TransformControls` gizmo for move / rotate / size with
+  optional snapping (0.5 cm · 15°), duplicate, delete, hide / unhide, parts
+  list (outliner) with reorder, click-empty-space to deselect, turntable,
+  1 cm grid, wireframe, orbit / pan / zoom with a viewport gizmo.
+- **Sculpt mode** on the selected part: Draw, Inflate, Grab, Smooth,
+  Flatten and Pinch brushes; radius and strength; four falloffs (smooth /
+  sharp / linear / constant); **X symmetry**; invert (Ctrl) and temporary
+  smooth (Shift); a brush cursor ring that hugs the surface normal; strokes
+  are spaced along the path so speed doesn't change the result. Sculpt
+  detail is stored per part as **sparse quantised offsets** (only touched
+  vertices, int16) so a typical sculpt is a few hundred bytes.
+- **Blender hotkeys** where they don't fight the browser, always mirrored by
+  visible glass buttons: Tab mode toggle, G/R/S gizmo modes, Shift+A add,
+  Shift+D duplicate, X/Delete, H / Alt+H, M mirror, N properties, F /
+  Shift+F brush size, D/I/G/S/T/P brushes, 1–0 add a shape by number,
+  Ctrl+Z / Shift+Ctrl+Z, Esc.
+- **Document**: `.whimlet-maker.json` v1 (strict, size-capped, sanitised
+  reader with per-part warnings), `?m=` share links (sculpt included when it
+  fits the 6000-char cap, otherwise dropped and said so), autosaved local
+  draft, **six templates** (blank, bear, bunny, cactus, strawberry, donut).
+- **Handoff**: plain-language description, rough spec (size, surface,
+  stitches, yarn grams, palette with hex), **WhatsApp** quote message with
+  the link, **.glb export** (opens in Blender / AR viewers), PNG snapshot.
+- Phones: tool strip and add-shape grid inside the bottom sheet, properties
+  drawer closed by default, full-width WhatsApp button.
+- Links: footer, studio header ("Maker →"), homepage studio teaser sentence,
+  sitemap entry.
+- `npm run test:maker` — 58 pure-logic tests (falloff, adjacency, dabs,
+  symmetry, grab, sparse offset codec, sanitiser, link/file round-trips,
+  estimates, descriptions, templates). `npm test` runs both suites.
+
+### Added — GitHub Pages
+- `npm run build:pages` (`NEXT_EXPORT=1`) writes a static `out/`;
+  `next.config.ts` gates `output: "export"`, `trailingSlash` and
+  `basePath`/`assetPrefix` from `NEXT_PUBLIC_BASE_PATH` (the workflow sets
+  `/3Dwebsite`). `public/.nojekyll`.
+- `src/lib/paths.ts` — `withBasePath()` / `absoluteUrl()`; applied to every
+  raw `/images/...` (12 render sites), the Open Graph image, JSON-LD, the
+  studio and maker share links, sitemap and robots (`force-static`).
+- `/studio` metadata falls back to the static description in export mode
+  (no server to read `?design=`); the client still opens the link.
+- `.github/workflows/deploy-pages.yml` (tests → export → `upload-pages-
+  artifact` → `deploy-pages`) on pushes to `main`; `ci.yml` now runs on
+  `main` + `arena/**`, runs both test suites and both build shapes.
+
+### Changed
+- `makeHeartGeometry` / `makePetalGeometry` / `makeLeafGeometry` accept a
+  `wobble` amount (default unchanged) so the Maker can build clean, weldable
+  topology.
+
+### Verified (headless Chromium, SwiftShader)
+- `/maker`: select → numeric edit → undo; sculpt stroke and grab persist as
+  sparse offsets; add by key, duplicate, delete; share link round-trip;
+  `.glb`, `.json` and PNG downloads; WhatsApp link; zero page errors on
+  desktop and phone viewports.
+- Pages build served under `/3Dwebsite/`: home (33 images, none broken),
+  `/studio/?design=…`, `/maker/` share link, 404 page, prefixed chunks,
+  OG image, robots/sitemap — zero failed requests.
+- `tsc` clean · `next build` (Node) and `build:pages` (export) OK ·
+  82 + 58 tests.
+
 ## [0.12.0] — 2026-09-21
 
 The Design Studio grows up: a **full-page studio** at `/studio`, a

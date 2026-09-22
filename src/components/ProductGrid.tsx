@@ -10,6 +10,7 @@ import { SectionHeading } from "./SectionHeading";
 import { TiltCard } from "./TiltCard";
 import { ProductModal } from "./ProductModal";
 import { HeartDoodle } from "./Decorations";
+import { withBasePath } from "@/lib/paths";
 
 /**
  * Featured products — "Made To Make You Smile".
@@ -111,7 +112,7 @@ function ProductCard({
             className="relative block aspect-[4/3] overflow-hidden rounded-[1.75rem]"
           >
             <Image
-              src={product.image}
+              src={withBasePath(product.image)}
               alt={product.alt}
               fill
               sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 92vw"

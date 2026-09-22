@@ -13,6 +13,12 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
  * strict sanitiser as the client, so a bad code simply falls back.
  */
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  // Static export (GitHub Pages) has no server to read the query string:
+  // return the generic metadata *without touching* `searchParams`, which
+  // keeps the route prerenderable. The client still decodes `?design=`.
+  if (process.env.NEXT_EXPORT === "1") {
+    return { title: "3D Design Studio | Whimlet", description: baseDescription, robots: { index: true, follow: true } };
+  }
   const sp = await searchParams;
   const raw = sp.design;
   const code = Array.isArray(raw) ? raw[0] : raw;

@@ -32,15 +32,17 @@ npm run optimize:images    # resize/compress images in public/images (ImageMagic
 ```
 src/
 ├─ app/               root layout (SEO, fonts, JSON-LD); (site)/ homepage with
-│                     marketing chrome; (app)/ bare shell for /studio and /admin
+│                     marketing chrome; (app)/ bare shell for /studio, /maker, /admin
 ├─ components/        one file per section + shared UI (Reveal, Decorations…)
 │  ├─ studio/         full studio + admin viewer (shared controls, hooks, panels)
+│  ├─ maker/          the free-form Maker (MakerApp + document/history hook)
 │  └─ three/          R3F scenes: HeroScene3D, GiftIntroScene, DesignScene, DeskScene…
 ├─ data/              ALL editable content lives here (see below)
 ├─ fonts/             self-hosted woff2 files
 └─ lib/               design.ts (studio domain + file format), sketch.ts,
-│                     WhatsApp helpers, hooks (WebGL/mobile/reduced-motion)
-scripts/              image optimization utility + design-tests.mjs
+│                     maker.ts + sculpt.ts (Maker document, brushes, codecs),
+│                     paths.ts (basePath helpers), WhatsApp helpers, hooks
+scripts/              image optimization utility + design-tests.mjs + maker-tests.mjs
 public/images/        product & scene imagery
 ```
 
@@ -117,6 +119,31 @@ fairy lights · wrap styles · ribbon styles · gift tag with text · butterflie
 - `npm run test:design` runs the 82 pure-logic tests (encode/decode, v1
   compat, sanitiser, file round-trips, spec estimates, descriptions).
 
+## The Whimlet Maker (`/maker`)
+
+The studio describes *flowers*; the Maker describes *anything*. It is a
+small, friendly Blender: soft crochet-shaped primitives you arrange, mirror
+and sculpt, then hand to Whimlet.
+
+- **Arrange** (Blender's Object Mode): add a shape (`Shift+A` or `1`–`0`),
+  click to select, gizmo for **move / rotate / size** (`G` / `R` / `S`),
+  snapping, duplicate (`Shift+D`), delete (`X`), hide (`H` / `Alt+H`), mirror
+  twin (`M`), numeric position/rotation/size in cm and degrees, 16 yarn
+  colours, five finishes, parts list with reorder, grid, wireframe, turntable.
+- **Sculpt** (`Tab`): Draw, Inflate, Grab, Smooth, Flatten, Pinch on the
+  selected part; radius (`F` / `Shift+F`), strength, falloff, X symmetry,
+  invert (`Ctrl`), temporary smooth (`Shift`). Detail is stored as sparse
+  int16 offsets per vertex — primitives have fixed topology, so a file made
+  today reopens identically.
+- **Document:** `{ format: "whimlet-maker", version: 1, … }` — Save / Open
+  (or drop the file anywhere), `?m=` share link (sculpt included when it
+  fits), autosaved local draft, six templates. **Handoff:** description,
+  size / stitches / yarn estimate, palette, WhatsApp message, **.glb** export
+  (Blender, iOS AR Quick Look, Windows 3D Viewer), PNG snapshot.
+- Scale: 1 unit = 5 cm; estimates assume ~3 single-crochet stitches / cm².
+- `npm run test:maker` runs the 58 pure-logic tests; `npm test` runs both
+  suites.
+
 ## Images
 
 Drop new photos into `public/images/` (keep names, or update the data files),
@@ -136,6 +163,27 @@ then run `npm run optimize:images`. Guidance for real photography:
 - `next.config.ts` disables runtime image optimization (`images.unoptimized`)
   because images are pre-optimized at authoring time. On platforms with
   built-in optimization (e.g. Vercel) you may remove that flag.
+
+### GitHub Pages
+
+The whole site also builds as a static export:
+
+```bash
+NEXT_PUBLIC_BASE_PATH=/3Dwebsite NEXT_PUBLIC_SITE_URL=https://<owner>.github.io npm run build:pages
+# → out/  (serve it under /3Dwebsite/ to mimic Pages)
+```
+
+`.github/workflows/deploy-pages.yml` does this on every push to `main` and
+publishes with `actions/deploy-pages`. **One-time setup:** repository
+*Settings → Pages → Source: GitHub Actions*. For a user site or a custom
+domain, set `NEXT_PUBLIC_BASE_PATH` to empty in the workflow.
+
+What changes in export mode: `/studio` share links lose their per-design
+Open Graph preview (there is no server to read `?design=`; the page itself
+still opens the design), and any future server feature must stay behind the
+same `NEXT_EXPORT` gate. Raw asset URLs must go through `withBasePath()`
+from `src/lib/paths.ts` — `next/image` with `unoptimized` does not add the
+base path by itself.
 
 ## Verification status
 

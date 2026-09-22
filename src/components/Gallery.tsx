@@ -8,6 +8,7 @@ import { galleryFilters, galleryItems } from "@/data/gallery";
 import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
 import { lockScroll, unlockScroll } from "@/lib/scroll";
+import { withBasePath } from "@/lib/paths";
 
 const ASPECTS: Record<string, string> = {
   tall: "aspect-[3/4]",
@@ -125,7 +126,7 @@ export function Gallery() {
                   >
                     <span className={`relative block ${ASPECTS[item.aspect]} w-full`}>
                       <Image
-                        src={item.src}
+                        src={withBasePath(item.src)}
                         alt={item.alt}
                         fill
                         sizes="(min-width: 768px) 33vw, 50vw"
@@ -173,7 +174,7 @@ export function Gallery() {
             >
               <div className="relative max-h-[74vh] w-[min(90vw,56rem)] overflow-hidden rounded-[1.5rem] shadow-lift">
                 <Image
-                  src={current.src}
+                  src={withBasePath(current.src)}
                   alt={current.alt}
                   width={1000}
                   height={768}

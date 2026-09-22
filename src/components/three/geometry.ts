@@ -48,7 +48,8 @@ export function makePetalGeometry(
   width = 0.36,
   length = 0.95,
   thickness = 0.16,
-  seed = 1
+  seed = 1,
+  wobble = 0.014
 ): THREE.BufferGeometry {
   const geo = new THREE.SphereGeometry(0.5, 16, 18);
   geo.scale(width, length, thickness);
@@ -75,7 +76,7 @@ export function makePetalGeometry(
   }
   pos.needsUpdate = true;
   geo.computeVertexNormals();
-  return wobbleGeometry(geo, 0.014, seed);
+  return wobble > 0 ? wobbleGeometry(geo, wobble, seed) : geo;
 }
 
 /**
@@ -83,7 +84,7 @@ export function makePetalGeometry(
  * pointing +Y. Distinct from a petal — leaves are longer, come to a tip,
  * and crease down the middle so light catches each half differently.
  */
-export function makeLeafGeometry(width = 0.34, length = 1, thickness = 0.1, seed = 1): THREE.BufferGeometry {
+export function makeLeafGeometry(width = 0.34, length = 1, thickness = 0.1, seed = 1, wobble = 0.012): THREE.BufferGeometry {
   const geo = new THREE.SphereGeometry(0.5, 14, 16);
   geo.scale(width, length, thickness);
   geo.translate(0, 0.5, 0);
@@ -103,7 +104,7 @@ export function makeLeafGeometry(width = 0.34, length = 1, thickness = 0.1, seed
   }
   pos.needsUpdate = true;
   geo.computeVertexNormals();
-  return wobbleGeometry(geo, 0.012, seed);
+  return wobble > 0 ? wobbleGeometry(geo, wobble, seed) : geo;
 }
 
 /**
@@ -126,7 +127,7 @@ export function makeStemGeometry(curve: THREE.CatmullRomCurve3, radius = 0.024):
 }
 
 /** A soft extruded heart, centred, with a handmade wobble. */
-export function makeHeartGeometry(seed = 5): THREE.BufferGeometry {
+export function makeHeartGeometry(seed = 5, wobble = 0.02): THREE.BufferGeometry {
   const s = new THREE.Shape();
   s.moveTo(0, -0.6);
   s.bezierCurveTo(-0.12, -0.35, -0.62, -0.05, -0.62, 0.25);
@@ -142,7 +143,8 @@ export function makeHeartGeometry(seed = 5): THREE.BufferGeometry {
     curveSegments: 14,
   });
   geo.center();
-  return wobbleGeometry(geo, 0.02, seed);
+  // wobble 0 = clean, weldable topology (the Maker sculpts its own dents)
+  return wobble > 0 ? wobbleGeometry(geo, wobble, seed) : geo;
 }
 
 /** A loose yarn thread draped along a smooth curve. */

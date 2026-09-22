@@ -16,6 +16,7 @@ import {
   PencilDoodle,
   YarnDoodle,
 } from "./Decorations";
+import { withBasePath } from "@/lib/paths";
 
 const ProcessScene = dynamic(() => import("./three/ProcessScene"), { ssr: false });
 
@@ -88,7 +89,7 @@ export function ProcessTimeline() {
                 <ProcessScene progress={progress} active={near} />
               ) : (
                 <Image
-                  src="/images/story-hands.jpg"
+                  src={withBasePath("/images/story-hands.jpg")}
                   alt="A half-finished blush crochet flower with a wooden hook mid-stitch"
                   fill
                   sizes="(min-width: 1024px) 48vw, 92vw"

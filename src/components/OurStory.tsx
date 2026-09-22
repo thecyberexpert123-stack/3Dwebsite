@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Reveal, TextReveal } from "./Reveal";
 import { HeartDoodle, LadybugDoodle, SquiggleDoodle } from "./Decorations";
+import { withBasePath } from "@/lib/paths";
 
 /**
  * "The Whimlet Story" — warm editorial layout. Copy sticks to facts provided
@@ -51,7 +52,7 @@ export function OurStory() {
         <Reveal delay={0.12} className="relative mx-auto w-full max-w-lg">
           <div className="relative aspect-[4/5] rotate-1 overflow-hidden rounded-[3rem_2rem_3rem_2rem] shadow-lift">
             <Image
-              src="/images/hero-fallback.jpg"
+              src={withBasePath("/images/hero-fallback.jpg")}
               alt="The Whimlet crochet studio scene: a hand-crocheted bouquet with pastel yarn balls, a wooden hook, ribbon and a small gift box on a cream surface"
               fill
               sizes="(min-width: 1024px) 44vw, 92vw"

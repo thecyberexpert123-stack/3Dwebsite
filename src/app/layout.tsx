@@ -6,6 +6,7 @@ import { GlassDefs } from "@/components/GlassDefs";
 import { site } from "@/data/site";
 import { faqs } from "@/data/faqs";
 import { PHONE_DISPLAY } from "@/lib/whatsapp";
+import { absoluteUrl, withBasePath } from "@/lib/paths";
 
 /* Brand type: elegant script (logo & select headings).
    Self-hosted OFL fonts (via Fontsource) so builds need no network access. */
@@ -39,6 +40,9 @@ const quicksand = localFont({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+// The metadata API resolves relative URLs against metadataBase but does not
+// add `basePath` (relevant for the GitHub Pages build), so prefix them here.
+const heroImage = withBasePath("/images/hero-fallback.jpg");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -60,11 +64,11 @@ export const metadata: Metadata = {
     title: site.metaTitle,
     description: site.metaDescription,
     type: "website",
-    url: "/",
+    url: withBasePath("/"),
     siteName: "Whimlet",
     images: [
       {
-        url: "/images/hero-fallback.jpg",
+        url: heroImage,
         width: 1408,
         height: 768,
         alt: "Hand-crocheted blush pink and cream yarn flower bouquet with pastel yarn balls, a crochet hook and a little gift box",
@@ -75,7 +79,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: site.metaTitle,
     description: site.metaDescription,
-    images: ["/images/hero-fallback.jpg"],
+    images: [heroImage],
   },
   robots: { index: true, follow: true },
 };
@@ -93,7 +97,7 @@ const structuredData = [
     "@type": "Organization",
     name: "Whimlet",
     description: site.metaDescription,
-    url: siteUrl,
+    url: absoluteUrl("/"),
     telephone: PHONE_DISPLAY,
   },
   {

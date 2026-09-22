@@ -1,12 +1,15 @@
 import type { MetadataRoute } from "next";
+import { absoluteUrl } from "@/lib/paths";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+// static: also emitted by the GitHub Pages export (`output: "export"`)
+export const dynamic = "force-static";
 
 /** /admin is intentionally absent — it is a maker's tool, noindex. */
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
   return [
-    { url: `${siteUrl}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${siteUrl}/studio`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: absoluteUrl("/"), lastModified: now, changeFrequency: "weekly", priority: 1 },
+    { url: absoluteUrl("/studio"), lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: absoluteUrl("/maker"), lastModified: now, changeFrequency: "monthly", priority: 0.8 },
   ];
 }

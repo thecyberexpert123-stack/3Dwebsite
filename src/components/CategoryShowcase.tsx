@@ -8,6 +8,7 @@ import { showcaseCategories } from "@/data/categories";
 import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
 import { ArrowDoodle, BowDoodle } from "./Decorations";
+import { withBasePath } from "@/lib/paths";
 
 /** Per-card organic radii + tilt so nothing feels like a template grid. */
 const SHAPES = [
@@ -67,7 +68,7 @@ export function CategoryShowcase() {
                   >
                   <div className="relative h-full w-full overflow-hidden" style={{ borderRadius: `calc(${shape.radius.split(" ")[0]} - 0.5rem)` }}>
                     <Image
-                      src={cat.image}
+                      src={withBasePath(cat.image)}
                       alt={cat.alt}
                       fill
                       sizes="(min-width: 768px) 240px, 45vw"

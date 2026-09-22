@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { withBasePath } from "@/lib/paths";
 
 /**
  * Beautiful static composition used:
@@ -13,7 +14,7 @@ export function HeroStatic() {
       {/* full-bleed, soft-focused at the edges so the copy sits comfortably on it */}
       <div className="absolute inset-y-0 right-0 w-full lg:w-[58%]">
         <Image
-          src="/images/hero-fallback.jpg"
+          src={withBasePath("/images/hero-fallback.jpg")}
           alt="A hand-crocheted bouquet of blush pink and cream yarn flowers with pastel yarn balls, a wooden crochet hook, a loose yarn thread, a tiny heart and a small gift box resting on a cream surface"
           fill
           priority

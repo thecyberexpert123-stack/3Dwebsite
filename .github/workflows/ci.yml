@@ -4,7 +4,9 @@ name: CI
 # clean machine → npm ci → design-domain tests → production build (incl. types)
 on:
   push:
-    branches: [arena/01a0be79-3dwebsite]
+    branches: [main, "arena/**"]
+  pull_request:
+    branches: [main]
   workflow_dispatch: {}
 
 jobs:
@@ -24,8 +26,13 @@ jobs:
       - name: Install dependencies (npm ci — lockfile-exact)
         run: npm ci
 
-      - name: Design-domain tests
-        run: npm run test:design
+      - name: Domain tests (design + maker)
+        run: npm test
 
-      - name: Build (includes TypeScript checks)
+      - name: Build — Node deployment (includes TypeScript checks)
         run: npm run build
+
+      - name: Build — static export (GitHub Pages shape)
+        run: npm run build:pages
+        env:
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}

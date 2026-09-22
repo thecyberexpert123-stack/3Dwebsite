@@ -13,6 +13,7 @@ import {
   toDesignFile,
   type DesignConfig,
 } from "@/lib/design";
+import { withBasePath } from "@/lib/paths";
 
 const DRAFT_KEY = "whimlet.studio.draft.v2";
 
@@ -114,7 +115,7 @@ export function useDesign(opts: { studioPath?: string; draft?: boolean } = {}) {
   // share link — computed after mount so SSR and first client render agree
   const [designUrl, setDesignUrl] = useState("");
   useEffect(() => {
-    const u = new URL(window.location.origin + studioPath);
+    const u = new URL(window.location.origin + withBasePath(studioPath));
     u.searchParams.set("design", encodeDesign(config));
     setDesignUrl(u.toString());
   }, [config, studioPath]);
