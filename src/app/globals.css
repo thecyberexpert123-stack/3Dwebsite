@@ -122,6 +122,76 @@
   .stitch-clip, .stitch-ink { transition: none; }
 }
 
+/* ---- the wordmark signs itself (components/LoadingScreen.tsx) ----
+   Seven letters, each a self-contained keyframe "pop" over transform +
+   opacity (no filter, no clip-path → compositor, safe under shader-compile
+   load). A single shared keyframe + per-letter custom properties fold the
+   hand-writing feel into calc(): each glyph travels in from the left along
+   the line (`--travel × --amp`), rises (`--rise × --amp`), rotates in
+   (`--rot`) and springs oversize (`--pop` is the small from-scale that a
+   back-out ease overshoots past 1). Stagger = `animation-delay` from one
+   `--step`, so the cascade of letters threads onto a single pen stroke.
+   Per-letter tuning lives in the component (capital leads, `i` is the quick
+   dot, `e` "swooshes" in with the biggest overshoot), plus an nth-of-type
+   hold so later letters sit further out while they wait their turn. */
+.whimlet-write {
+  --travel: 0.3; --rise: 0.12; --step: 0.085s; --letter-dur: 0.5s; --letter-delay: 0.12s;
+  display: inline-block;
+}
+@keyframes whimlet-pop {
+  0% {
+    transform: translate3d(calc(-1 * var(--travel) * var(--amp) * 1em), calc(var(--rise) * var(--amp) * 1em), 0)
+      rotate(var(--rot)) scale(var(--pop));
+    opacity: 0;
+  }
+  60% { opacity: 1; }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+.whimlet-ch {
+  /* (principle of animation) energy telescopes: scale + rotate + rise + travel
+     all overshoot early and settle together — the immediate, memorable part */
+  --pop: 0.5; --amp: 1; --rot: 0deg;
+  animation: whimlet-pop var(--letter-dur, 0.5s) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: calc(var(--letter-delay, 0.12s) + var(--i, 0) * var(--step, 0.085s));
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .whimlet-ch { animation: none; }
+}
+
+/* the needle's flourish under the freshly-signed name — the classic
+   "signature underline" stroke-dash draw, whizzed once (compositor-safe:
+   only this one-time dash offset + a clip/ink style reveal) */
+.underline-flourish path {
+  stroke-dasharray: 410;
+  stroke-dashoffset: 410;
+  animation: underline-draw 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.72s both;
+}
+@keyframes underline-draw {
+  to { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .underline-flourish path { animation: none; stroke-dashoffset: 0; }
+}
+
+/* fairy sparkles by the heart's full stop (transform + opacity, one shot) */
+@keyframes sparkle-wink {
+  0% { transform: scale(0) rotate(-18deg); opacity: 0; }
+  55% { transform: scale(1.25) rotate(8deg); opacity: 1; }
+  100% { transform: scale(0.9) rotate(0deg); opacity: 0; }
+}
+.sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sparkle-wink 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1.4s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sparkle { animation: none; opacity: 0; }
+}
+
 @keyframes draw {
   to { stroke-dashoffset: 0; }
 }

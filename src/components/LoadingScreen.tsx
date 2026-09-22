@@ -12,25 +12,31 @@ import { lockScroll, unlockScroll } from "@/lib/scroll";
  * One idea, done quietly, on ONE timeline:
  *   0.00 s  the candy curtain is already painted (SSR-safe: nothing here
  *           depends on a chunk arriving)
- *   0.15 s  the wordmark writes itself left → right like a name being signed
- *           on a gift tag (clip-path, 1.1 s)
- *   1.10 s  a little heart lands as the full stop
- *   0.90 s  "one stitch at a time." settles under it
- *   1.20 s  the running stitch appears and fills with *real* progress —
+ *   0.12 s  the wordmark signs itself — each letter pops onto the line in a
+ *           staggered cascade (W h i m l e t, ~85 ms apart, hand-tuned
+ *           amplitudes: the capital leads, `i` and `m` flourish, `t` pops
+ *           under the heart) like a name written by hand; as the last letter
+ *           lands (~0.72 s) a needle draws a soft underline flourish
+ *   1.15 s  a little heart lands as the full stop
+ *   1.05 s  "one stitch at a time." settles under it
+ *   1.35 s  the running stitch appears and fills with *real* progress —
  *           page assets (`window.load`) → the meadow's first frame
  *           (`markHeroReady`) — with a percentage and one honest line
  *   ready   the curtain lifts straight up, scalloped hem last, and the hero's
  *           own choreography starts on that beat (`startIntro`)
  *
- * Every beat runs on the compositor: the write-on and the stitch are pure
- * transform animations (a clip box sliding one way, the ink inside sliding
- * the other — see `.sig-pen/.sig-ink/.stitch-*` in globals.css) and the
- * fades are opacity. Nothing here is a `clip-path`, `width` or rAF-stepped
- * value, so the sequence keeps moving while the main thread is busy
- * compiling the hero's shaders — which is exactly when a cold Android start
- * used to freeze the earlier version mid-stroke and collapse several beats
- * into one. The percentage is the only JS-ticked number; if it hitches the
- * visuals do not.
+ * Every beat runs on the compositor: each letter is a CSS animation over
+ * transform + opacity (scroll-linked per-letter amplitude via `var(--amp/
+ * --rot/--pop)` — no per-letter CSS generation, no blur that would freeze
+ * mid-glyph), the stitch is a clip/ink transform pair driven by a CSS
+ * transition on `--stitch` (see `.whimlet-ch/.stitch-*` in globals.css) and
+ * the fades are opacity. Nothing here is a `clip-path`, `width` or
+ * rAF-stepped value, so the sequence keeps moving while the main thread is
+ * busy compiling the hero's shaders — which is exactly when a cold Android
+ * start used to freeze the earlier version mid-stroke and collapse several
+ * beats into one. The percentage is the only JS-ticked number; if it hitches
+ * the visuals do not. The wordmark size is a `clamp()` so a 320 px phone
+ * still sees the whole signature.
  *
  * Why this shape (see AGENT-EXPERIENCE v0.18.0): waits with visible, honest
  * progress feel shorter and are abandoned less; a determinate indicator is
@@ -62,6 +68,31 @@ function introOverride(): "skip" | "hold" | "force" | null {
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 const EASE_CURTAIN = [0.76, 0, 0.24, 1] as const;
 
+/* ---- the wordmark signs itself, one letter at a time ----
+   Each glyph is an inline-block with a CSS animation (transform + opacity)
+   that pops/blurs-toward/in the glyph, staggered by ~90 ms. The amplitude is
+   *scroll-linked*: all letters share one `--a` custom property tweened by a
+   separate, interval-free transition, so the per-letter differences come
+   from static multipliers (`--amp` / `--rot` / `--pop`) computed once per
+   eyebrow of the signature instead of N bespoke keyframes.
+   Per-letter tuning (cascade, hand-feel):
+     W  leads big;  h and m  dip low and spring up (descender/ascender feel);
+     i  a short quick pop (it's the fastest real stroke);  l  tall soft rise;
+     e  curls in late with the biggest overshoot — the "swoosh out" of the pen.
+   This is the O(n) per-letter effect — no filtering, no per-glyph keyframes.
+   The constants this tunes (travel / rise / step / letter-dur / letter-delay
+   / pop) live once in `.whimlet-write` in globals.css, so the CSS animation
+   and this per-letter tuning stay in one motion language. */
+const LETTERS = [
+  { ch: "W", amp: 1, rot: -1, pop: 1 },
+  { ch: "h", amp: 0.9, rot: 2, pop: 0.9 },
+  { ch: "i", amp: 0.6, rot: 1, pop: 1.5 },
+  { ch: "m", amp: 0.95, rot: -2, pop: 1.2 },
+  { ch: "l", amp: 0.7, rot: 2, pop: 1 },
+  { ch: "e", amp: 1.35, rot: -2, pop: 2.3 },
+  { ch: "t", amp: 0.75, rot: 3, pop: 0.7 },
+];
+
 /* ---- the timeline: one parent, children keyed by beat ---- */
 const timeline: Variants = {
   hidden: {},
@@ -69,12 +100,14 @@ const timeline: Variants = {
 };
 const fullStop: Variants = {
   hidden: { opacity: 0, scale: 0.3 },
-  show: { opacity: 1, scale: 1, transition: { delay: 1.05, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] } },
+  show: { opacity: 1, scale: 1, transition: { delay: 1.15, duration: 0.45, ease: [0.34, 1.56, 0.64, 1] } },
 };
 const settle = (delay: number): Variants => ({
   hidden: { opacity: 0, y: 8 },
   show: { opacity: 1, y: 0, transition: { delay, duration: 0.6, ease: EASE_OUT } },
 });
+// ↑ the settle delay for the stitch has been moved from 1.2 s → 1.35 s so it
+// appears right as the underline flourish finishes (0.72 s + 0.6 s draw).
 
 export function LoadingScreen() {
   const [mounted, setMounted] = useState(false);
@@ -239,15 +272,53 @@ export function LoadingScreen() {
             animate="show"
             exit={reduce ? undefined : { opacity: 0, transition: { duration: 0.4, ease: EASE_CURTAIN } }}
           >
-            {/* ---- the signature: the wordmark writes itself left → right;
-                 a small heart is the pen, pausing at the end like a full stop ---- */}
+            {/* ---- the signature: each letter signs onto the line in a
+                 staggered cascade, then a needle draws the underline flourish ---- */}
             <div className="relative">
-              {/* the pen: an overflow-hidden clip box slides in from the left
-                  while the ink slides the opposite way — glyphs stay put, the
-                  visible edge advances. Padding on both keeps the swashes. */}
-              <span className={`block overflow-hidden px-[0.35em] py-[0.15em] font-script text-[4.2rem] leading-[1.15] text-cocoa md:text-[5.6rem] ${full ? "sig-pen" : ""}`}>
-                <span className={`block ${full ? "sig-ink" : ""}`}>Whimlet</span>
-              </span>
+              {full ? (
+                <span
+                  className="whimlet-write inline-block font-script text-[clamp(3.4rem,12.5vw,4.2rem)] leading-[1.18] text-cocoa md:text-[clamp(4rem,7vw,5.6rem)]"
+                  aria-label="Whimlet"
+                >
+                  {LETTERS.map((g, i) => (
+                    <span
+                      key={`${g.ch}-${i}`}
+                      aria-hidden="true"
+                      className="whimlet-ch inline-block will-change-[transform,opacity]"
+                      style={
+                        {
+                          "--i": i,
+                          "--amp": g.amp,
+                          "--rot": `${g.rot}deg`,
+                          "--pop": g.pop,
+                        } as React.CSSProperties
+                      }
+                    >
+                      {g.ch}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span className="inline-block font-script text-[clamp(3.4rem,12.5vw,4.2rem)] leading-[1.18] text-cocoa md:text-[clamp(4rem,7vw,5.6rem)]">
+                  Whimlet
+                </span>
+              )}
+              {/* the needle's flourish under the freshly-signed name */}
+              {full && (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 260 14"
+                  className="underline-flourish absolute -bottom-2 left-1/2 h-3.5 w-[min(88%,22rem)] -translate-x-1/2 text-rose"
+                >
+                  <path
+                    d="M3 8.5C52 4.5 92 10.5 129 7.2 156 4.7 182 11.5 208 8.3 224.5 6.6 240 8.5 256.5 5.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
               <motion.svg
                 variants={full ? fullStop : undefined}
                 viewBox="0 0 24 24"
@@ -263,6 +334,27 @@ export function LoadingScreen() {
                   className={full ? "origin-center animate-heartbeat [animation-delay:1.6s]" : undefined}
                 />
               </motion.svg>
+              {/* fairy sparkles: a curved 4-point pair that winks once near the
+                  heart as it lands (scale + rotate + opacity, whizzed once) */}
+              {full && (
+                <>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute -right-5 -top-4 h-4 w-4 text-cocoa-soft/70 md:-right-7 md:h-[1.15rem] md:w-[1.15rem]">
+                    <path
+                      className="sparkle"
+                      d="M12 2 C12.7 7 15.1 9.4 20 10 C15.1 10.6 12.7 13 12 18 C11.3 13 8.9 10.6 4 10 C8.9 9.4 11.3 7 12 2 Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute -right-8 top-0 h-3 w-3 text-rose-ink/70 md:-right-11 md:h-3.5 md:w-3.5">
+                    <path
+                      className="sparkle"
+                      style={{ animationDelay: "1.55s" }}
+                      d="M12 2 C12.7 7 15.1 9.4 20 10 C15.1 10.6 12.7 13 12 18 C11.3 13 8.9 10.6 4 10 C8.9 9.4 11.3 7 12 2 Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </>
+              )}
             </div>
 
             <motion.p variants={full ? settle(0.9) : undefined} className="mt-1 font-hand text-xl text-cocoa-soft md:text-2xl">
@@ -273,7 +365,7 @@ export function LoadingScreen() {
               <>
                 {/* ---- the running stitch: a dashed seam that closes with real progress ---- */}
                 <motion.div
-                  variants={settle(1.2)}
+                  variants={settle(1.35)}
                   className="relative mt-9 h-3 w-[min(60vw,15rem)]"
                   style={{ "--stitch": target, "--stitch-ms": `${stitchMs}ms` } as React.CSSProperties}
                   aria-hidden="true"

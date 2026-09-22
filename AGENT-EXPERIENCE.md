@@ -819,6 +819,41 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.18.2 — the whole word writes, not a single clip
+
+**Problem.** The v0.18.1 write-on was honest but a little flat: one clip
+edge sweeping across the whole word, so the eye saw "a reveal" rather than
+"a signature". Want per-letter hand-feel without the usual costs.
+
+**Fix (mechanism, reusable).** One `@keyframes` pop over transform +
+opacity, parameterised per letter by custom properties (`--amp` travel
+amplitude, `--rot` entrance rotation, `--pop` from-scale), staggered by a
+single `animation-delay: calc(base + i * step)`. The letter "travels" the
+line because its translate is `calc(-1 * var(--ravel) * var(--amp) * 1em)`
+— the amount is a fraction of *the letter's own* em box, so it needs no
+measurement and no per-glyph keyframes. Add a back-out ease so scale and
+rotation overshoot past identity and settle, which is what reads as the
+pen's flourish. Cost is O(7) elements for a static word — 0 KB of extra CSS.
+
+**Verify per-letter state precisely.** Pause `document.getAnimations()`
+(which includes JS and CSS animations) and scrub `currentTime`, then read
+each glyph's `getComputedStyle(el).opacity` and parsed matrix — this gives
+exact per-letter posture at any timestamp even when the emulator's rAF is
+~1 Hz and real time sampling would be meaningless. (Gotcha: framer's
+variant-driven children don't scrub the same way through `getAnimations()`;
+the letters are plain CSS animations so they do — verify those with real-time
+sampling instead.)
+
+**Fonts.** Splitting a cursive/connected-script word into per-letter
+inline-blocks is a known trap (GPOS cursive joins + pair kerning break). In
+Chromium the rendered widths matched to < 0.1 px, so joining this Latin
+subset costs nothing — but always spot-check the split vs. unsplit width
+before committing to per-letter spans, and be ready to fall back to the
+clip reveal for a script font.
+
+**Confidence.** High on the mechanism (measured), medium on the real-device
+feel — still no ability to capture actual device frames here.
+
 ## v0.18.1 — a loader must not depend on the thread it is covering for
 
 **Problem.** The owner reported the boot-sequence animations "not coming

@@ -174,6 +174,41 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.18.2] — 2026-09-22
+
+### Changed — the letter intro signs itself, and fits any device
+- **Per-letter write-on.** The wordmark no longer appears behind a single
+  sliding clip — each of the seven letters (W h i m l e t) now pops onto the
+  line in a staggered cascade, hand-tuned per glyph: the capital leads, the
+  `i` is the quick dot (its pop is fastest, overshooting to ~1.5×), the `e`
+  "swooshes" in last with the biggest overshoot, and every letter travelles
+  in from the left along the line, rises, rotates in and springs oversize —
+  all in one shared keyframe through per-letter custom properties, so it
+  stays O(n) with no per-glyph CSS and no filtering. Still pure transform +
+  opacity (the compositor contract from v0.18.1 holds; nothing freezes
+  while the hero compiles shaders on a cold start).
+- **Signature underline.** As the last letter lands, a needle draws a
+  scalloped flourish under the freshly-signed name (stroke-dash draw,
+  whizzed once), timed to hand off to the stitch.
+- **Fairy sparkles.** A pair of 4-point sparkles wink once near the heart's
+  full stop as it lands.
+- **Fits every device.** The wordmark is now a viewport `clamp()`
+  (min 3.4 rem, 12.5 vw, max 4.2 rem mobile / up to 5.6 rem desktop), so it
+  scales down but stays full-width dramatic on a 320 px phone; a split
+  glyph render spot-check confirmed the Parisienne cursive joins are
+  preserved to within 0.04 px of the unsplit string.
+- Beat retime so the cascade → flourish → heart → tagline → stitch hands off
+  cleanly (stitch settle 1.2 s → 1.35 s).
+
+### Verified
+- Freeze-frame scrub of the letter animation at 300 / 600 / 900 / 1300 /
+  2000 ms shows the full cascade plus settle spring; real-time sampling shows
+  heart, tagline, stitch, status and skip all complete by ~1.5 s.
+- Width fit probed at 320 / 360 / 390 / 1440 px: word centered, `scrollWidth`
+  == viewport, 0 errors. Desktop / android-parity / reduced-motion /
+  no-WebGL / skip-click all lift the curtain and hand off.
+- `tsc` clean, `npm test` 82 / 58 / 91 passing.
+
 ## [0.18.1] — 2026-09-22
 
 ### Fixed — the boot sequence actually plays, everywhere
