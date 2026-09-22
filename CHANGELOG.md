@@ -174,6 +174,40 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.16.1] — 2026-09-22
+
+**Studio fits the screen.** Reported: on desktop the bottom action bar hid
+part of the piece and pushed the left option rail up under it; on phones the
+scrollable tabs hid some option groups and the piece was cut.
+
+### Changed — `/studio`
+
+- **The action bar folds.** A chevron on the left of the bar collapses it to
+  a slim strip (summary + Send) and back; `aria-expanded` / `aria-controls`;
+  the choice is remembered for the session. Phones start folded (the stage
+  is the point there), desktops open.
+- **The piece fits the free band.** The studio measures the band between the
+  header and the lowest panel over the stage (bar / open sheet / tabs) and
+  passes `fit` + a vertical `shift` to the directed Rig, which backs the
+  camera off along its line of sight (≤ 1.6×) and centres the piece in the
+  band — so the whole flower is visible with the bar open, and grows back
+  when it folds (damped, no jump). Free orbit (admin) ignores it.
+- **Rail and sheet stay above the bar.** The left rail is centred in the
+  band above the bar; the sheet is anchored above the bar with a measured
+  max-height instead of a fixed `top-1/2` that could run under it.
+- **Phone tabs wrap** (centred rows) instead of scrolling horizontally, so
+  every option group is visible at once; the sheet is anchored above them by
+  a measured `--tabs-h`.
+
+### Verified (headless Chromium, SwiftShader)
+
+- 1366×700 open: rail 164–394, sheet 76–490, bar from 502 → nothing overlaps;
+  folded: bar from 592, piece re-centred and larger. 1280×600 unchanged
+  otherwise.
+- Pixel 8 emulation: five tabs visible in two rows; sheet above tabs above
+  bar; bar folded by default; opening the bar re-centres the piece.
+  0 page errors in all five states.
+
 ## [0.16.0] — 2026-09-22
 
 **Touch parity.** The website on an Android phone is now the same website

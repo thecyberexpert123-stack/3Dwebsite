@@ -46,14 +46,49 @@ export function StudioApp() {
   // the bottom bar wraps to a different height per viewport; the mobile tabs
   // and sheet are anchored above it via a measured CSS variable, not a guess
   const barRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
   const [barH, setBarH] = useState(168);
+  const [tabsH, setTabsH] = useState(44);
   useEffect(() => {
     const el = barRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => setBarH(el.offsetHeight));
+    const ro = new ResizeObserver(() => {
+      setBarH(el.offsetHeight);
+      setTabsH(tabsRef.current?.offsetHeight ?? 0);
+    });
     ro.observe(el);
+    if (tabsRef.current) ro.observe(tabsRef.current);
     return () => ro.disconnect();
   }, []);
+  // The action bar folds to a slim strip (summary + send) so the piece gets
+  // the screen back. Phones start folded — the stage is the point there;
+  // desktops start open. The choice is remembered for the session.
+  const [barOpen, setBarOpen] = useState(true);
+  const barChosen = useRef(false);
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = sessionStorage.getItem("whimlet-studio-bar");
+    } catch {
+      /* private mode */
+    }
+    if (saved === "open" || saved === "closed") {
+      barChosen.current = true;
+      setBarOpen(saved === "open");
+    } else setBarOpen(!window.matchMedia("(max-width: 767px)").matches);
+  }, []);
+  const toggleBar = () => {
+    barChosen.current = true;
+    setBarOpen((o) => {
+      try {
+        sessionStorage.setItem("whimlet-studio-bar", o ? "closed" : "open");
+      } catch {
+        /* ignore */
+      }
+      return !o;
+    });
+  };
   const [saveName, setSaveName] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const captureRef = useRef<(() => string | null) | null>(null);
@@ -74,27 +109,48 @@ export function StudioApp() {
   const asideRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const compute = () => {
-      let shift: [number, number] = [0, 0];
-      if (sheetOpen && phone) shift = [0, 0.42];
-      else if (sheetOpen) {
-        // centre the piece in the free band between the sheet and the
-        // right-hand aside (measured, so it holds at 1000 px and 2560 px)
-        const w = window.innerWidth;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      // vertical: centre the piece in the band between the header and
+      // whatever sits lowest on top of the stage — the open sheet / phone
+      // tabs, else the bar. Measured, so folding the bar or opening a
+      // group re-centres it (the Rig damps the move).
+      const headerB = headerRef.current?.getBoundingClientRect().bottom ?? 64;
+      const barT = barRef.current?.getBoundingClientRect().top ?? h;
+      const sheetT = sheetRef.current?.getBoundingClientRect().top ?? null;
+      const tabsT = tabsRef.current && getComputedStyle(tabsRef.current).display !== "none" ? tabsRef.current.getBoundingClientRect().top : null;
+      const bandBottom = phone ? Math.min(barT, sheetT ?? Infinity, tabsT ?? Infinity) : barT;
+      const band = Math.max(1, bandBottom - headerB);
+      // the Rig backs the camera off by 1/fit; the shift then centres the
+      // (smaller) piece in the band. On a phone with the sheet open the band
+      // is too small for the whole piece — show the head, as before.
+      const fit = Math.min(1, band / h);
+      const up = h / 2 - (headerB + bandBottom) / 2; // px the piece must rise
+      const sy = Math.min(phone && sheetOpen ? 0.42 : 0.6, Math.max(0, up / (h * 0.5)));
+      // horizontal (desktop): centre in the band between the sheet and the
+      // right-hand aside (measured, so it holds at 1000 px and 2560 px)
+      let sx = 0;
+      if (sheetOpen && !phone) {
         const sheetRight = sheetRef.current?.getBoundingClientRect().right ?? 0;
         const aside = asideRef.current;
         const asideW = aside && getComputedStyle(aside).display !== "none" ? w - aside.getBoundingClientRect().left : 0;
-        shift = [Math.min(0.6, Math.max(0, (sheetRight - asideW) / w)), 0];
+        sx = Math.min(0.6, Math.max(0, (sheetRight - asideW) / w));
       }
-      setView((v) => (Math.abs((v.shift?.[0] ?? 0) - shift[0]) < 0.005 && (v.shift?.[1] ?? 0) === shift[1] ? v : { ...v, shift }));
+      const shift: [number, number] = [sx, sy];
+      setView((v) =>
+        Math.abs((v.shift?.[0] ?? 0) - shift[0]) < 0.005 && Math.abs((v.shift?.[1] ?? 0) - shift[1]) < 0.005 && Math.abs((v.fit ?? 1) - fit) < 0.01 ? v : { ...v, shift, fit }
+      );
     };
     // the sheet mounts with an enter animation; measure after layout
     const id = requestAnimationFrame(compute);
+    const t = setTimeout(compute, 400);
     window.addEventListener("resize", compute);
     return () => {
       cancelAnimationFrame(id);
+      clearTimeout(t);
       window.removeEventListener("resize", compute);
     };
-  }, [sheetOpen, phone, panel, drawing]);
+  }, [sheetOpen, phone, panel, drawing, barOpen, barH]);
   // a bouquet-only group closes when the piece becomes a single flower
   useEffect(() => {
     if (c.type !== "bouquet" && panel === "bouquet") setPanel("piece");
@@ -152,7 +208,7 @@ export function StudioApp() {
   return (
     <div
       className="studio-page relative min-h-[100dvh] overflow-hidden bg-[#FFE6EE] text-cocoa"
-      style={{ "--bar-h": `${barH}px` } as React.CSSProperties}
+      style={{ "--bar-h": `${barH}px`, "--tabs-h": `${tabsH}px` } as React.CSSProperties}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
@@ -172,7 +228,7 @@ export function StudioApp() {
 
       {/* ---------- top bar ---------- */}
       <h1 className="sr-only">Whimlet 3D Design Studio</h1>
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-3 md:p-5">
+      <header ref={headerRef} className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-3 md:p-5">
         <div className="pointer-events-auto flex items-center gap-2">
           <Link href="/" className="btn btn-glass btn-sm" aria-label="Back to Whimlet">
             ← Whimlet
@@ -208,7 +264,7 @@ export function StudioApp() {
       </header>
 
       {/* ---------- left rail: option groups ---------- */}
-      <nav aria-label="Design options" className="absolute left-3 top-1/2 z-20 hidden -translate-y-1/2 md:block">
+      <nav aria-label="Design options" className="absolute left-3 z-20 hidden -translate-y-1/2 md:block" style={{ top: "calc((100dvh - var(--bar-h) + 3.5rem) / 2)" }}>
         <ul className="glass-rail flex flex-col gap-1 p-1.5">
           {visiblePanels.map((p, i) => {
             const active = panel === p.id && !drawing;
@@ -233,8 +289,8 @@ export function StudioApp() {
       </nav>
 
       {/* ---------- mobile group tabs ---------- */}
-      <div className="absolute inset-x-0 z-20 md:hidden" style={{ bottom: "calc(var(--bar-h) + 0.5rem)" }}>
-        <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-3" data-lenis-prevent>
+      <div ref={tabsRef} className="absolute inset-x-0 z-20 md:hidden" style={{ bottom: "calc(var(--bar-h) + 0.5rem)" }}>
+        <div className="flex flex-wrap justify-center gap-1.5 px-3">
           {visiblePanels.map((p) => {
             const active = panel === p.id && !drawing;
             return (
@@ -266,7 +322,8 @@ export function StudioApp() {
             exit={reduce ? { opacity: 0 } : { opacity: 0, x: -10, scale: 0.98 }}
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             aria-label={drawing ? "Petal sketch pad" : PANELS.find((p) => p.id === panel)?.label}
-            className="glass-sheet absolute inset-x-3 top-auto z-20 max-h-[42dvh] overflow-y-auto p-4 max-md:!bottom-[calc(var(--bar-h)+3.25rem)] md:inset-x-auto md:bottom-auto md:left-[13.5rem] md:top-1/2 md:max-h-[74dvh] md:w-[26rem] md:-translate-y-1/2 md:p-5"
+            className="glass-sheet absolute inset-x-3 top-auto z-20 max-h-[42dvh] overflow-y-auto p-4 md:inset-x-auto md:left-[13.5rem] md:w-[26rem] md:p-5"
+            style={{ bottom: phone ? "calc(var(--bar-h) + var(--tabs-h) + 1rem)" : "calc(var(--bar-h) + 0.75rem)", maxHeight: phone ? undefined : "calc(100dvh - var(--bar-h) - 5.5rem)" }}
             data-lenis-prevent
           >
             {drawing ? (
@@ -327,13 +384,34 @@ export function StudioApp() {
         </div>
       </aside>
 
-      {/* ---------- bottom bar ---------- */}
+      {/* ---------- bottom bar (folds to a slim strip) ---------- */}
       <footer ref={barRef} className="absolute inset-x-0 bottom-0 z-20 p-3 md:p-4">
         <div className="glass-sheet mx-auto flex max-w-5xl flex-col gap-2.5 p-3 md:p-4">
-          <p aria-live="polite" className="line-clamp-1 text-pretty font-hand text-base leading-snug text-cocoa md:line-clamp-2 md:text-xl">
-            <span className="text-rose-ink">your design:</span> {summary}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleBar}
+              aria-expanded={barOpen}
+              aria-controls="studio-actions"
+              className="btn btn-glass btn-sm shrink-0 !px-2.5"
+              title={barOpen ? "Hide the actions — more room for the piece" : "Show the actions"}
+            >
+              <svg viewBox="0 0 16 16" className={`h-3.5 w-3.5 transition-transform duration-300 ${barOpen ? "" : "rotate-180"}`} aria-hidden="true">
+                <path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="sr-only">{barOpen ? "Hide actions" : "Show actions"}</span>
+            </button>
+            <p aria-live="polite" className={`min-w-0 flex-1 text-pretty font-hand leading-snug text-cocoa ${barOpen ? "line-clamp-1 text-base md:line-clamp-2 md:text-xl" : "truncate text-base md:text-lg"}`}>
+              <span className="text-rose-ink">your design:</span> {summary}
+            </p>
+            {!barOpen && (
+              <a href={waLink(buildDesignMessage(c, d.designUrl))} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp btn-sm shrink-0" aria-label="Send to Whimlet">
+                <WhatsAppGlyph className="h-5 w-5" strokeWidth={1.8} />
+                <span className="hidden sm:inline">Send</span>
+              </a>
+            )}
+          </div>
+          <div id="studio-actions" hidden={!barOpen} className="flex flex-wrap items-center gap-2">
             <div role="group" aria-label="History" className="flex gap-1">
               <button type="button" onClick={d.undo} disabled={!d.canUndo} className="btn btn-glass btn-sm disabled:opacity-40" title="Undo (Ctrl/⌘+Z)">
                 ↶

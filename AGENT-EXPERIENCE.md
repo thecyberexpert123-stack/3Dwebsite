@@ -819,6 +819,22 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.16.1 — Studio layout: measure the band, don't assume the centre
+
+- **`top-1/2` is only the centre of the *viewport*.** Overlays that live on
+  top of a full-page stage (bar, sheet, tabs) shrink the usable band; the
+  rail and the camera framing must centre in *that* band, measured from
+  the real elements (ResizeObserver + getBoundingClientRect), not from the
+  viewport. Fixing it as "fit" (camera backs off along its line of sight)
+  + "shift" (view offset) keeps the composition instead of squashing it.
+- **A collapsible bar needs a default per form factor** and a remembered
+  choice — phones fold, desktops open — and the framing must follow it
+  (put `barOpen`/`barH` in the measurement effect's deps, plus a 400 ms
+  re-measure for the sheet's enter animation).
+- **Horizontal scroll rows hide options.** On a 390 px screen a row of five
+  glass chips scrolled; wrapping into centred rows costs ~40 px of height
+  and makes every group visible — pay the height.
+
 ## v0.16.0 — Touch parity: the phone is not a lesser device
 
 - **"Works on mobile" hid a lesser site.** Grep the gates before believing

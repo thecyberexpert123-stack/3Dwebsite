@@ -76,6 +76,14 @@ export type StudioView = {
    * directed Rig honours it; free orbit ignores it.
    */
   shift?: [number, number];
+  /**
+   * Fraction of the viewport height that is free for the piece (between the
+   * header and the lowest panel over the stage). Below 1 the directed Rig
+   * backs the camera off by 1/fit (capped) so the whole piece fits the band
+   * instead of running under the bar. Measured by the studio; free orbit
+   * ignores it.
+   */
+  fit?: number;
 };
 
 export const DEFAULT_VIEW: StudioView = {
@@ -1268,7 +1276,7 @@ function Scene({ config, reduced, view, frame }: { config: DesignConfig; reduced
 
 /** Camera: every option group has a home framing, the lens glides there
  *  (never cuts) — a barely-there drift toward the pointer keeps it alive. */
-function Rig({ reduced, focus, frame, active, bloomMul = 1, shift }: { reduced: boolean; focus: FocusId; frame: React.RefObject<FrameInfo>; active: boolean; bloomMul?: number; shift?: [number, number] }) {
+function Rig({ reduced, focus, frame, active, bloomMul = 1, shift, fit = 1 }: { reduced: boolean; focus: FocusId; frame: React.RefObject<FrameInfo>; active: boolean; bloomMul?: number; shift?: [number, number]; fit?: number }) {
   const { camera, pointer } = useThree();
   const size = useThree((st) => st.size);
   const sx = shift?.[0] ?? 0;
@@ -1317,6 +1325,14 @@ function Rig({ reduced, focus, frame, active, bloomMul = 1, shift }: { reduced: 
         goal.pos.set(0.6, 1.7, d);
         goal.look.set(0, 0.9, 0);
       }
+    }
+    // fit: the studio's panels leave only `fit` of the height free — back off
+    // along the same line of sight so the whole piece fits that band
+    const k = Math.min(1.6, Math.max(1, 1 / Math.max(0.3, fit)));
+    if (k > 1) {
+      goal.pos.x *= k;
+      goal.pos.y = goal.look.y + (goal.pos.y - goal.look.y) * k;
+      goal.pos.z *= k;
     }
     const px = reduced ? 0 : pointer.x * 0.3;
     const py = reduced ? 0 : pointer.y * 0.15;
@@ -1479,7 +1495,7 @@ export default function DesignScene({
         {view.orbit ? (
           <OrbitControls makeDefault target={[0, 0.9, 0]} enableDamping dampingFactor={0.08} minDistance={1.2} maxDistance={9} maxPolarAngle={Math.PI * 0.55} autoRotate={view.autoRotate && !reduce} autoRotateSpeed={0.6} />
         ) : (
-          <Rig reduced={reduce} focus={view.focus} frame={frame} active bloomMul={SIZE_MUL[config.petalSize] * (config.type === "bouquet" ? 1.25 : 1)} shift={view.shift} />
+          <Rig reduced={reduce} focus={view.focus} frame={frame} active bloomMul={SIZE_MUL[config.petalSize] * (config.type === "bouquet" ? 1.25 : 1)} shift={view.shift} fit={view.fit} />
         )}
         <group position={[0, -0.15, 0]}>
           <SoftGround radius={opaque ? 4 : 2.2} color={opaque ? bd.ground : "#FFE9EF"} />
