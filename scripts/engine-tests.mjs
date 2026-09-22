@@ -16,6 +16,7 @@ if (!outDir) {
 const require = createRequire(import.meta.url);
 const { decide, smoothFrameMs, FRAME_BUDGET_MS } = require(resolve(outDir, "scheduler.js"));
 const { decideBack, shouldPushEntry } = require(resolve(outDir, "android.js"));
+const { gpuScore, scoreDevice, tierFromScore, decideParity, orientationToPointer, followRest, tiltMayDrive, TILT_RANGE_DEG } = require(resolve(outDir, "capability.js"));
 
 let pass = 0;
 let fail = 0;
@@ -105,6 +106,83 @@ console.log("engine: android back button");
   check("non-modal dialog is ignored", shouldPushEntry(el({ role: "dialog" }), tracked) === false);
   check("plain element is ignored", shouldPushEntry(el({}), tracked) === false);
   check("the welcome door (.candy) is excluded", shouldPushEntry(el({ role: "dialog", "aria-modal": "true" }, ["candy"]), tracked) === false);
+}
+
+console.log("engine: GPU classification (capability.ts)");
+{
+  check("Adreno 750 (Snapdragon 8 Gen 3) → capable", gpuScore("Adreno (TM) 750") === 2);
+  check("Adreno 650 (Snapdragon 865) → capable", gpuScore("Adreno (TM) 650") === 2);
+  check("Adreno 610 (Snapdragon 6xx) → neutral", gpuScore("Adreno (TM) 610") === 0);
+  check("Adreno 506 → entry", gpuScore("Adreno (TM) 506") === -2);
+  check("Mali-G715 (Tensor G3) → capable", gpuScore("Mali-G715-Immortalis MC11") === 2);
+  check("Mali-G78 (Tensor G1) → capable", gpuScore("Mali-G78 MP20") === 2);
+  check("Mali-G52 → entry-ish", gpuScore("Mali-G52 MC2") === -1);
+  check("Mali-G57 → entry-ish", gpuScore("Mali-G57 MC2") === -1);
+  check("Mali-T830 → entry", gpuScore("Mali-T830") === -2);
+  check("Xclipse 940 → capable", gpuScore("Samsung Xclipse 940") === 2);
+  check("Apple GPU → capable", gpuScore("Apple GPU") === 2);
+  check("PowerVR → entry", gpuScore("PowerVR Rogue GE8320") === -2);
+  check("desktop NVIDIA → unrecognised (neutral)", gpuScore("ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)") === null);
+  check("empty → unrecognised", gpuScore("") === null);
+}
+
+console.log("engine: device score → tier");
+{
+  const t = (e) => tierFromScore(scoreDevice(e));
+  check("software renderer → low regardless", t({ cores: 16, mem: 32, gpu: 2, software: true, coarseSmall: false }) === "low");
+  check("Pixel 8 class (Mali-G715, 8 GB) → high", t({ cores: 9, mem: 8, gpu: 2, software: false, coarseSmall: true }) === "high");
+  check("Snapdragon 8 Gen 2, 12 GB → high", t({ cores: 8, mem: 8, gpu: 2, software: false, coarseSmall: true }) === "high");
+  check("Adreno 610 phone, 4 GB → mid", t({ cores: 8, mem: 4, gpu: 0, software: false, coarseSmall: true }) === "mid");
+  check("Mali-G52 phone, 4 GB (8 cores!) → low", t({ cores: 8, mem: 4, gpu: -1, software: false, coarseSmall: true }) === "low");
+  check("Mali-G52 phone, 3 GB → low", t({ cores: 8, mem: 2, gpu: -1, software: false, coarseSmall: true }) === "low");
+  check("unknown phone GPU, 4 cores, 4 GB → mid (old heuristic)", t({ cores: 4, mem: 4, gpu: null, software: false, coarseSmall: true }) === "mid");
+  check("unknown phone GPU, 4 cores, 2 GB → low", t({ cores: 4, mem: 2, gpu: null, software: false, coarseSmall: true }) === "low");
+  check("desktop 8 cores 16 GB unknown GPU → high", t({ cores: 8, mem: 16, gpu: null, software: false, coarseSmall: false }) === "high");
+  check("Safari (no deviceMemory), Apple GPU → high", t({ cores: 6, mem: undefined, gpu: 2, software: false, coarseSmall: true }) === "high");
+}
+
+console.log("engine: touch parity");
+{
+  check("capable phone → desktop choreography", decideParity({ coarse: true, tier: "high", reducedMotion: false }));
+  check("mid phone → on", decideParity({ coarse: true, tier: "mid", reducedMotion: false }));
+  check("low phone → off", !decideParity({ coarse: true, tier: "low", reducedMotion: false }));
+  check("reduced motion → off", !decideParity({ coarse: true, tier: "high", reducedMotion: true }));
+  check("mouse device → not this path", !decideParity({ coarse: false, tier: "high", reducedMotion: false }));
+  check("?parity=on forces even low", decideParity({ coarse: true, tier: "low", reducedMotion: false, forced: "on" }));
+  check("?parity=off forces off", !decideParity({ coarse: true, tier: "high", reducedMotion: false, forced: "off" }));
+  check("?parity=on never applies to a mouse", !decideParity({ coarse: false, tier: "high", reducedMotion: false, forced: "on" }));
+}
+
+console.log("engine: tilt → pointer");
+{
+  const rest = { beta: 45, gamma: 0 };
+  const c = orientationToPointer(rest, rest, 0);
+  check("at rest → centre", c.x === 0 && c.y === 0);
+  const r = orientationToPointer({ beta: 45, gamma: TILT_RANGE_DEG / 2 }, rest, 0);
+  check("roll right (portrait) → pointer.x +0.5", Math.abs(r.x - 0.5) < 1e-9 && r.y === 0);
+  const away = orientationToPointer({ beta: 45 + TILT_RANGE_DEG, gamma: 0 }, rest, 0);
+  check("top edge away → pointer.y −1 (look up)", away.y === -1 && away.x === 0);
+  const far = orientationToPointer({ beta: 45, gamma: 90 }, rest, 0);
+  check("clamped to ±1", far.x === 1);
+  const land = orientationToPointer({ beta: 45 + TILT_RANGE_DEG / 2, gamma: 0 }, rest, 90);
+  check("landscape (90°): beta drives x", Math.abs(land.x - 0.5) < 1e-9 && land.y === 0);
+  const land2 = orientationToPointer({ beta: 45 + TILT_RANGE_DEG / 2, gamma: 0 }, rest, 270);
+  check("landscape (270°): mirrored", Math.abs(land2.x + 0.5) < 1e-9);
+  const neg = orientationToPointer({ beta: 45, gamma: 7 }, rest, -90);
+  check("negative angle normalised", Number.isFinite(neg.x));
+
+  // rest follows the sample: a held tilt fades to centre
+  let rr = { beta: 45, gamma: 0 };
+  const held = { beta: 45, gamma: 20 };
+  for (let i = 0; i < 60 * 3.2; i++) rr = followRest(rr, held, 1 / 60);
+  check("rest reaches ~63 % of a held tilt after one time constant", Math.abs(rr.gamma - 20 * (1 - Math.exp(-1))) < 0.4);
+  for (let i = 0; i < 60 * 15; i++) rr = followRest(rr, held, 1 / 60);
+  check("…and (nearly) all of it after 18 s", Math.abs(rr.gamma - 20) < 0.1);
+  check("followRest is frame-rate independent", Math.abs(followRest({ beta: 0, gamma: 0 }, { beta: 0, gamma: 10 }, 1).gamma - (followRest(followRest({ beta: 0, gamma: 0 }, { beta: 0, gamma: 10 }, 0.5), { beta: 0, gamma: 10 }, 0.5).gamma)) < 1e-9);
+  check("negative dt is inert", followRest({ beta: 1, gamma: 1 }, { beta: 9, gamma: 9 }, -1).gamma === 1);
+
+  check("finger just touched → tilt yields", !tiltMayDrive(1000, 900));
+  check("finger gone for a second → tilt drives", tiltMayDrive(2000, 900));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

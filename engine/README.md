@@ -77,8 +77,42 @@ one canvas rendering at a time and zero frames for off-screen roots.
 - `window.__engine.stats()` — `{ roots: [{ id, area, hint, rendering, frames, primed }], avgFrameMs, fps }`.
 - User Timing marks `engine:<id>:compile`, `engine:<id>:warm`, `engine:<id>:primed` in DevTools › Performance.
 - `?stats=1` (existing) — per-canvas draw calls / programs.
+- `?parity=on|off` — force / suppress the desktop choreography on a touch device.
+- `?quality=low|mid|high` (existing) — force the tier; `sessionStorage.whimlet-tier-cap` shows a runtime demotion.
+- `window.__tilt()` — `{ active, users, pointer }` of the tilt source.
 
 Unit tests for the decision logic: `npm run test:engine`.
+
+### Touch parity (v0.16.0)
+
+The site was desktop-first: the section peel, card fan, sticky stack, the 3D
+desk and every pointer-driven motion were gated on "has a mouse". The engine
+now decides per device instead (`src/lib/engine/capability.ts`):
+
+1. **Tier from the GPU, not the UA.** `gpuScore()` reads the unmasked WebGL
+   renderer (Adreno / Mali / Immortalis / Xclipse / Apple / PowerVR buckets);
+   a recognised GPU decides the tier with `deviceMemory` as the correction.
+   Unknown strings fall back to the old cores + memory heuristic; software
+   renderers are always low.
+2. **Runtime correction.** drei's `PerformanceMonitor` still steps the DPR;
+   when a canvas is *still* declining at DPR 1 (or the monitor gives up) the
+   session tier is demoted once (`demoteTier()`), every mounted scene
+   re-reads its preset, and `sessionStorage` carries it to the next page.
+3. **Parity.** `useTouchParity()` = coarse pointer ∧ tier ≠ low ∧ no
+   reduced-motion. `useDesktopPointer()` passes for it, so the existing
+   components take their desktop path unchanged; a component whose layout is
+   breakpoint-bound opts out (`OccasionSection`).
+4. **Tilt as the pointer** (`tilt.ts`). One `deviceorientation` listener;
+   `EngineRoot` writes the tilt into each canvas's R3F `pointer` before
+   `advance()`, so the scenes' existing parallax / nudge / Breeze code runs.
+   The rest pose follows the hand (τ 3.2 s) — a phone on a table is still. A
+   finger on the canvas owns the pointer for 800 ms. `--tilt-sx/sy/o` on
+   `<html>` move the card sheen and glass specular (CSS only).
+   Permission: Chrome ≥ 151 and Safari expose
+   `DeviceOrientationEvent.requestPermission()`; it is called silently when
+   the Permissions API already reports the sensors granted, otherwise from
+   the visitor's first tap on a 3D canvas. Never on the welcome door, never
+   under reduced motion, HTTPS only.
 
 ---
 

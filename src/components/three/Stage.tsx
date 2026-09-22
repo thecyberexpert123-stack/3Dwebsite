@@ -9,7 +9,7 @@ import {
   PerformanceMonitor,
 } from "@react-three/drei";
 import * as THREE from "three";
-import type { Quality } from "@/lib/quality";
+import { demoteTier, type Quality } from "@/lib/quality";
 import { EngineRoot } from "@/lib/engine/EngineRoot";
 import type { RootHint } from "@/lib/engine/scheduler";
 
@@ -257,14 +257,42 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
   // stays mounted (context + shaders kept warm) but is skipped by the loop.
   const hint: RootHint = frameloop === "never" ? "pause" : "run";
 
-  // if the tier is measured after mount, adopt its cap
-  useEffect(() => setDpr(quality.dpr[1]), [quality]);
+  // if the tier is measured after mount, adopt its cap; after a runtime
+  // demotion keep whatever the monitor had already stepped down to
+  const demoted = useRef(false);
+  useEffect(() => setDpr((d) => (demoted.current ? Math.min(d, quality.dpr[1]) : quality.dpr[1])), [quality]);
 
-  if (lost) return <>{fallback}</>;
+  // Engine: a canvas that still starves at DPR 1 demotes the session tier
+  // (particles, post stack and caps step down for every scene) — once per
+  // canvas, so one bad moment cannot drag "high" straight to "low".
+  // (dprRef mirrors state so the decision stays out of the state updater.)
+  const dprRef = useRef(dpr);
+  dprRef.current = dpr;
+  const measured = quality.measured === true;
+  const starving = () => {
+    if (demoted.current || !measured) return;
+    demoted.current = true;
+    demoteTier();
+  };
+  const onDecline = () => {
+    if (dprRef.current <= 1) starving();
+    setDpr((d) => Math.max(1, +(d - 0.25).toFixed(2)));
+  };
+  // the monitor gives up after `flipflops` steps — that is the same verdict
+  const onFallback = () => {
+    starving();
+    setDpr(1);
+  };
 
   // PCF (not PCFSoft) so `shadow.radius` can feather the edge — crochet is
-  // lit by a window, not a laser. The low tier keeps shadow maps off.
-  const shadowInfo: ShadowInfo = { enabled: !quality.simple, res: quality.shadowRes * 2 };
+  // lit by a window, not a laser. The low tier keeps shadow maps off. The
+  // decision is locked at the first measured tier: flipping shadow maps on a
+  // live context would leave already-compiled programs sampling a stale map.
+  const shadowsOn = useRef<boolean | null>(null);
+  if (shadowsOn.current === null && quality.measured) shadowsOn.current = !quality.simple;
+  const shadowInfo: ShadowInfo = { enabled: shadowsOn.current ?? !quality.simple, res: quality.shadowRes * 2 };
+
+  if (lost) return <>{fallback}</>;
 
   return (
     <Canvas
@@ -307,9 +335,9 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
           iterations={6}
           threshold={0.7}
           flipflops={3}
-          onDecline={() => setDpr((d) => Math.max(1, +(d - 0.25).toFixed(2)))}
+          onDecline={onDecline}
           onIncline={() => setDpr((d) => Math.min(quality.dpr[1], +(d + 0.25).toFixed(2)))}
-          onFallback={() => setDpr(1)}
+          onFallback={onFallback}
         >
           {children}
           {shadowInfo.enabled && <AutoShadowCasters />}

@@ -819,6 +819,48 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.16.0 — Touch parity: the phone is not a lesser device
+
+- **"Works on mobile" hid a lesser site.** Grep the gates before believing
+  the audit: `useDesktopPointer`, `finePointer`, `!isMobile`, `hover:hover`
+  fenced off six choreographies, the 3D desk and *every* pointer-driven
+  motion (R3F's `pointer` never moves without a mouse). The v0.15 audit
+  checked layout and errors; it did not ask "what is missing".
+- **Tier from the GPU string, not the UA.** `/Android/ → −1` treated a
+  Snapdragon 8 Gen 3 like a Helio G35. `WEBGL_debug_renderer_info` gives
+  the IP block (Adreno 750, Mali-G715…) with no prompt; bucket it as a
+  prior and let PerformanceMonitor correct it. Core count is meaningless on
+  phones (budget chips have eight); memory is the only other honest signal.
+- **Runtime demotion must be one-way, once per canvas, session-scoped.**
+  Stepping the *tier* (not just DPR) changes particle counts, post stack and
+  shadow maps; do it when DPR is already 1 and still declining, or when the
+  monitor gives up (`onFallback`) — on SwiftShader the hero took ~40 s to
+  get there via `onDecline` alone. Lock shadow-map on/off at first measured
+  tier: flipping it on a live context leaves compiled programs sampling a
+  stale map.
+- **Parity is decided once per page.** Layout that reflows under a thumb
+  (grid → sticky stack) is worse than a slightly heavy page; the demotion
+  is remembered in `sessionStorage` for the *next* page instead.
+- **Feed the pointer, don't fork the scenes.** Writing the tilt into
+  `state.pointer` inside `EngineRoot` right before `advance()` made every
+  scene's parallax/nudge/Breeze work on touch with zero scene edits. Rest
+  pose follows the hand (exponential, τ 3.2 s) so any grip is centre; a
+  real finger owns the pointer for 800 ms.
+- **Research the permission before shipping a sensor.** Chrome 151 (2026)
+  added `DeviceOrientationEvent.requestPermission()` (Safari since iOS 13);
+  listeners stay silent until it resolves. Ask silently when the Permissions
+  API already says granted, else from a deliberate tap on a canvas — never
+  the welcome door, never an ambush on load. Remember refusals per session.
+- **Trap: headless synthetic taps aren't user gestures** for permission
+  APIs — the gesture path can only be armed-and-inspected here, not proven.
+- **Trap: choreography offsets are viewport-sized.** The card fan's
+  `−k·150 px` was designed for a 1024 px row; on 390 px it produced a 446 px
+  scroll width. Redraw the *same gesture* for the phone grid (per column)
+  rather than scaling numbers down until nothing overflows.
+- **Trap: don't call side effects inside a React state updater** (the first
+  `onDecline` did `demoteTier()` inside `setDpr(d => …)`); mirror state to a
+  ref and decide outside.
+
 ## v0.15.0 — Android without touching the components
 
 - **Audit before assuming.** A Pixel-class emulated walk (390 px, touch,

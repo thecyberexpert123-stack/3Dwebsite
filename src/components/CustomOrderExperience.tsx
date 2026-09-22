@@ -8,7 +8,7 @@ import {
   waMessages,
   type CustomEnquiry,
 } from "@/lib/whatsapp";
-import { useInViewport, useIsMobile, useWebGL } from "@/lib/hooks";
+import { useInViewport, useIsMobile, useTouchParity, useWebGL } from "@/lib/hooks";
 import { Reveal } from "./Reveal";
 import {
   BowDoodle,
@@ -70,11 +70,12 @@ export function CustomOrderExperience() {
   const [error, setError] = useState("");
   const reduce = useReducedMotion();
   const isMobile = useIsMobile();
+  const parity = useTouchParity(); // capable phones get the real desk (engine)
   const webgl = useWebGL();
   const deskWrapRef = useRef<HTMLDivElement>(null);
   const deskNear = useInViewport(deskWrapRef, "200px");
 
-  const showDesk3D = webgl === true && !isMobile;
+  const showDesk3D = webgl === true && (!isMobile || parity);
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((f) => ({ ...f, [key]: value }));

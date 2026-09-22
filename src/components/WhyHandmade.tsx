@@ -104,7 +104,7 @@ function StackCard({
   const body = (
     <article
       className={`group relative flex h-full flex-col overflow-hidden rounded-[2.25rem] border border-white/80 bg-gradient-to-br p-7 shadow-clay ${card} ${
-        stacked ? "min-h-[18rem] flex-row items-center gap-8 px-10 py-10 md:min-h-[20rem]" : "items-center gap-4 text-center"
+        stacked ? "min-h-[16rem] flex-row items-center gap-5 px-6 py-8 md:min-h-[20rem] md:gap-8 md:px-10 md:py-10" : "items-center gap-4 text-center"
       }`}
     >
       <span className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full shadow-clay-sm transition-transform duration-500 group-hover:-rotate-6 group-hover:scale-110 ${tint}`}>

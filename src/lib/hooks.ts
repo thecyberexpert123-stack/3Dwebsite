@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { decideParity } from "@/lib/engine/capability";
+import { detectTier } from "@/lib/quality";
 
 /** Reactive media-query hook (SSR-safe: false until mounted + measured). */
 export function useMediaQuery(query: string): boolean {
@@ -17,17 +19,42 @@ export function useMediaQuery(query: string): boolean {
   return matches;
 }
 
+/**
+ * Touch parity (engine): should this touch device run the desktop
+ * choreography — section peel, card fan, sticky stack, the 3D desk, tilt
+ * parallax? The decision (`engine/capability.ts`) is evidence-based: the
+ * primary pointer is coarse, the measured tier is not low, and the visitor
+ * has not asked for reduced motion. Decided once per page — layout must not
+ * reflow under a thumb — but a runtime demotion (a canvas starving at DPR 1)
+ * is remembered for the session, so the *next* page takes the lighter path.
+ * `?parity=on|off` overrides for QA. False until mounted.
+ */
+export function useTouchParity(): boolean {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const q = new URLSearchParams(window.location.search).get("parity");
+    const forced = q === "on" || q === "off" ? q : null;
+    setOn(decideParity({ coarse, tier: detectTier(), reducedMotion: reduced, forced }));
+  }, []);
+  return on;
+}
+
 /** "Desktop with a mouse": the gate for scroll-linked choreography that
  *  would only cost frames on touch (pinned strips, card stacks, section
- *  peel). QA override `?pointer=fine` lets headless runs (which report
- *  hover:none) exercise the desktop path. */
-export function useDesktopPointer(minWidth = 1024): boolean {
+ *  peel); touch already has inertia. Capable touch devices now take the
+ *  same path (`useTouchParity`) unless a caller opts out because its layout
+ *  is bound to a desktop breakpoint. QA override `?pointer=fine` lets
+ *  headless runs (which report hover:none) exercise the desktop path. */
+export function useDesktopPointer(minWidth = 1024, touchParity = true): boolean {
   const mq = useMediaQuery(`(min-width: ${minWidth}px) and (hover: hover) and (pointer: fine)`);
+  const parity = useTouchParity();
   const [forced, setForced] = useState(false);
   useEffect(() => {
     setForced(new URLSearchParams(window.location.search).get("pointer") === "fine" && window.innerWidth >= minWidth);
   }, [minWidth]);
-  return mq || forced;
+  return mq || forced || (touchParity && parity);
 }
 
 /** Simplify the 3D scene on small screens. */

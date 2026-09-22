@@ -177,12 +177,18 @@ scheduler/warm-up that keeps every 3D scene smooth (and how to A/B it with
 `?engine=off`), and the server packaging (standalone build, Caddy edge with
 zstd/brotli + immutable caching, `/api/health`).
 
-### Android
+### Android (in the browser)
 
-The site is installable from Android Chrome (manifest + icons, "Add to Home
-screen") and ships a Trusted Web Activity descriptor for the Play Store —
-see `android/README.md`. The engine's Android shim makes the hardware Back
-button close overlays instead of leaving the app.
+On a capable phone the site is the same site as on a desktop: every
+choreography, every 3D scene, and the phone's tilt takes the mouse's place
+for parallax, breeze and the light on the glass (engine *touch parity*, see
+`engine/README.md`). The tier is read from the GPU and corrected at runtime;
+entry-level phones and `prefers-reduced-motion` get the lighter path. QA:
+`?parity=on|off`, `?quality=low|mid|high`.
+
+It is also installable ("Add to Home screen") and ships a Trusted Web
+Activity descriptor for the Play Store — optional, see `android/README.md`.
+The engine's Android shim makes the hardware Back button close overlays.
 
 ### GitHub Pages
 

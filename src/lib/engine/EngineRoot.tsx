@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { engine, type RootHint } from "./scheduler";
+import { acquireTilt, noteRealPointer, tiltPointer } from "./tilt";
 
 /**
  * Attaches an R3F canvas to the Whimlet Engine scheduler.
@@ -20,7 +21,11 @@ import { engine, type RootHint } from "./scheduler";
  *     a 4–7 s synchronous first frame when the studio teaser scrolled in.
  *  3. turns off three's `debug.checkShaderErrors` in production — each
  *     `getShaderInfoLog` is a synchronous GPU round-trip that only
- *     produces console text.
+ *     produces console text;
+ *  4. on touch devices, drives R3F's `pointer` from the phone's tilt
+ *     (`tilt.ts`) right before each advance, so the parallax / breeze /
+ *     nudge that every scene already reads from the pointer comes alive
+ *     without a mouse. A finger on the canvas takes the pointer back.
  *
  * `hint="pause"` mirrors the old `frameloop="never"` scenes (a paused scene
  * stays mounted but never renders); `priority` breaks ties when two
@@ -71,8 +76,24 @@ function Legacy({ hint }: { hint: RootHint }) {
 }
 
 function Engine({ id, hint, priority, onReady }: { id: string; hint: RootHint; priority: number; onReady?: () => void }) {
-  const { gl, scene, camera, clock, advance, setFrameloop, frameloop } = useThree();
+  const { gl, scene, camera, clock, advance, setFrameloop, frameloop, pointer } = useThree();
   const [warm, setWarm] = useState(false);
+
+  // 4. tilt → pointer (touch devices only; no-op elsewhere)
+  useEffect(() => {
+    const release = acquireTilt();
+    const el = gl.domElement;
+    const onReal = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") noteRealPointer(performance.now());
+    };
+    el.addEventListener("pointerdown", onReal, { passive: true });
+    el.addEventListener("pointermove", onReal, { passive: true });
+    return () => {
+      el.removeEventListener("pointerdown", onReal);
+      el.removeEventListener("pointermove", onReal);
+      release();
+    };
+  }, [gl]);
   const readyRef = useRef(onReady);
   readyRef.current = onReady;
 
@@ -170,12 +191,14 @@ function Engine({ id, hint, priority, onReady }: { id: string; hint: RootHint; p
       // snapping to their end state.
       if (!last || t - last > 0.25) clock.elapsedTime = t - 1 / 60;
       last = t;
+      const tilt = tiltPointer(tMs);
+      if (tilt) pointer.set(tilt.x, tilt.y);
       advance(t, true);
     };
     const off = engine().register(id, el, step, priority);
     return off;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gl, id, advance, setFrameloop]);
+  }, [gl, id, advance, setFrameloop, pointer]);
 
   useEffect(() => {
     // Never hold a *visible* scene back for warm-up: if the user is already

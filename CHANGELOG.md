@@ -174,6 +174,104 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.16.0] — 2026-09-22
+
+**Touch parity.** The website on an Android phone is now the same website
+as on a desktop — every choreography, every 3D scene, every light that
+followed the mouse — in the browser, no app. Decided by evidence (the GPU
+the phone actually has), corrected at runtime, and nothing in the scenes
+changed.
+
+### Why
+
+Audit of what a phone browser *withheld* (all gates were "has a mouse"):
+the section peel between beats, the "hand of cards" fan, the sticky card
+stack, the 3D customization desk (a JPG instead), the pointer parallax /
+"nudge toward the visitor" / Breeze in every scene (nothing moved the
+pointer on touch), the window-light sheen on cards and the specular on the
+glass buttons (hover-only). The quality tier also subtracted a point for
+*being Android* regardless of the chip.
+
+### Added — `src/lib/engine/capability.ts` (pure, tested)
+
+- `gpuScore()` — classifies the unmasked WebGL renderer string the way a
+  game launcher reads a GPU name: Adreno 6xx/7xx/8xx, Mali-G7x/Immortalis,
+  Xclipse, Apple → capable; Adreno 5xx/4xx, Mali-G5x/T-series, PowerVR →
+  entry; desktop/unknown → neutral. A prior, not a verdict.
+- `scoreDevice()` — when the GPU is recognised it decides (×2) with memory
+  as the correction; core count no longer counts on phones (a budget
+  8-core Helio is not a flagship). Unknown GPUs keep the previous heuristic.
+- `decideParity()` — a coarse-pointer device runs the desktop choreography
+  when its tier is not low and reduced motion is off; `?parity=on|off`.
+- `orientationToPointer()` / `followRest()` / `tiltMayDrive()` — device
+  tilt → the same −1…1 pointer the scenes read, relative to a rest pose that
+  follows the hand (τ = 3.2 s), screen-orientation aware, finger wins.
+
+### Added — `src/lib/engine/tilt.ts`
+
+- One `deviceorientation` listener per page; `EngineRoot` writes the tilt
+  into each canvas's R3F `pointer` just before it advances → hero parallax,
+  gift-box nudge, studio camera drift, desk sway and the Breeze come alive
+  on a phone without any scene edit. A finger on a canvas owns the pointer
+  for 800 ms after its last move.
+- `--tilt-sx/--tilt-sy/--tilt-o` on `<html>` (≤30 Hz, only when the light
+  moved) → the tilt-sheen on cards and the glass specular sweep with the
+  phone (`html.tilt` rules in `globals.css`). Still on a table = no cost.
+- Permission model researched (Chrome 151 adds `requestPermission()`, Safari
+  has had it since iOS 13): asked silently when the Permissions API already
+  says granted, otherwise from the first tap on a 3D canvas (never the
+  welcome door); refusal remembered per session; never under reduced motion
+  or off HTTPS.
+
+### Changed — quality tier
+
+- `detectTier()` reads the GPU (`gpuScore`) instead of penalising the
+  Android UA; `demoteTier()` steps the session tier down when a canvas is
+  still declining at DPR 1 or drei's monitor gives up (`onFallback`), and
+  `useQuality()` re-emits to every mounted scene. Remembered in
+  `sessionStorage` (`whimlet-tier-cap`) so the next page starts there.
+- `AdaptiveCanvas` locks its shadow-map decision at the first measured tier
+  (flipping shadow maps on a live context leaves compiled programs sampling
+  a stale map).
+
+### Changed — hooks / components (gates only)
+
+- `useTouchParity()` (new) and `useDesktopPointer(minWidth, touchParity =
+  true)` — the existing gate now also passes on capable touch devices.
+  Decided once per page (layout must not reflow under a thumb).
+- `OccasionSection` opts out (`useDesktopPointer(1024, false)`): its pin is
+  bound to `lg:` layout and a thumb-driven snap strip is the right model.
+- `CustomOrderExperience`: the 3D desk renders on capable phones.
+- `CategoryShowcase` fan on phones is drawn per column (2-2-1 grid): left
+  column comes from the right and vice versa, the lone last card only
+  rises — the row-sized offsets threw the outer cards off a 390 px screen
+  (measured: 446 px scroll width → fixed to 390).
+- `WhyHandmade` stacked card: phone padding (`px-6 py-8`, `md:` restores).
+
+### Tests
+
+- `npm run test:engine` 29 → 74: GPU classification (14), device score →
+  tier (10), parity (8), tilt → pointer incl. landscape and rest-following
+  (13).
+
+### Verified (headless Chromium, Pixel 8 emulation, SwiftShader)
+
+- 0 console/page errors on the home page with parity on, tilt granted;
+  no horizontal overflow (390/390).
+- Parity traces present: `#why .sticky`, five transformed fan cards, a
+  canvas in the customization desk; `Beat` peel active on every section.
+- Tilt: synthetic `deviceorientation` → `html.tilt`, `--tilt-sx 28.5%`,
+  `--tilt-o 0.86`; `requestPermission` paths exercised for granted / denied
+  / legacy (no API) / prompt (gesture path armed; synthetic taps don't
+  count as gestures in headless, so the tap itself is unverified).
+- Runtime demotion: on the software renderer at `?quality=high` the hero
+  stepped 1.75 → 1 over ~40 s and then wrote `whimlet-tier-cap = mid`.
+
+### Not verified
+
+- A real phone (GPU strings, sensor permission UI, actual frame rate). The
+  GPU buckets are public tiering, not benchmarks run here.
+
 ## [0.15.0] — 2026-09-22
 
 **Android.** The whole site as a phone experience, an installable app, and a

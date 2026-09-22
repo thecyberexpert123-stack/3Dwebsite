@@ -26,7 +26,9 @@ const STICKERS = ["for them", "never wilts", "thinking of you", "one of a kind",
  * scroller with snap points — same content, thumb-driven.
  */
 export function OccasionSection() {
-  const desktop = useDesktopPointer();
+  // no touch parity here: the pin is bound to the `lg:` layout below, and a
+  // thumb-driven snap strip is the right model for this beat on a phone
+  const desktop = useDesktopPointer(1024, false);
   const reduce = useReducedMotion();
   const pinned = desktop && !reduce;
 

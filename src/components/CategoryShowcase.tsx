@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
-import { useDesktopPointer } from "@/lib/hooks";
+import { useDesktopPointer, useIsMobile } from "@/lib/hooks";
 import { showcaseCategories } from "@/data/categories";
 import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
@@ -120,11 +120,22 @@ function FanCard({
   children: React.ReactNode;
 }) {
   const desktop = useDesktopPointer(768);
+  // phones (touch parity): the cards sit in two columns (2-2-1), not one
+  // row, so the same gesture — gathered at the centre, fanned into place —
+  // is drawn per column: left column comes from the right and vice versa,
+  // the lone last card only rises. Sized so nothing leaves a 360 px screen.
+  const compact = useIsMobile();
   const k = index - (total - 1) / 2; // −2 … 2
   const on = desktop && !reduce;
-  const x = useTransform(spread, [0, 1], [on ? -k * 150 : 0, 0]);
-  const y = useTransform(spread, [0, 1], [on ? Math.abs(k) * 26 + 40 : 0, 0]);
-  const rotate = useTransform(spread, [0, 1], [on ? k * 9 : 0, 0]);
+  const col = index % 2 === 0 ? 1 : -1;
+  const row = Math.floor(index / 2);
+  const lastAlone = total % 2 === 1 && index === total - 1;
+  const fromX = compact ? (lastAlone ? 0 : col * 64) : -k * 150;
+  const fromY = compact ? row * 18 + 36 : Math.abs(k) * 26 + 40;
+  const fromR = compact ? (lastAlone ? 0 : -col * 5) : k * 9;
+  const x = useTransform(spread, [0, 1], [on ? fromX : 0, 0]);
+  const y = useTransform(spread, [0, 1], [on ? fromY : 0, 0]);
+  const rotate = useTransform(spread, [0, 1], [on ? fromR : 0, 0]);
   const opacity = useTransform(spread, [0, 0.35], [on ? 0.6 : 1, 1]);
   if (!on) {
     return (

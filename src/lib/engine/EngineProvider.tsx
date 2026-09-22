@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { engineEnabled } from "./EngineRoot";
 import { installAndroidShim } from "./android";
+import { acquireTilt } from "./tilt";
 
 /**
  * Whimlet Engine — page-level governor. Mounted once in the root layout.
@@ -23,6 +24,10 @@ import { installAndroidShim } from "./android";
  *  - The Android shim (`android.ts`): hardware Back closes overlays, visual
  *    viewport → `--vvh` for keyboard-safe sheets, `html.pwa` when installed.
  *
+ *  - Tilt (`tilt.ts`): on touch devices the phone's orientation becomes the
+ *    pointer the 3D scenes read (via EngineRoot) and the light position the
+ *    card sheen / glass specular follow (CSS vars on <html>).
+ *
  * `?engine=off` disables it along with the rest of the engine, for A/B.
  */
 
@@ -31,7 +36,12 @@ const DECORATIVE = /\banimate-(?:float|float-slow|sway|heartbeat|bounce-soft|twi
 export function EngineProvider() {
   useEffect(() => {
     if (!engineEnabled()) return;
-    return installAndroidShim();
+    const offShim = installAndroidShim();
+    const offTilt = acquireTilt();
+    return () => {
+      offShim();
+      offTilt();
+    };
   }, []);
 
   useEffect(() => {

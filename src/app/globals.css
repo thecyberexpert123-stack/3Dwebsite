@@ -792,6 +792,39 @@ html {
   }
 }
 
+/* ---- Tilt light (engine/tilt.ts) — touch devices only ----
+   On desktop the window-light sheen on cards and the specular lens on the
+   glass buttons follow the mouse (JS writes --sheen-x/--mx per element). On a
+   phone there is no hover, so the same highlights take their position from
+   the phone's tilt, written once on <html> as --tilt-sx/--tilt-sy (light
+   position, %) and --tilt-o (0 at rest … 1 tilted). The sheen appears only
+   while the phone is actually moving off its rest pose — a phone lying on a
+   table is exactly as it was. */
+html.tilt .tilt-sheen::after {
+  opacity: calc(var(--tilt-o, 0) * 0.9);
+  background: radial-gradient(
+    circle at var(--tilt-sx, 50%) var(--tilt-sy, 50%),
+    rgb(255 255 255 / 0.28),
+    rgb(255 255 255 / 0.06) 32%,
+    transparent 60%
+  );
+  transition: opacity 0.25s ease;
+}
+html.tilt .btn-primary,
+html.tilt .btn-outline,
+html.tilt .btn-whatsapp,
+html.tilt .btn-glass {
+  --mx: var(--tilt-sx, 30%);
+  --my: var(--tilt-sy, 15%);
+}
+html.tilt .btn-primary::after,
+html.tilt .btn-outline::after,
+html.tilt .btn-whatsapp::after,
+html.tilt .btn-glass::after {
+  opacity: calc(var(--tilt-o, 0) * 0.85);
+  transition: opacity 0.25s ease;
+}
+
 /* Installed app (Android home-screen / TWA): the address bar is gone, so
    give the top a touch more breathing room under the status bar */
 @media (display-mode: standalone), (display-mode: fullscreen) {
