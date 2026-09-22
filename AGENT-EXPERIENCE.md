@@ -819,6 +819,45 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.17.0 — "Android engine": the wins were in the compositor and the monitor, not the scenes
+
+**Problem.** Android felt heavier than desktop and the Process section's 3D
+stage was missing while scrolling the steps on phones.
+
+**Evidence.** Pixel 8 emulation (`/tmp/pw/proc.mjs`): the canvas mounted
+fine (`canvas:true`), but the stage was only `lg:sticky` — stageTop went
+515 → 15 → −584 → −1184 across the six steps. The "missing 3D" was layout, not
+WebGL. For performance, the engine already had a scheduler and tier
+demotion; the remaining suspects were (a) ~90 elements with
+`backdrop-filter: blur(18–22px)` plus an SVG `feDisplacementMap` on every
+button (w3c/svgwg#1142, mozilla bug 1731965: GPU-bound in eglSwapBuffers on
+Android), and (b) drei's `PerformanceMonitor` default bounds `[40, 60]` /
+`[60, 100]` (hz>100), which read a steady 55 fps on a 120 Hz phone as a
+decline and demoted flagships.
+
+**Root cause / fix.** Three engine-layer knobs, zero scene edits: a
+tier-gated glass budget (`html.glass-frosted|glass-lite` from
+`glassLevel(coarse, tier)`), refresh-aware monitor bounds (`monitorBounds`),
+and fling-aware frame alternation for secondary scenes (`isFlinging`). The
+Process stage is now sticky below `lg` too, and the process camera backs off
+for wide aspect ratios (frames were authored for 4:5).
+
+**Lessons.**
+- On phones, the compositor cost of glass (blur + SVG displacement under
+  many elements) rivals the WebGL cost. Budget it per tier like DPR.
+- Any fps-threshold heuristic must know the refresh rate; a fixed 60 target
+  on a 120 Hz screen is a false-negative machine.
+- When a "3D not showing" report arrives, check the *layout* rects before
+  the GL: `useInViewport` gates and sticky breakpoints hide more scenes than
+  context loss does.
+- Camera frames are authored for an aspect ratio; when the stage's aspect
+  changes per breakpoint, compensate in the rig (back off along the line of
+  sight), don't re-author the frames.
+
+**Confidence.** Structural (emulator) for the Process fix and glass classes;
+performance effect on real Android is reasoned from the cited bugs, not
+measured here (SwiftShader ≈ 10 fps, no real device).
+
 ## v0.16.1 — Studio layout: measure the band, don't assume the centre
 
 - **`top-1/2` is only the centre of the *viewport*.** Overlays that live on

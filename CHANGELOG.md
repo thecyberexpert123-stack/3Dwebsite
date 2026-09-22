@@ -174,6 +174,35 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.17.0] — 2026-09-22
+
+### Added — Android Engine (engine layer only; no scene or component rewrites)
+- **Glass budget** (`engine/capability.ts` `glassLevel`): on touch devices the
+  liquid-glass recipe is trimmed by GPU tier — `html.glass-frosted` (mid tier:
+  blur kept, SVG `#glass-bend` displacement dropped) and `html.glass-lite` (low
+  tier: narrower blur, no displacement, no tilt sheen). Applied by
+  `EngineProvider`, follows runtime demotions. Same layout, same alphas.
+- **Refresh-aware performance monitor** (`monitorBounds`): drei's default
+  decline/incline bounds assume 60 Hz; on 90/120 Hz Android screens a steady
+  55 fps was read as a decline, the DPR stepped to 1 and the tier was demoted
+  for nothing. Bounds are now `[48, 80]` above 100 Hz, `[44, 66]` above 70.
+- **Fling-aware scheduling** (`scheduler.ts` `isFlinging`): while the page is
+  flinging (> 1.5 px/ms), secondary scenes alternate frames so the compositor
+  has headroom for the scroll itself; the primary scene keeps every frame.
+  Desktop and Android both benefit. `__engine.stats().flinging` exposes it.
+
+### Fixed
+- **Process section on phones/tablets**: the 3D stage was `lg:sticky` only, so
+  below the desktop breakpoint it scrolled away before step 2. It is now a
+  short landscape card pinned under the header (`38svh`, `42svh` on
+  tablets) while the six steps scroll beneath it, and the process camera backs
+  off along its line of sight for wide stages so the whole table stays in
+  frame (the frames were composed for a 4:5 portrait stage).
+
+### Tests
+- `scripts/engine-tests.mjs`: 91 checks (monitor bounds, glass levels,
+  fling detection + decision).
+
 ## [0.16.1] — 2026-09-22
 
 **Studio fits the screen.** Reported: on desktop the bottom action bar hid

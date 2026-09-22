@@ -122,6 +122,39 @@ export function lowerTier(t: Tier): Tier {
 }
 
 /* ------------------------------------------------------------------ */
+/* Frame-rate targets                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Bounds for drei's PerformanceMonitor: `[decline below, incline above]` in
+ * fps, given the measured refresh rate.
+ *
+ * drei's default is `hz > 100 ? [60, 100] : [40, 60]` — on a 90/120 Hz phone
+ * (most Androids since 2021) a scene holding a steady 55 fps is then
+ * "declining", the DPR is stepped to 1, the monitor gives up and the engine
+ * demotes a flagship for no reason. Our content targets 60; on a high-refresh
+ * screen 48 is the floor and the DPR climbs back only above 80.
+ */
+export function monitorBounds(hz: number): [number, number] {
+  return hz > 100 ? [48, 80] : hz > 70 ? [44, 66] : [40, 60];
+}
+
+/**
+ * Glass budget for touch devices. The liquid-glass recipe layers a
+ * backdrop blur + an SVG displacement (`#glass-bend`) under ~90 buttons and
+ * panels; on desktop GPUs that is free, on an entry-level phone the blur
+ * chain re-rasterises every frame something moves behind it.
+ *  - "full": everything (desktop, high-tier phones)
+ *  - "frosted": blur but no displacement (mid-tier phones)
+ *  - "lite": lighter blur, no displacement, no tilt sheen (low tier)
+ */
+export type GlassLevel = "full" | "frosted" | "lite";
+export function glassLevel(coarse: boolean, tier: Tier): GlassLevel {
+  if (!coarse) return "full";
+  return tier === "high" ? "full" : tier === "mid" ? "frosted" : "lite";
+}
+
+/* ------------------------------------------------------------------ */
 /* Touch parity                                                        */
 /* ------------------------------------------------------------------ */
 

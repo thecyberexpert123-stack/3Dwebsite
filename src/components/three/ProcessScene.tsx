@@ -398,6 +398,7 @@ function Camera({ p: pr, reduced }: { p: P; reduced: boolean }) {
   const b = useMemo(() => new THREE.Vector3(), []);
   const cur = useMemo(() => new THREE.Vector3(0, 1.2, 0), []);
 
+  const size = useThree((st) => st.size);
   useFrame((state, dt) => {
     const x = pr.current * STAGES;
     const i = Math.min(STAGES - 1, Math.floor(x));
@@ -405,6 +406,17 @@ function Camera({ p: pr, reduced }: { p: P; reduced: boolean }) {
     const f = smoothstep(x - i);
     pos.lerpVectors(a.fromArray(FRAMES[i].pos), b.fromArray(FRAMES[j].pos), f);
     look.lerpVectors(a.fromArray(FRAMES[i].look), b.fromArray(FRAMES[j].look), f);
+    // The frames were composed for a portrait stage (4:5). On the phone the
+    // stage is a short landscape card: the vertical field of view is what
+    // the fov sets, so the same camera sees far less height — back off along
+    // the line of sight in proportion to how much shorter the card is, and
+    // drop the look point a little so the table stays in frame.
+    const aspect = size.width / Math.max(1, size.height);
+    const wide = Math.min(1.75, Math.max(1, aspect / 0.8));
+    if (wide > 1) {
+      pos.sub(look).multiplyScalar(wide).add(look);
+      look.y -= (wide - 1) * 0.25;
+    }
     if (!reduced) {
       pos.x += state.pointer.x * 0.25;
       pos.y += state.pointer.y * 0.12;

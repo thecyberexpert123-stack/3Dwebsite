@@ -11,6 +11,7 @@ import {
 import * as THREE from "three";
 import { demoteTier, type Quality } from "@/lib/quality";
 import { EngineRoot } from "@/lib/engine/EngineRoot";
+import { monitorBounds } from "@/lib/engine/capability";
 import type { RootHint } from "@/lib/engine/scheduler";
 
 /* ================================================================
@@ -335,6 +336,7 @@ export function AdaptiveCanvas({ quality, children, gl, fallback = null, onCreat
           iterations={6}
           threshold={0.7}
           flipflops={3}
+          bounds={monitorBounds}
           onDecline={onDecline}
           onIncline={() => setDpr((d) => Math.min(quality.dpr[1], +(d + 0.25).toFixed(2)))}
           onFallback={onFallback}

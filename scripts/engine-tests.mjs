@@ -14,9 +14,9 @@ if (!outDir) {
   process.exit(2);
 }
 const require = createRequire(import.meta.url);
-const { decide, smoothFrameMs, FRAME_BUDGET_MS } = require(resolve(outDir, "scheduler.js"));
+const { decide, smoothFrameMs, FRAME_BUDGET_MS, isFlinging } = require(resolve(outDir, "scheduler.js"));
 const { decideBack, shouldPushEntry } = require(resolve(outDir, "android.js"));
-const { gpuScore, scoreDevice, tierFromScore, decideParity, orientationToPointer, followRest, tiltMayDrive, TILT_RANGE_DEG } = require(resolve(outDir, "capability.js"));
+const { gpuScore, scoreDevice, tierFromScore, decideParity, orientationToPointer, followRest, tiltMayDrive, TILT_RANGE_DEG, monitorBounds, glassLevel } = require(resolve(outDir, "capability.js"));
 
 let pass = 0;
 let fail = 0;
@@ -183,6 +183,35 @@ console.log("engine: tilt → pointer");
 
   check("finger just touched → tilt yields", !tiltMayDrive(1000, 900));
   check("finger gone for a second → tilt drives", tiltMayDrive(2000, 900));
+}
+
+console.log("engine: refresh-aware monitor bounds + glass budget");
+{
+  check("60 Hz → drei defaults [40, 60]", monitorBounds(60).join() === "40,60");
+  check("90 Hz → floor 44, climb above 66", monitorBounds(90).join() === "44,66");
+  check("120 Hz → a steady 55 fps is NOT a decline", monitorBounds(120)[0] < 55);
+  check("120 Hz → climb only above 80", monitorBounds(120)[1] === 80);
+  check("144 Hz same as 120", monitorBounds(144).join() === monitorBounds(120).join());
+  check("mouse device → full glass whatever the tier", glassLevel(false, "low") === "full");
+  check("high-tier phone → full glass", glassLevel(true, "high") === "full");
+  check("mid-tier phone → frosted (no displacement)", glassLevel(true, "mid") === "frosted");
+  check("low-tier phone → lite", glassLevel(true, "low") === "lite");
+}
+
+console.log("engine: scroll fling");
+{
+  check("slow scroll is not a fling", !isFlinging(8, 16, 10));
+  check("fast fling detected", isFlinging(60, 16, 10));
+  check("a stale sample (>120 ms ago) is not a fling", !isFlinging(60, 16, 200));
+  check("zero dt is safe", !isFlinging(60, 0, 10));
+  const two = [{ id: "hero", area: 0.6, hint: "run", priority: 1 }, { id: "gift", area: 0.3, hint: "run", priority: 0 }];
+  const calm = decide(two, 8, 0, false);
+  check("calm: both render", calm.every((d) => d.render));
+  const f0 = by(decide(two, 8, 0, true));
+  const f1 = by(decide(two, 8, 1, true));
+  check("fling: primary renders every frame", f0.hero.render && f1.hero.render);
+  check("fling: secondary alternates", f0.gift.render !== f1.gift.render);
+  check("fling with one visible root: still renders", decide([two[0]], 8, 0, true)[0].render);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

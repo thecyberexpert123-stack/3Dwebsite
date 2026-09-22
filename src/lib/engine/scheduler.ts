@@ -39,11 +39,22 @@ export type Decision = { id: string; render: boolean; primary: boolean };
 /** frame budget in ms — beyond this, secondary roots go half-rate */
 export const FRAME_BUDGET_MS = 18;
 
+/** scroll speed (CSS px per ms) above which the page is "flinging" — the
+ *  compositor is busy and a secondary scene's frame is the first thing to give */
+export const FLING_PX_PER_MS = 1.5;
+
+/** Is the page flinging? `dy` px travelled in `dtMs`, and how long ago (ms). */
+export function isFlinging(dy: number, dtMs: number, agoMs: number): boolean {
+  if (dtMs <= 0 || agoMs > 120) return false;
+  return Math.abs(dy) / dtMs > FLING_PX_PER_MS;
+}
+
 /**
  * Decide which roots render this frame.
- * `frameIndex` alternates secondary roots when over budget.
+ * `frameIndex` alternates secondary roots when over budget or while the
+ * page flings (`busy`); the primary root always renders every frame.
  */
-export function decide(roots: RootInfo[], avgFrameMs: number, frameIndex: number): Decision[] {
+export function decide(roots: RootInfo[], avgFrameMs: number, frameIndex: number, busy = false): Decision[] {
   const visible = roots.filter((r) => r.hint === "run" && r.area > 0);
   const out = new Map<string, Decision>();
   // Priming: an off-screen root whose programs are linked gets ONE frame so
@@ -55,7 +66,7 @@ export function decide(roots: RootInfo[], avgFrameMs: number, frameIndex: number
   if (visible.length) {
     const sorted = [...visible].sort((a, b) => b.priority - a.priority || b.area - a.area);
     const primary = sorted[0].id;
-    const tight = avgFrameMs > FRAME_BUDGET_MS && sorted.length > 1;
+    const tight = (avgFrameMs > FRAME_BUDGET_MS || busy) && sorted.length > 1;
     sorted.forEach((r, i) => {
       if (r.id === primary) out.set(r.id, { id: r.id, render: true, primary: true });
       else {
@@ -97,6 +108,8 @@ export type EngineStats = {
   avgFrameMs: number;
   fps: number;
   hidden: boolean;
+  /** page was flinging on the last frame (secondary scenes at half rate) */
+  flinging: boolean;
 };
 
 class Scheduler {
@@ -108,6 +121,18 @@ class Scheduler {
   private frameIndex = 0;
   private lastDecisions: Decision[] = [];
   private fpsWindow: number[] = [];
+  private scroll = { y: 0, t: 0, dy: 0, dt: 0 };
+  private onScroll = () => {
+    const now = performance.now();
+    const y = window.scrollY;
+    const s = this.scroll;
+    if (s.t) {
+      s.dy = y - s.y;
+      s.dt = now - s.t;
+    }
+    s.y = y;
+    s.t = now;
+  };
 
   register(id: string, el: Element, advance: (t: number) => void, priority = 0): () => void {
     const root: Root = { id, el, advance, hint: "run", priority, area: 0, prime: false, frames: 0, primed: 0 };
@@ -146,7 +171,8 @@ class Scheduler {
     const hidden = typeof document !== "undefined" && document.hidden;
     const roots = [...this.roots.values()].map((r) => ({ id: r.id, area: +r.area.toFixed(3), hint: r.hint, rendering: this.isRendering(r.id), frames: r.frames, primed: r.primed }));
     const fps = this.fpsWindow.length > 1 ? Math.round(1000 / (this.fpsWindow.reduce((a, b) => a + b, 0) / this.fpsWindow.length)) : 0;
-    return { roots, avgFrameMs: +this.avg.toFixed(2), fps, hidden };
+    const sc = this.scroll;
+    return { roots, avgFrameMs: +this.avg.toFixed(2), fps, hidden, flinging: isFlinging(sc.dy, sc.dt, performance.now() - sc.t) };
   }
 
   private observer(): IntersectionObserver {
@@ -174,11 +200,13 @@ class Scheduler {
     if (this.raf) return;
     this.last = 0;
     this.raf = requestAnimationFrame(this.loop);
+    window.addEventListener("scroll", this.onScroll, { passive: true });
   }
 
   private stopLoop(): void {
     if (this.raf) cancelAnimationFrame(this.raf);
     this.raf = 0;
+    window.removeEventListener("scroll", this.onScroll);
   }
 
   private loop = (t: number): void => {
@@ -192,7 +220,9 @@ class Scheduler {
     this.last = t;
     this.frameIndex++;
     const infos: RootInfo[] = [...this.roots.values()].map((r) => ({ id: r.id, area: r.area, hint: r.hint, priority: r.priority, prime: r.prime }));
-    this.lastDecisions = decide(infos, this.avg, this.frameIndex);
+    const sc = this.scroll;
+    const busy = isFlinging(sc.dy, sc.dt, t - sc.t);
+    this.lastDecisions = decide(infos, this.avg, this.frameIndex, busy);
     for (const d of this.lastDecisions) {
       if (!d.render) continue;
       const r = this.roots.get(d.id);

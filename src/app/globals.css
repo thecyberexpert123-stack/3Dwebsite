@@ -825,6 +825,40 @@ html.tilt .btn-glass::after {
   transition: opacity 0.25s ease;
 }
 
+/* ---- Glass budget (engine/capability.ts glassLevel) — touch devices ----
+   mid tier: keep the frosted glass, drop the SVG displacement (#glass-bend);
+   low tier: also narrow the blur and switch the tilt sheen off. Same layout,
+   same alphas — only the per-frame compositor cost changes. */
+html.glass-frosted .btn-primary:not(:active),
+html.glass-frosted .btn-outline:not(:active),
+html.glass-frosted .btn-whatsapp:not(:active),
+html.glass-frosted .btn-glass:not(:active),
+html.glass-lite .btn-primary:not(:active),
+html.glass-lite .btn-outline:not(:active),
+html.glass-lite .btn-whatsapp:not(:active),
+html.glass-lite .btn-glass:not(:active) {
+  -webkit-backdrop-filter: blur(12px) saturate(1.7) brightness(1.05);
+  backdrop-filter: blur(12px) saturate(1.7) brightness(1.05);
+}
+html.glass-frosted .glass-panel,
+html.glass-lite .glass-panel {
+  -webkit-backdrop-filter: blur(16px) saturate(1.6) brightness(1.04);
+  backdrop-filter: blur(16px) saturate(1.6) brightness(1.04);
+}
+html.glass-lite .btn-primary, html.glass-lite .btn-outline, html.glass-lite .btn-whatsapp, html.glass-lite .btn-glass {
+  -webkit-backdrop-filter: blur(6px) saturate(1.5);
+  backdrop-filter: blur(6px) saturate(1.5);
+}
+html.glass-lite .glass-panel, html.glass-lite .glass-sheet, html.glass-lite .glass-rail, html.glass-lite .glass-pill {
+  -webkit-backdrop-filter: blur(8px) saturate(1.4);
+  backdrop-filter: blur(8px) saturate(1.4);
+}
+html.glass-lite.tilt .tilt-sheen::after,
+html.glass-lite.tilt .btn-primary::after,
+html.glass-lite.tilt .btn-outline::after,
+html.glass-lite.tilt .btn-whatsapp::after,
+html.glass-lite.tilt .btn-glass::after { opacity: 0; }
+
 /* Installed app (Android home-screen / TWA): the address bar is gone, so
    give the top a touch more breathing room under the status bar */
 @media (display-mode: standalone), (display-mode: fullscreen) {

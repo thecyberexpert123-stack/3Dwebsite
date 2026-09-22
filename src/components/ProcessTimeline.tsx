@@ -79,11 +79,15 @@ export function ProcessTimeline() {
         />
 
         <div className="relative mt-14 grid gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
-          {/* ---------- the sticky stage ---------- */}
-          <div className="lg:sticky lg:top-24 lg:self-start">
+          {/* ---------- the sticky stage ----------
+              Desktop: pinned beside the steps. Phones/tablets: the same
+              scene, pinned to the top of the viewport (under the header) as
+              a short landscape card while the steps scroll past beneath it —
+              otherwise the animation had scrolled away before step 2. */}
+          <div className="sticky top-[4.5rem] z-10 self-start lg:top-24">
             <div
               ref={stageRef}
-              className="surface-sky relative aspect-[4/5] w-full overflow-hidden rounded-[2.5rem] shadow-clay sm:aspect-[5/4] lg:aspect-[4/5] lg:h-[calc(100vh-8rem)] lg:max-h-[46rem]"
+              className="surface-sky relative h-[min(38svh,22rem)] w-full overflow-hidden rounded-[2rem] shadow-clay sm:h-[min(42svh,26rem)] lg:aspect-[4/5] lg:h-[calc(100vh-8rem)] lg:max-h-[46rem] lg:rounded-[2.5rem]"
             >
               {webgl === true && near ? (
                 <ProcessScene progress={progress} active={near} />
@@ -98,12 +102,12 @@ export function ProcessTimeline() {
               )}
 
               {/* stage caption: the current step, mirrored in the scene */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-5 md:p-6">
-                <div className="rounded-full bg-white/80 px-4 py-2 shadow-card backdrop-blur-sm">
-                  <span className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-cocoa-soft">
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3.5 md:p-6">
+                <div className="rounded-full bg-white/80 px-3.5 py-1.5 shadow-card backdrop-blur-sm md:px-4 md:py-2">
+                  <span className="text-[0.6rem] font-bold uppercase tracking-[0.3em] text-cocoa-soft md:text-[0.65rem]">
                     step {active + 1} of {processSteps.length}
                   </span>
-                  <span className="ml-3 font-script text-2xl leading-none text-rose-ink">
+                  <span className="ml-2.5 font-script text-xl leading-none text-rose-ink md:ml-3 md:text-2xl">
                     {processSteps[active].title}
                   </span>
                 </div>
@@ -135,7 +139,7 @@ export function ProcessTimeline() {
               />
             </div>
 
-            <ol className="flex flex-col gap-6 md:gap-8 lg:gap-[22vh] lg:py-[18vh]">
+            <ol className="flex flex-col gap-8 pb-[12svh] md:gap-10 lg:gap-[22vh] lg:py-[18vh] lg:pb-[18vh]">
               {processSteps.map((step, i) => {
                 const Icon = ICONS[step.icon];
                 const isActive = i === active;

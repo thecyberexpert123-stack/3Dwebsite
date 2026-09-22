@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { engineEnabled } from "./EngineRoot";
 import { installAndroidShim } from "./android";
 import { acquireTilt } from "./tilt";
+import { glassLevel } from "./capability";
+import { detectTier, onTierChange } from "@/lib/quality";
 
 /**
  * Whimlet Engine — page-level governor. Mounted once in the root layout.
@@ -28,6 +30,12 @@ import { acquireTilt } from "./tilt";
  *    pointer the 3D scenes read (via EngineRoot) and the light position the
  *    card sheen / glass specular follow (CSS vars on <html>).
  *
+ *  - Glass budget (`capability.glassLevel`): `html.glass-frosted` /
+ *    `html.glass-lite` on mid / low-tier touch devices trim the liquid-glass
+ *    recipe (globals.css) — the displacement filter and the wide blur are
+ *    the two most expensive compositor items on a phone. Follows runtime
+ *    demotions.
+ *
  * `?engine=off` disables it along with the rest of the engine, for A/B.
  */
 
@@ -38,9 +46,20 @@ export function EngineProvider() {
     if (!engineEnabled()) return;
     const offShim = installAndroidShim();
     const offTilt = acquireTilt();
+    const html = document.documentElement;
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const applyGlass = () => {
+      const level = glassLevel(coarse, detectTier());
+      html.classList.toggle("glass-frosted", level === "frosted");
+      html.classList.toggle("glass-lite", level === "lite");
+    };
+    applyGlass();
+    const offTier = onTierChange(applyGlass);
     return () => {
       offShim();
       offTilt();
+      offTier();
+      html.classList.remove("glass-frosted", "glass-lite");
     };
   }, []);
 
