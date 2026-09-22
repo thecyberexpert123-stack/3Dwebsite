@@ -174,6 +174,30 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.17.1] — 2026-09-22
+
+### Fixed — animation & layout bugs found in a full desktop + Android audit
+- **Anchor travel landed 96 px low** (desktop + Android, every nav link and
+  the mobile menu): Lenis ≥ 1.3 already subtracts `scroll-padding-top`
+  (6 rem) when it resolves an element target, and we passed `offset: −96`
+  on top. Lenis now gets 0; the native fallback keeps −96.
+- **Product modal / gallery lightbox positioned against the section, not the
+  viewport**: every section's `Beat` wrapper carries a perspective transform,
+  which makes it the containing block for `position: fixed`. Deep in the
+  shop grid the modal opened above the fold; on phones the sheet's CTA hung
+  below the screen. Both overlays now render through a `Portal` into
+  `<body>` (new `components/Portal.tsx`).
+- **Horizontal page overflow on desktop** (`scrollWidth` 2320 px at 1440):
+  the pinned Occasions strip is laid out at full width and shifted by
+  `x`; the section is now `overflow-x: clip` at `lg` (clip, not hidden, so
+  `sticky` keeps working).
+- **Process "Pack" step**: the tissue-paper plane sat at the rim of the box,
+  reading as a pink slab that hid the flower being laid inside and crawled
+  against the transparent walls. It now lines the floor of the box.
+- **Collections cards on phones**: two per row is ~9.5 rem wide — the note,
+  title and blurb overlapped. Caption sizes scale down below `sm`, blurb
+  clamps to two lines.
+
 ## [0.17.0] — 2026-09-22
 
 ### Added — Android Engine (engine layer only; no scene or component rewrites)

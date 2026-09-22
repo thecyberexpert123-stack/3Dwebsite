@@ -354,10 +354,13 @@ function PackBox({ p: pr }: { p: P }) {
       <RoundedBox args={[1.04, 0.5, 0.74]} radius={0.04} smoothness={3} position={[0, 0.25, 0]}>
         <meshStandardMaterial color="#FFEDF2" roughness={0.7} side={THREE.FrontSide} transparent opacity={0.92} />
       </RoundedBox>
-      {/* tissue paper peeking out */}
-      <mesh position={[0, 0.5, 0]} rotation={[-Math.PI / 2, 0, 0.2]}>
-        <planeGeometry args={[0.95, 0.65]} />
-        <meshStandardMaterial color={PALETTE.blushDeep} roughness={0.7} side={THREE.DoubleSide} transparent opacity={0.6} />
+      {/* tissue paper lining the floor of the box. It used to sit at the
+          rim (y = 0.5): a semi-transparent plane across the opening that read
+          as a pink slab on top of the box and hid the flower being laid
+          inside — and its edge crawled against the transparent walls. */}
+      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0.2]}>
+        <planeGeometry args={[0.92, 0.62]} />
+        <meshStandardMaterial color={PALETTE.blushDeep} roughness={0.8} side={THREE.DoubleSide} />
       </mesh>
       <group ref={lid} visible={false}>
         <RoundedBox args={[1.08, 0.14, 0.78]} radius={0.04} smoothness={3} position={[0, 0.07, 0]}>

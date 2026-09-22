@@ -8,6 +8,7 @@ import { waLink, waMessages } from "@/lib/whatsapp";
 import { HeartDoodle, SparkleDoodle, WhatsAppGlyph } from "./Decorations";
 import { lockScroll, unlockScroll } from "@/lib/scroll";
 import { withBasePath } from "@/lib/paths";
+import { Portal } from "./Portal";
 
 /**
  * Product detail dialog: image, story, customization notes and a WhatsApp
@@ -37,6 +38,7 @@ export function ProductModal({
   }, [product, onClose]);
 
   return (
+    <Portal>
     <AnimatePresence>
       {product && (
         <motion.div
@@ -140,5 +142,6 @@ export function ProductModal({
         </motion.div>
       )}
     </AnimatePresence>
+    </Portal>
   );
 }

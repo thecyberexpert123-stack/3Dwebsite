@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Lenis from "lenis";
 import { useReducedMotion } from "framer-motion";
-import { registerLenis, ANCHOR_OFFSET } from "@/lib/scroll";
+import { registerLenis, LENIS_ANCHOR_OFFSET } from "@/lib/scroll";
 
 /**
  * Inertial page scroll (Lenis, MIT) — the thing that makes every
@@ -33,7 +33,7 @@ export function SmoothScroll() {
       wheelMultiplier: 0.95,
       smoothWheel: true,
       syncTouch: false,
-      anchors: { offset: ANCHOR_OFFSET },
+      anchors: { offset: LENIS_ANCHOR_OFFSET },
       prevent: (node) => node.hasAttribute("data-lenis-prevent"),
     });
     registerLenis(lenis);

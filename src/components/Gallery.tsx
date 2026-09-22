@@ -9,6 +9,7 @@ import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
 import { lockScroll, unlockScroll } from "@/lib/scroll";
 import { withBasePath } from "@/lib/paths";
+import { Portal } from "./Portal";
 
 const ASPECTS: Record<string, string> = {
   tall: "aspect-[3/4]",
@@ -144,7 +145,8 @@ export function Gallery() {
         </div>
       </div>
 
-      {/* ---------- lightbox ---------- */}
+      {/* ---------- lightbox (portaled: see Portal.tsx) ---------- */}
+      <Portal>
       <AnimatePresence>
         {current && (
           <motion.div
@@ -225,6 +227,7 @@ export function Gallery() {
           </motion.div>
         )}
       </AnimatePresence>
+      </Portal>
     </section>
   );
 }

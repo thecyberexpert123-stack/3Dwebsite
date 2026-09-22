@@ -819,6 +819,32 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.17.1 — audit lessons: transforms own your "fixed" overlays; don't double-apply scroll padding
+
+**Method.** Section-by-section screenshot sweep on both viewports plus
+flows (intro → door → hero, nav, modal, lightbox, menu), with rect logging
+around every overlay and `scrollWidth` at three scroll positions.
+
+**Findings.**
+- `Beat` (perspective peel) turns every section into a containing block for
+  `position: fixed` descendants. The modal and lightbox had been "working"
+  only while the section they lived in happened to be near the top of the
+  viewport. Rule: overlays are portaled to `<body>`; never trust `fixed`
+  inside a transformed ancestor.
+- Lenis 1.3 resolves element targets with `scroll-padding-top` and
+  `scroll-margin` already applied. Our extra `offset: −96` doubled it and
+  every anchor landed 96 px low — on both platforms, for months, because
+  the section eyebrow still looked "roughly right". Check a library's
+  offset math before adding your own.
+- A `w-max` track translated with `x` inside a pinned section widened
+  `document.scrollWidth` on desktop (`body { overflow-x: hidden }` hides the
+  bar but not the width; the page could still be dragged sideways on
+  trackpads). `overflow-x: clip` on the section fixes it without breaking
+  `position: sticky` — `hidden` would have.
+- Under SwiftShader a heading photographed at 1.5 s looks cut mid-word;
+  that is the reveal in flight at 2 fps, not a bug. Re-shoot at 6 s before
+  filing anything about text reveals.
+
 ## v0.17.0 — "Android engine": the wins were in the compositor and the monitor, not the scenes
 
 **Problem.** Android felt heavier than desktop and the Process section's 3D

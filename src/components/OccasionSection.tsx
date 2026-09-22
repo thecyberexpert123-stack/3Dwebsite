@@ -62,7 +62,7 @@ export function OccasionSection() {
     <section
       id="occasions"
       ref={ref}
-      className={`surface-butter relative ${pinned ? "lg:h-[260vh]" : ""}`}
+      className={`surface-butter relative ${pinned ? "lg:h-[260vh] lg:overflow-x-clip" : ""}`}
     >
       <div className={`${pinned ? "lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-center" : ""} py-24 md:py-32 ${pinned ? "lg:py-0" : ""}`}>
         <div className="wrap">

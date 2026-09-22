@@ -32,8 +32,17 @@ export function getLenis(): Lenis | null {
   return lenis;
 }
 
-/** Nav offset used by anchor travel — matches `scroll-padding-top` in globals.css. */
+/**
+ * Nav offset for the *native* anchor path — matches `scroll-padding-top`
+ * (6rem) in globals.css, which `window.scrollTo` does not apply.
+ *
+ * Lenis (≥ 1.3) reads `scroll-padding-top` and the target's `scroll-margin`
+ * itself when it resolves an element target, so it gets `LENIS_ANCHOR_OFFSET`
+ * (0) — passing −96 as well landed every anchor 192 px low, with the section
+ * heading hidden under nothing.
+ */
 export const ANCHOR_OFFSET = -96;
+export const LENIS_ANCHOR_OFFSET = 0;
 
 export function lockScroll(): void {
   locks++;
@@ -54,7 +63,7 @@ export function scrollToId(id: string): void {
   const el = document.getElementById(id);
   if (!el) return;
   if (lenis && !lenis.isStopped) {
-    lenis.scrollTo(el, { offset: ANCHOR_OFFSET });
+    lenis.scrollTo(el, { offset: LENIS_ANCHOR_OFFSET });
     return;
   }
   const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;

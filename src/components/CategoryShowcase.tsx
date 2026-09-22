@@ -79,12 +79,15 @@ export function CategoryShowcase() {
                       aria-hidden="true"
                       className="absolute inset-0 bg-gradient-to-t from-cocoa/55 via-cocoa/10 to-transparent"
                     />
-                    <span className="absolute left-4 top-4 -rotate-3 font-hand text-lg text-white/95 drop-shadow-sm">
+                    <span className="absolute left-3 top-3 -rotate-3 font-hand text-base text-white/95 drop-shadow-sm sm:left-4 sm:top-4 sm:text-lg">
                       {cat.note}
                     </span>
-                    <div className="absolute inset-x-0 bottom-0 p-4">
-                      <h3 className="text-lg font-bold text-white">{cat.title}</h3>
-                      <p className="mt-0.5 text-[0.8rem] leading-snug text-white/85">{cat.description}</p>
+                    {/* phones: two cards per row (~9.5 rem) — the title and blurb are
+                        scaled down so they read as a caption and stop colliding with
+                        the hand-written note above them */}
+                    <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+                      <h3 className="text-[0.95rem] font-bold leading-tight text-white sm:text-lg">{cat.title}</h3>
+                      <p className="mt-0.5 line-clamp-2 text-[0.72rem] leading-snug text-white/85 sm:line-clamp-none sm:text-[0.8rem]">{cat.description}</p>
                       <span className="mt-2 inline-flex items-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-blush transition-transform duration-300 group-hover:translate-x-1">
                         Explore <ArrowDoodle className="h-3.5 w-3.5" />
                       </span>
