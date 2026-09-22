@@ -174,6 +174,57 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.18.1] — 2026-09-22
+
+### Fixed — the boot sequence actually plays, everywhere
+- **Loader choreography rebuilt on the compositor.** On a cold start the main
+  thread is busy compiling the hero's shaders and running React's first
+  commit — exactly the window in which the loader animates. The v0.18.0
+  write-on was a `clip-path` transition armed from a `requestAnimationFrame`
+  in an effect and the stitch was stepped from a rAF loop: both stall while
+  the main thread is blocked, so on real devices the wordmark appeared
+  already written, the stitch jumped, and several beats collapsed into one.
+  Now the write-on is two **transform** animations (an `overflow:hidden` clip
+  box sliding right while the ink inside slides left, so the glyphs stay put
+  and the visible edge advances), the stitch is the same clip/ink pair driven
+  by a CSS `transition` on `--stitch`, and every fade is opacity. Nothing in
+  the sequence depends on JavaScript ticking; only the percentage number
+  does, and if it hitches the visuals do not (`.sig-pen/.sig-ink/.stitch-*`
+  in `globals.css`).
+- **Beats no longer fire out of order.** The heart, tagline, stitch, status
+  line and *skip* are framer variants under one parent timeline with fixed
+  delays (0.9 / 1.05 / 1.2 / 1.3 / 1.7 s) instead of per-element
+  `transition-delay`s toggled by state.
+- **Stitch waits for its cue.** The progress used to start counting the
+  moment the loader mounted, so a page that was already cached showed
+  "73 %" under a wordmark that hadn't been written yet. The stitch now arms
+  at 1.25 s (when it appears) and `MIN_SHOW_MS` is 1.9 s so the signature
+  is always seen whole before the curtain lifts.
+- **Horizontal wobble on phones.** Once scrolled, the page's scroll box was
+  15–79 px wider than the viewport (the Beat peel projects a tilting section
+  wider than 100 vw). `<main>` now has `overflow-x: clip` — clip, not
+  hidden, so the desktop occasions rail keeps its `position: sticky`
+  (verified: sticky child pins at 0 while the section is at −58 px).
+- **Tofu glyphs.** The self-hosted Latin subsets (Quicksand, Caveat,
+  Parisienne) have no ✿ ↻ ↶ ↷ — checked against each font's `cmap` — so
+  those fell through to whatever the device had, or a box. Replaced with
+  inline SVG doodles (`FlowerDoodle`, new `UndoDoodle` / `RedoDoodle` /
+  `RotateDoodle`) in the hero sticker, contact gift toggle, quick-studio
+  hint, sketch pad, admin parts list and the studio's history/turn buttons
+  (which also gained `aria-label`s).
+- Stale "gift-unwrap door" docblock in `(site)/layout.tsx`.
+
+### Verified
+- Emulator freeze-frames of the loader timeline at 250 / 500 / 800 / 1150 /
+  1500 / 2600 ms (pausing `document.getAnimations()` and scrubbing) show the
+  stroke at C → W → Whiml → Whimlet, heart landing, tagline settling,
+  stitch filling, 390×844 and 1440×900; 0 console errors.
+- Desktop-full / Android-parity / reduced-motion / no-WebGL / skip-click
+  all lift the curtain and hand off to the hero (`startIntro`).
+- Slow full-page scroll on a 390 px viewport: 0 samples with horizontal
+  overflow (was 74 of 77).
+- `tsc` clean, `npm test` 82 / 58 / 91 passing.
+
 ## [0.18.0] — 2026-09-22
 
 ### Changed — the loading page is now "the signature"

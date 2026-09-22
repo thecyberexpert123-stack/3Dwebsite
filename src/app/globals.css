@@ -90,6 +90,38 @@
   }
 }
 
+/* ---- the loading signature (components/LoadingScreen.tsx) ----
+   The wordmark is "written" by a clip box that slides right while the ink
+   inside slides left by the same amount, so the glyphs stay put and the
+   visible edge advances. Two transforms → both run on the compositor, so the
+   stroke keeps moving while the main thread compiles the hero's shaders
+   (clip-path / width animations would freeze there). Same trick for the
+   running stitch, driven by CSS transitions on --stitch. */
+@keyframes pen-clip {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes pen-ink {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.sig-pen { animation: pen-clip 1.1s cubic-bezier(0.65, 0, 0.35, 1) 0.15s both; will-change: transform; }
+.sig-ink { animation: pen-ink 1.1s cubic-bezier(0.65, 0, 0.35, 1) 0.15s both; will-change: transform; }
+.stitch-clip {
+  transform: translateX(calc(var(--stitch, 0) * 1% - 100%));
+  transition: transform var(--stitch-ms, 4500ms) cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.stitch-ink {
+  transform: translateX(calc(100% - var(--stitch, 0) * 1%));
+  transition: transform var(--stitch-ms, 4500ms) cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sig-pen, .sig-ink { animation: none; }
+  .stitch-clip, .stitch-ink { transition: none; }
+}
+
 @keyframes draw {
   to { stroke-dashoffset: 0; }
 }

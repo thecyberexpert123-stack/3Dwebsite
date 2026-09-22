@@ -220,6 +220,30 @@ export function ArrowDoodle(props: DoodleProps) {
   );
 }
 
+/** Undo / redo / rotate arrows — the site's fonts have no ↶ ↷ ↻ glyphs
+ *  (Latin subsets), so these are drawn instead of falling back to tofu. */
+export function UndoDoodle(props: DoodleProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path {...stroke} d="M9 14 4 9l5-5M4 9h9.5a5.5 5.5 0 0 1 0 11H11" />
+    </svg>
+  );
+}
+export function RedoDoodle(props: DoodleProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path {...stroke} d="m15 14 5-5-5-5M20 9h-9.5a5.5 5.5 0 0 0 0 11H13" />
+    </svg>
+  );
+}
+export function RotateDoodle(props: DoodleProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path {...stroke} d="M20 12a8 8 0 1 1-2.9-6.2M20 4v5h-5" />
+    </svg>
+  );
+}
+
 /** Small squiggly underline for handwritten annotations. */
 export function SquiggleDoodle(props: DoodleProps) {
   return (

@@ -1,5 +1,6 @@
 "use client";
 
+import { FlowerDoodle } from "./Decorations";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dequantizePetal, processSketch, quantizePetal, type Pt } from "@/lib/sketch";
 
@@ -258,7 +259,7 @@ export function PetalSketch({
           />
           {!rawPts && (
             <span className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center font-hand text-lg text-rose/50">
-              draw here ✿
+              draw here <FlowerDoodle className="-mt-1 inline-block h-4 w-4 align-middle" />
             </span>
           )}
         </div>
@@ -282,9 +283,9 @@ export function PetalSketch({
             ) : (
               <div
                 aria-hidden="true"
-                className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-blush-deep/40 text-3xl"
+                className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-blush-deep/40 text-rose"
               >
-                ✿
+                <FlowerDoodle className="h-9 w-9" />
               </div>
             )}
             <div>

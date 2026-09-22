@@ -819,6 +819,52 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.18.1 — a loader must not depend on the thread it is covering for
+
+**Problem.** The owner reported the boot-sequence animations "not coming
+properly". In the emulator every state was correct, so the state machine
+was not the bug.
+
+**Hypothesis → evidence.** The loader's job is to entertain while the main
+thread is at its busiest (first React commit, R3F canvas creation, shader
+compilation). The v0.18.0 write-on was a CSS `clip-path` transition armed
+from a `requestAnimationFrame` inside an effect, and the stitch was eased
+from a rAF loop. `clip-path` and `width` animations run on the main thread
+in Blink (only transform / opacity / filter / backdrop-filter are
+compositor properties — chromium `core/animation` README), and rAF simply
+does not fire while the thread is blocked. So on a real cold start the rAF
+fired *after* the block, the transition-delay chain started late or was
+skipped when the state had already advanced, and the beats collapsed. The
+emulator hid it because SwiftShader's rAF runs at ~1 Hz and the loader was
+judged by end states.
+
+**Fix (mechanism, reusable).** Put every visual beat on the compositor:
+- Write-on without `clip-path`: an `overflow:hidden` box translating one
+  way while its child translates the other by the same amount. The glyphs
+  stay still, the visible edge moves, and it is two `transform` animations.
+- Progress bar the same way, driven by a CSS `transition` on a custom
+  property (`--stitch`) — React only writes the target; the compositor
+  tweens it. The percentage number is the one JS-ticked value, deliberately
+  decoupled so a hitch there never freezes the visual.
+- Sequencing by *fixed delays from one parent timeline* (framer variants
+  with per-child `delay`), never by state flips + `transition-delay`.
+
+**Verification method.** Pause `document.getAnimations()` inside the loader
+and scrub `currentTime` to 250…2600 ms, screenshot each — this shows the
+choreography regardless of how slow the emulator's rAF is. `CSSTransition`s
+and `CSSAnimation`s both surface there; framer's WAAPI-backed opacity
+animations too.
+
+**Also.** Font subsets are a glyph budget: check the woff2 `cmap` before
+using a decorative character (✿ ↻ ↶ ↷ are absent from the Latin subsets
+of Quicksand/Caveat/Parisienne); draw the icon instead. And any
+scroll-linked 3D tilt (the Beat peel) projects wider than the viewport —
+contain it with `overflow-x: clip` on an ancestor that is *not* the
+sticky element's scroll container.
+
+**Confidence.** High on the mechanism (spec + measured), medium on the
+exact device symptom since real-device frames could not be captured here.
+
 ## v0.18.0 — the loading page: a signature, not a gate
 
 **Problem.** The gift-unwrap door was the "surprise on entry", but it asked

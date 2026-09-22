@@ -7,7 +7,7 @@ import { useInViewport } from "@/lib/hooks";
 import { useIntroStarted } from "@/lib/intro";
 import { HeroStatic } from "./HeroStatic";
 import { Magnetic } from "./Magnetic";
-import { HeartDoodle, SquiggleDoodle, YarnDoodle } from "./Decorations";
+import { FlowerDoodle, HeartDoodle, SquiggleDoodle, YarnDoodle } from "./Decorations";
 
 const HeroScene3D = dynamic(() => import("./three/HeroScene3D"), {
   ssr: false,
@@ -225,7 +225,7 @@ export function Hero() {
             className="sticker pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap text-cocoa-soft"
             style={{ "--tilt": "-2deg" } as React.CSSProperties}
           >
-            tap the bouquet ✿
+            tap the bouquet <FlowerDoodle className="-mt-1 inline-block h-4 w-4 align-middle text-rose-ink" />
           </motion.span>
         </div>
       </div>

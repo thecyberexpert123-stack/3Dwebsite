@@ -116,7 +116,8 @@ export function ContactSection() {
               aria-pressed={open}
               className="btn btn-outline btn-sm absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white/85"
             >
-              {open ? "close it up ✿" : "open your little gift ✿"}
+              {open ? "close it up" : "open your little gift"}
+              <FlowerDoodle className="ml-1.5 inline-block h-3.5 w-3.5 align-[-2px]" />
             </button>
           )}
           {!has3D && (

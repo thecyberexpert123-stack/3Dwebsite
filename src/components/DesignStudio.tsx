@@ -20,7 +20,7 @@ import { waLink } from "@/lib/whatsapp";
 import { useInViewport, useWebGL } from "@/lib/hooks";
 import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
-import { SparkleDoodle, WhatsAppGlyph } from "./Decorations";
+import { FlowerDoodle, SparkleDoodle, WhatsAppGlyph } from "./Decorations";
 import { PetalSketch } from "./PetalSketch";
 import { ControlGroup, Segmented, Swatches, ToggleSwitch } from "./studio/controls";
 import { useDesign } from "./studio/useDesign";
@@ -129,7 +129,8 @@ export function DesignStudio() {
                 className="sticker pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-rose-ink"
                 style={{ "--tilt": "-2deg" } as React.CSSProperties}
               >
-                {webgl === false ? "3D preview unavailable — your choices still work below ✿" : "drag to spin ✿"}
+                {webgl === false ? "3D preview unavailable — your choices still work below" : "drag to spin"}
+                <FlowerDoodle className="ml-1.5 inline-block h-4 w-4 align-[-3px] text-rose-ink" />
               </p>
               <Link href={studioHref} className="btn btn-glass btn-sm absolute right-3 top-3">
                 <SparkleDoodle className="h-4 w-4 text-rose-ink" /> Open full studio

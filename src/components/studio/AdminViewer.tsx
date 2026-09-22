@@ -1,5 +1,6 @@
 "use client";
 
+import { FlowerDoodle } from "../Decorations";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -112,7 +113,7 @@ export function AdminViewer() {
         {c && webgl !== false && <DesignScene config={c} view={view} opaque className="!absolute inset-0 cursor-grab active:cursor-grabbing" captureRef={captureRef} />}
         {c && webgl === false && (
           <div className="flex h-full items-center justify-center p-8">
-            <p className="max-w-sm rounded-3xl bg-white/80 p-6 text-center font-hand text-2xl text-rose-ink">No WebGL here — the spec sheet on the right still has everything ✿</p>
+            <p className="max-w-sm rounded-3xl bg-white/80 p-6 text-center font-hand text-2xl text-rose-ink">No WebGL here — the spec sheet on the right still has everything.</p>
           </div>
         )}
         {!c && (
@@ -298,7 +299,7 @@ export function AdminViewer() {
                     <ul className="flex flex-col gap-1 text-sm">
                       {spec.parts.map((p) => (
                         <li key={p} className="flex gap-2">
-                          <span className="text-rose-ink">✿</span>
+                          <FlowerDoodle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-ink" />
                           <span>{p}</span>
                         </li>
                       ))}

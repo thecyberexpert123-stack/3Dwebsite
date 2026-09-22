@@ -7,7 +7,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { DESIGN_PRESETS, buildDesignMessage, describeDesign, estimateSpec, type DesignConfig } from "@/lib/design";
 import { waLink } from "@/lib/whatsapp";
 import { useIsMobile, useWebGL } from "@/lib/hooks";
-import { HeartDoodle, PencilDoodle, SparkleDoodle, WhatsAppGlyph } from "../Decorations";
+import { HeartDoodle, PencilDoodle, RedoDoodle, RotateDoodle, SparkleDoodle, UndoDoodle, WhatsAppGlyph } from "../Decorations";
 import { PetalSketch } from "../PetalSketch";
 import { BACKDROPS, DEFAULT_VIEW, type BackdropId, type StudioView } from "../three/DesignScene";
 import { PANELS, Panel, countOptions, type PanelId } from "./OptionPanels";
@@ -219,7 +219,7 @@ export function StudioApp() {
       <div className="absolute inset-0">
         {webgl === false ? (
           <div className="flex h-full items-center justify-center p-8 text-center">
-            <p className="max-w-sm rounded-3xl bg-white/80 p-6 font-hand text-2xl text-rose-ink">3D preview unavailable on this device — every choice below still saves and sends ✿</p>
+            <p className="max-w-sm rounded-3xl bg-white/80 p-6 font-hand text-2xl text-rose-ink">3D preview unavailable on this device — every choice below still saves and sends.</p>
           </div>
         ) : (
           <DesignScene config={c} view={view} opaque className="!absolute inset-0 cursor-grab active:cursor-grabbing" captureRef={captureRef} />
@@ -258,7 +258,8 @@ export function StudioApp() {
             ))}
           </div>
           <button type="button" className="btn btn-glass btn-sm" aria-pressed={view.autoRotate} onClick={() => setView((v) => ({ ...v, autoRotate: !v.autoRotate }))}>
-            {view.autoRotate ? "↻ turning" : "↻ still"}
+            <RotateDoodle className={`h-3.5 w-3.5 ${view.autoRotate ? "animate-[spin_6s_linear_infinite]" : ""}`} />
+            {view.autoRotate ? "turning" : "still"}
           </button>
         </div>
       </header>
@@ -413,11 +414,11 @@ export function StudioApp() {
           </div>
           <div id="studio-actions" hidden={!barOpen} className="flex flex-wrap items-center gap-2">
             <div role="group" aria-label="History" className="flex gap-1">
-              <button type="button" onClick={d.undo} disabled={!d.canUndo} className="btn btn-glass btn-sm disabled:opacity-40" title="Undo (Ctrl/⌘+Z)">
-                ↶
+              <button type="button" onClick={d.undo} disabled={!d.canUndo} className="btn btn-glass btn-sm disabled:opacity-40" title="Undo (Ctrl/⌘+Z)" aria-label="Undo">
+                <UndoDoodle className="h-4 w-4" />
               </button>
-              <button type="button" onClick={d.redo} disabled={!d.canRedo} className="btn btn-glass btn-sm disabled:opacity-40" title="Redo (Shift+Ctrl/⌘+Z)">
-                ↷
+              <button type="button" onClick={d.redo} disabled={!d.canRedo} className="btn btn-glass btn-sm disabled:opacity-40" title="Redo (Shift+Ctrl/⌘+Z)" aria-label="Redo">
+                <RedoDoodle className="h-4 w-4" />
               </button>
             </div>
             <button type="button" onClick={d.surprise} className="btn btn-outline btn-sm">
