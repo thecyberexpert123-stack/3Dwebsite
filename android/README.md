@@ -62,48 +62,66 @@ cached bundle is the fastest way to break a WebGL app after a deploy.
 Chrome's current install criteria (manifest + icons + HTTPS) do not require
 one.
 
-## Layer 3 — Play Store via Trusted Web Activity
+## Layer 3 — Play Store via Trusted Web Activity (GitHub Pages, no domain)
 
 A TWA is Chrome rendering the live site full-screen inside a tiny native
 shell. The shell is generated — no Android code to maintain — and the site
-keeps deploying as usual.
+keeps deploying as usual. The app points at the free GitHub Pages site:
 
-**One-time, on a machine with Java 17 + the Android SDK** (Bubblewrap
-offers to install both):
+| | value |
+| --- | --- |
+| Site | `https://thecyberexpert123-stack.github.io/3Dwebsite/` |
+| Origin (where Android looks for the proof) | `https://thecyberexpert123-stack.github.io/` |
+| Package id | `io.github.thecyberexpert123_stack.whimlet` |
+
+`android/twa-manifest.json` is already filled in with these.
+
+### Step 1 — publish the proof at the origin root (free, one-time)
+
+Android fetches `https://thecyberexpert123-stack.github.io/.well-known/assetlinks.json`
+— the origin root, which `/3Dwebsite/` cannot serve. On GitHub the root is
+served by a repository named exactly `thecyberexpert123-stack.github.io`.
+Everything it needs is in **`android/root-site/`** with step-by-step
+instructions in its README (create repo → add two files → Pages from
+`main`). The same file is also in this repo's `public/.well-known/` so the
+`/3Dwebsite/.well-known/assetlinks.json` copy exists — harmless, but it is
+the root one that counts.
+
+### Step 2 — build the shell (on a laptop with Java 17; Bubblewrap installs the Android SDK)
 
 ```sh
 npm i -g @bubblewrap/cli
 cd android
-# 1. put your real domain into twa-manifest.json (host, iconUrl, webManifestUrl, fullScopeUrl)
-# 2. generate the project (reads the site's manifest; creates android.keystore — keep it safe, never commit)
-bubblewrap init --manifest https://<domain>/manifest.webmanifest
-# 3. build → app-release-signed.apk (sideload for testing) + app-release-bundle.aab (Play Console)
+bubblewrap init --manifest https://thecyberexpert123-stack.github.io/3Dwebsite/manifest.webmanifest
+#   → confirms the values from twa-manifest.json, creates android.keystore (keep it, never commit)
 bubblewrap build
+#   → app-release-signed.apk (sideload to test) + app-release-bundle.aab (Play Console)
+bubblewrap fingerprint list
+#   → SHA-256 of the keystore: paste into the root-site assetlinks.json for sideload testing
 ```
 
-**Digital Asset Links** (what removes the browser bar): Android must be able
-to prove the app and the site belong together.
+Install the `.apk` on your phone (Settings → allow from this source). If it
+opens **with** a URL bar, the fingerprint in the root `assetlinks.json` does
+not match yet or Pages hasn't redeployed — give it a minute and reopen.
 
-1. Get the SHA-256 of the signing certificate. For a Play upload, use the
-   **App signing key** fingerprint from Play Console → Setup → App
-   integrity (not the upload key); for a sideloaded test build,
-   `bubblewrap fingerprint list` or
-   `keytool -list -v -keystore android.keystore -alias whimlet`.
-2. Paste it into `public/.well-known/assetlinks.json` and deploy. It must be
-   served from the **origin root** — `https://<domain>/.well-known/assetlinks.json`,
-   content-type `application/json`. (On a GitHub *project* Pages site the
-   root is `<owner>.github.io/`, not `/3Dwebsite/` — use a custom domain or
-   a user-site repo for the TWA.)
-3. Check with `https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://<domain>&relation=delegate_permission/common.handle_all_urls`.
-   If the app opens with a URL bar, the fingerprint in the JSON does not
-   match the certificate that signed the installed build.
+### Step 3 — Play Store
 
-Then upload the `.aab` in Play Console (internal testing first). Store
-listing needs the 512 px icon (`public/icons/icon-512.png`), a feature
-graphic and phone screenshots — take them from the installed app.
+Upload the `.aab` in Play Console (internal testing first). Play re-signs
+the app with its own **App signing key**: copy that SHA-256 (Setup → App
+integrity) into the root `assetlinks.json` too — both fingerprints can be
+listed in the array. Store listing needs `public/icons/icon-512.png`, a
+feature graphic and phone screenshots taken from the installed app.
 
-Updates: deploy the site. Rebuild the shell only when its own metadata
-changes (name, icon, colours, start URL) — bump `appVersionCode` then.
+Updates: deploy the site (push to `main`). Rebuild the shell only when its
+own metadata changes (name, icon, colours, start URL) — bump
+`appVersionCode` then.
+
+### If a domain ever comes later
+
+Change `host`, the four URLs and `fullScopeUrl` in `twa-manifest.json`,
+move `assetlinks.json` to the new origin root, add the new origin to
+`additionalTrustedOrigins` during the transition, rebuild. The package id
+can stay.
 
 ## Not verified here
 
@@ -111,6 +129,6 @@ changes (name, icon, colours, start URL) — bump `appVersionCode` then.
   were verified with Chrome's Android emulation (viewport, touch, UA,
   display-mode) and by inspecting the served manifest/icons; the **install
   prompt and the TWA build were not executed**. `twa-manifest.json` follows
-  Bubblewrap's current schema and the assetlinks file follows Google's
-  documented format, both with placeholders where your domain and
-  certificate go.
+  Bubblewrap's current schema (pre-filled for the GitHub Pages origin) and
+  the assetlinks file follows Google's documented format with a placeholder
+  where the signing-key fingerprint goes.

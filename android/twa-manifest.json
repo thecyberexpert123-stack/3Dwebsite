@@ -1,6 +1,6 @@
 {
-  "packageId": "in.whimlet.app",
-  "host": "REPLACE-WITH-YOUR-DOMAIN.example",
+  "packageId": "io.github.thecyberexpert123_stack.whimlet",
+  "host": "thecyberexpert123-stack.github.io",
   "name": "Whimlet — Handmade Crochet",
   "launcherName": "Whimlet",
   "display": "standalone",
@@ -12,9 +12,9 @@
   "navigationDividerColorDark": "#FFF6F8",
   "backgroundColor": "#FFF6F8",
   "enableNotifications": false,
-  "startUrl": "/?source=twa",
-  "iconUrl": "https://REPLACE-WITH-YOUR-DOMAIN.example/icons/icon-512.png",
-  "maskableIconUrl": "https://REPLACE-WITH-YOUR-DOMAIN.example/icons/maskable-512.png",
+  "startUrl": "/3Dwebsite/?source=twa",
+  "iconUrl": "https://thecyberexpert123-stack.github.io/3Dwebsite/icons/icon-512.png",
+  "maskableIconUrl": "https://thecyberexpert123-stack.github.io/3Dwebsite/icons/maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
@@ -23,18 +23,30 @@
   "appVersionName": "1.0.0",
   "appVersionCode": 1,
   "shortcuts": [
-    { "name": "Design Studio", "shortName": "Studio", "url": "/studio/?source=twa", "chosenIconUrl": "https://REPLACE-WITH-YOUR-DOMAIN.example/icons/icon-192.png" },
-    { "name": "Whimlet Maker", "shortName": "Maker", "url": "/maker/?source=twa", "chosenIconUrl": "https://REPLACE-WITH-YOUR-DOMAIN.example/icons/icon-192.png" }
+    {
+      "name": "Design Studio",
+      "shortName": "Studio",
+      "url": "/3Dwebsite/studio/?source=twa",
+      "chosenIconUrl": "https://thecyberexpert123-stack.github.io/3Dwebsite/icons/icon-192.png"
+    },
+    {
+      "name": "Whimlet Maker",
+      "shortName": "Maker",
+      "url": "/3Dwebsite/maker/?source=twa",
+      "chosenIconUrl": "https://thecyberexpert123-stack.github.io/3Dwebsite/icons/icon-192.png"
+    }
   ],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://REPLACE-WITH-YOUR-DOMAIN.example/manifest.webmanifest",
+  "webManifestUrl": "https://thecyberexpert123-stack.github.io/3Dwebsite/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
-  "alphaDependencies": { "enabled": false },
+  "alphaDependencies": {
+    "enabled": false
+  },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://REPLACE-WITH-YOUR-DOMAIN.example/",
+  "fullScopeUrl": "https://thecyberexpert123-stack.github.io/3Dwebsite/",
   "minSdkVersion": 21,
   "orientation": "default",
   "fingerprints": [],

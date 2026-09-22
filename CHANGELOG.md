@@ -217,6 +217,14 @@ Play-Store-ready shell — without changing any component. Notes in
 - `npm run test:engine` now also covers the Back-button decision logic
   (29 checks total).
 
+### Changed — GitHub Pages is the app's home (no domain)
+- `android/twa-manifest.json` pre-filled for
+  `https://thecyberexpert123-stack.github.io/3Dwebsite/` (package id
+  `io.github.thecyberexpert123_stack.whimlet`); `android/root-site/` holds
+  the files for the free `thecyberexpert123-stack.github.io` repository
+  that serves `assetlinks.json` at the origin root (plus a redirect to
+  `/3Dwebsite/`), with its own README.
+
 ### Not verified
 - No Android device, emulator or SDK in the sandbox: layers were verified
   with Chrome's Android emulation and the served manifest/icons; the
