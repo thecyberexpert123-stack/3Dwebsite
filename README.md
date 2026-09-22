@@ -14,7 +14,7 @@ primary conversion channel.
   opening-gift scene in the closing CTA, and the custom-order desk still life
   (all lazy-loaded, viewport-gated, with beautiful static fallbacks)
 - **Framer Motion** — reveals, parallax, modals, carousel
-- **Lenis** (MIT) — inertial page scroll; `src/lib/scroll.ts` owns the instance (scroll locks, anchor travel). QA overrides: `?intro=skip|hold|gift`, `?quality=low|mid|high`, `?pointer=fine`.
+- **Lenis** (MIT) — inertial page scroll; `src/lib/scroll.ts` owns the instance (scroll locks, anchor travel). QA overrides: `?intro=skip|hold|force`, `?quality=low|mid|high`, `?pointer=fine`.
 - Self-hosted fonts (Parisienne · Caveat · Quicksand) — no external font CDN
 
 ## Getting started
@@ -36,7 +36,7 @@ src/
 ├─ components/        one file per section + shared UI (Reveal, Decorations…)
 │  ├─ studio/         full studio + admin viewer (shared controls, hooks, panels)
 │  ├─ maker/          the free-form Maker (MakerApp + document/history hook)
-│  └─ three/          R3F scenes: HeroScene3D, GiftIntroScene, DesignScene, DeskScene…
+│  └─ three/          R3F scenes: HeroScene3D, DesignScene, DeskScene, ProcessScene…
 ├─ data/              ALL editable content lives here (see below)
 ├─ fonts/             self-hosted woff2 files
 └─ lib/               design.ts (studio domain + file format), sketch.ts,

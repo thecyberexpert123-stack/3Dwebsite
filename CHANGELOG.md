@@ -174,6 +174,31 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.18.0] — 2026-09-22
+
+### Changed — the loading page is now "the signature"
+- **Removed the gift-unwrap door** (`three/GiftIntroScene.tsx`, −619 lines,
+  a whole R3F scene + its chunk) and the tap/Enter/auto-unwrap state machine.
+- **New `LoadingScreen`**: the *Whimlet* wordmark writes itself across the
+  page like a name signed on a gift tag (clip-path write-on, 1.1 s), a small
+  heart lands as the full stop, "one stitch at a time." settles under it, and
+  a dashed running stitch fills with **real** progress — page assets
+  (`window.load`) → the meadow's first frame (`markHeroReady`) — with a
+  percentage and one honest status line. The curtain then lifts straight up
+  with its scalloped hem, revealing the hero, whose choreography starts on
+  that beat (`startIntro`). Pure DOM + CSS: paints before any 3D chunk.
+- Timing: minimum 1.5 s so the signature is *seen*, hard cap 7 s so the
+  loader can only delay, never trap; repeat visits in the session get a
+  0.55 s curtain; reduced motion gets the mark in place and a plain fade;
+  no-WebGL lifts once the static hero is painted. `skip` remains.
+- QA flags: `?intro=skip | hold | force` (`force` replaces `gift`).
+
+### Research behind the choice (see AGENT-EXPERIENCE v0.18.0)
+Determinate progress for 1–10 s waits; waits with feedback feel 11–15 %
+shorter and are abandoned less; fast-start/slow-finish reads quicker than
+linear; and the strongest recent loaders are a brand signature + counter +
+one directed exit rather than an interactive gate.
+
 ## [0.17.1] — 2026-09-22
 
 ### Fixed — animation & layout bugs found in a full desktop + Android audit

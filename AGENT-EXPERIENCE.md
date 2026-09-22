@@ -819,6 +819,50 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.18.0 — the loading page: a signature, not a gate
+
+**Problem.** The gift-unwrap door was the "surprise on entry", but it asked
+the visitor to *do* something before seeing the site, shipped a second R3F
+scene before the hero's own, and on slow Android the box itself was the thing
+loading. The owner asked for something simpler and more attractive.
+
+**Research (what the evidence says a loader should be).**
+- Match the indicator to the wait: < 1 s nothing, 1–3 s a light indicator,
+  3–10 s a *determinate* bar; uncertainty is what makes waiting hurt
+  (Smart Interface Design Patterns, citing Nah 2004 and Buell & Norton 2011).
+- Waits with feedback feel 11–15 % shorter (NN/g via flowwies); a bar that
+  moves fast first and slows near the end is perceived as quicker than a
+  linear one.
+- What wins on Awwwards-class sites in 2024–26: a brand signature (logo /
+  wordmark reveal), a 0→100 counter tied to real load where possible, and a
+  single directed exit (wipe/lift) — not interactive gates or mini-scenes
+  (Framer marketplace survey, svgator round-up, Codrops "page preloading").
+
+**Design.** Wordmark write-on (Parisienne script, left→right clip-path — the
+handwriting reads as a signature without needing glyph paths), a heart as the
+full stop, a dashed *running stitch* as the progress bar (craft vocabulary),
+real stages (window load → hero first frame), status copy that never runs
+ahead of the number, and a straight-up curtain with the site's scalloped hem
+so the last thing seen is the trim the sections share.
+
+**Verification (emulator).** Desktop, Pixel-8 emulation, reduced motion,
+no-WebGL and the skip path all lift; the hero's headline stagger starts after
+the lift; `sessionStorage` quick mode 0.55 s; 0 console errors; frozen
+write-on frames at 15/45/75/100 % look like a pen stroke, not a wipe.
+
+**Lessons.**
+- A "surprise" that blocks entry is a cost, not a gift. Put the surprise
+  *after* the door (the meadow growing in) and make the door itself fast,
+  honest and brand-shaped.
+- With SwiftShader every `requestAnimationFrame` is ~1 s; a progress
+  animation that creeps toward a ceiling will *look* stuck at 38 % in the
+  emulator. Judge such loaders by their state machine (stages, timers,
+  caps), not by emulator screenshots.
+- `clip-path: inset()` transitions are compositor-cheap and give a
+  convincing handwriting reveal for script fonts — no SVG tracing needed.
+- Keep status text derived from the *displayed* number; a line that says
+  "ready!" next to "93 %" is a small lie the eye catches instantly.
+
 ## v0.17.1 — audit lessons: transforms own your "fixed" overlays; don't double-apply scroll padding
 
 **Method.** Section-by-section screenshot sweep on both viewports plus
