@@ -21,6 +21,9 @@ export interface AuthState {
   /** Sign-up with email + password; when "Confirm email" is ON, Supabase sends
    *  a verification link and no session is created until it is confirmed. */
   signUpWithPassword: (email: string, password: string, name?: string) => Promise<{ error: string | null }>;
+  /** Google sign-in — free, no SMS provider; redirects to /signin after the
+   *  OAuth grant where the session is auto-detected. */
+  signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -122,6 +125,24 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     [client]
   );
 
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      const { error } = await client.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          // return to /signin (base path included) once Google approves;
+          // the client auto-detects the session from the callback URL
+          redirectTo: absoluteUrl("/signin"),
+        },
+      });
+      // a non-null error here is normally a config problem (provider not
+      // enabled / redirect not allowed) surfaced BEFORE the redirect
+      return { error: error ? error.message : null };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Could not start Google sign-in." };
+    }
+  }, [client]);
+
   const signOut = useCallback(async () => {
     await client.auth.signOut();
     setSession(null);
@@ -136,9 +157,10 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       signInWithOtp,
       signInWithPassword,
       signUpWithPassword,
+      signInWithGoogle,
       signOut,
     }),
-    [loading, session, role, signInWithOtp, signInWithPassword, signUpWithPassword, signOut]
+    [loading, session, role, signInWithOtp, signInWithPassword, signUpWithPassword, signInWithGoogle, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

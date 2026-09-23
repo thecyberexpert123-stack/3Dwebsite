@@ -819,6 +819,35 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.22.0 — OAuth on a static host: respect redirect_to; never reuse a 6-digit token as a URL
+
+**Problem.** Owner tried to add Twilio for SMS verification, found it needed
+payment, and switched to Google OAuth — the right call (free, and Google
+accounts arrive email-verified).
+
+**Findings (evidence, from the installed auth-js types).**
+- `signInWithOAuth` = `{ provider, options: { redirectTo, scopes,
+  queryParams, skipBrowserRedirect } }`. On a static Pages site you must pass
+  `redirectTo: absoluteUrl("/signin")` because the default returns to the
+  project "Site URL", which omits the `/3Dwebsite` base path → 404. Same
+  class of bug as v0.21.1's `emailRedirectTo`. Compute from `paths.ts`, not a
+  hard-coded string, so the VPS/domain shape inherits the fix.
+- The redirect flow auths itself: `detectSessionInUrl` (on by default) pulls
+  the tokens out of the callback query on `/signin`, so no callback route is
+  needed — the page that was already there is the callback target.
+- **Email templates:** `{{ .Token }}` is a 6-digit code only. Using it inside
+  an `href` silently breaks email verification, so the only valid link var is
+  `{{ .ConfirmationURL }}` — but keep `{{ .Token }}` as a visible *fallback
+  code* because corporate scanners (MS Safe Links) prefetch and consume the
+  link token. Email clients block external CSS/images/fonts: everything
+  inline, system-font only.
+- Setup surface: Google Cloud OAuth client (Authorised redirect URI =
+  `https://<ref>.supabase.co/auth/v1/callback`) → Supabase Providers → Google
+  → Client ID/secret; and the *app* redirect must be in URL Configuration.
+
+**Confidence.** High on the client mechanics (types + build + smoke); the
+Google consent + template delivery are owner-device steps, stated as such.
+
 ## v0.21.1 — a verification email is only good if the link lands somewhere real
 
 **Problem.** Owner confirmed "Confirm email" was already ON — which is the

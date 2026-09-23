@@ -174,6 +174,30 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.22.0] — 2026-09-23
+
+### Added — Google Sign-In + branded verification emails
+
+- **Google Sign-In** on `.signin`: a "Continue with Google" button
+  (inline multi-colour G, no assets), wired through
+  `auth.signInWithOAuth({ provider: "google", options: { redirectTo:
+  absoluteUrl("/signin") } })` — base-path aware, same account space as
+  email users. No SMS/Twilio, no per-use cost. (Owner: Twilio dropped — needs
+  payment.)
+- **Email-verification templates** shipped as paste-ready deliverables in
+  `supabase/email-templates.md`: "Confirm signup" + "Magic link", fully
+  self-contained (email clients block external CSS/images/fonts), both using
+  `{{ .ConfirmationURL }}` as the link plus `{{ .Token }}` as a 6-digit
+  fallback for mail scanners that prefetch links.
+- `supabase/README.md` documents the Google provider + redirect setup.
+
+### Verified
+- tsc clean, tests 82/58/91, static export compiles (empty-secret condition);
+  headless smoke: Google button + "or" divider render alongside the existing
+  magic-link/password tabs, create-account intact, 0 console errors.
+- Provider-side behaviour (Google consent, template delivery) unverifiable
+  here — sandbox cannot reach Google or supabase.co.
+
 ## [0.21.1] — 2026-09-23
 
 ### Fixed — the email-verification loop now closes

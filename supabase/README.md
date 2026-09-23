@@ -49,6 +49,36 @@ Repository secrets) if they are not already:
 
 For local dev, copy them into `.env.local` (already git-ignored).
 
+## Google Sign-In (free, no SMS provider)
+
+The `/signin` button is already wired in the code; it just needs the
+provider on in Supabase and its callback URL whitelisted.
+
+1. **Google Cloud Console → Credentials → OAuth 2.0 Client ID**
+   (type *Web application*). In *Authorised redirect URIs* add the Supabase
+   callback exactly:
+   ```
+   https://hbimqkdirfvmhitkuiqe.supabase.co/auth/v1/callback
+   ```
+   → Create (you can skip the OAuth consent-screen branding for now; use
+   *External*, add your email as a test user).
+2. **Supabase → Authentication → Providers → Google → enable**, and paste
+   the **Client ID** and **Client secret** from the step above.
+3. **Authentication → URL Configuration → Redirect URLs** must already contain
+   `https://thecyberexpert123-stack.github.io/3Dwebsite/**` — that is where
+   the browser comes back after Google approves (the client sends
+   `redirectTo: …/signin`).
+
+That's it — no server code, no per-SMS cost. Google accounts that sign up
+are automatically email-verified by Google itself.
+
+## Email templates
+
+The "Confirm signup" and "Magic link" emails are unbranded by default. Two
+paste-ready Whimlet templates (pastel, fully self-contained) live in
+[`email-templates.md`](email-templates.md). Both include a 6-digit fallback
+code for mail scanners that prefetch links.
+
 ## Passwords — how they are stored
 
 The site never stores passwords at all. Both sign-up and sign-in go through
