@@ -1,0 +1,300 @@
+================================================================================
+ WHIMLET  —  PRODUCTION CHECKLIST & LAUNCH RUNBOOK
+================================================================================
+ Written: 23 September 2026     ·     Repo: thecyberexpert123-stack/3Dwebsite
+ Branch:  arena/01a0bf4f-3dwebsite   (HEAD v0.24.0 — 811f8e0)
+ Status:  CI ✔   ·   Deploy to GitHub Pages ✔   ·   NOT merged to main (on purpose)
+
+ This file is the single source of truth for everything between "the site is
+ built" and "the site is live as a business". It is honest: nothing here is
+ promised working unless it was actually verified.
+
+--------------------------------------------------------------------------------
+ 1. THE 20-SECOND VERDICT
+--------------------------------------------------------------------------------
+   Soft-launch ready : YES. Real customers can sign up, save up to 5 designs,
+                       and order over WhatsApp TODAY.
+   Fully production   : NOT YET. Three things stand in the way (Section 3).
+                        None of them is a code bug. Two are decisions/budget;
+                        one is a Google platform rule that only a domain you
+                        OWN can remove.
+
+--------------------------------------------------------------------------------
+ 2. WHAT IS ALREADY DONE (verified)
+--------------------------------------------------------------------------------
+ [x] Marketing site — responsive, runs on Android like desktop, PWA installable
+ [x] 3D studio + maker — custom design tooling, base-path aware on Pages
+ [x] Sign-in — email + password (email verification ON), magic link,
+     "use a 6-digit code instead" fallback, Google sign-in button
+ [x] Accounts — ≤5 saved designs (enforced twice: client + DB RLS trigger)
+ [x] Admin panel — phone-first, editable catalog/testimonials, viewer
+ [x] Security — Supabase RLS everywhere; publishable-only key; CSP + security
+     headers; no secret/service key anywhere in the repo
+ [x] Docs — /privacy, /terms, sitemap, robots, app logo (npm run icons)
+ [x] Supabase schema — supabase/schema.sql (idempotent, re-runnable)
+ [x] Email — branded templates saved by you in Supabase, flow tested working
+ [x] Google OAuth consent screen — filled + PUBLISHED to production by you,
+     non-sensitive scopes only (openid, email, profile)
+ [x] Two admins granted: thecyberexpert123@gmail.com + legitanusuya@gmail.com
+ [x] CI/CD — GitHub Actions builds, tests, and deploys on every push
+
+--------------------------------------------------------------------------------
+ 3. THE THREE REAL BLOCKERS
+--------------------------------------------------------------------------------
+ (A) Google sign-in cap. The "Continue with Google" button is limited to
+     ~100 distinct users because the app is UNVERIFIED, and it can never be
+     verified while it lives on a domain you don't own.
+         github.io   → owned by GitHub (shared public suffix) — unverifiable
+         work.gd     → owned by DNSExit (free subdomain)       — unverifiable
+     Fix = own a domain + verify it in Google Search Console (Section 5).
+     Note: this cap ONLY affects the Google button. Email sign-in (magic link
+     or password) is Supabase's own system and has NO such cap.
+
+ (B) Supabase free tier auto-pause + no backups (Section 6). Sign-in can go
+     silently dead after 7 days of API inactivity, and there is no backup of
+     accounts/saved designs unless you enable one.
+
+ (C) Business content still partly placeholder (Section 7): AI product shots,
+     sample testimonials, and legal wording that needs your real returns/
+     delivery decisions.
+
+--------------------------------------------------------------------------------
+ 4. YOUR DOMAIN — THE ONLY UNAVOIDABLE SPEND
+--------------------------------------------------------------------------------
+ Reality (researched, 2026): a genuinely FREE "real" domain with no limits and
+ no expiry does not exist for anyone. ICANN charges a mandatory annual fee per
+ domain; Freenom (the famous .tk/.ml free registrar) was shut down over
+ abuse. Every "free forever" domain today is a subdomain on someone else's
+ property that can be revoked or capped (your work.gd is exactly this).
+
+ What you own right now, free forever with no expiry:
+     https://thecyberexpert123-stack.github.io/3Dwebsite/   ← the real home
+ Hosting is permanently solved (GitHub Pages). You are only ever paying for
+ the NAME string.
+
+ Realistic cost (renewal price is what matters):
+     Cloudflare Registrar   — at-cost; cheap TLDs ~₹250–300/yr, .com ~₹900/yr
+     .in from Indian registry paths — roughly ₹500–900/yr
+     Namecheap / Porkbun / GoDaddy promos — first year cheap, renewal higher
+
+ Recommendation: buy a real domain (e.g. whimlet.in, whimlet.com) and point it
+ at GitHub Pages. Everything else in your stack can stay free forever.
+
+--------------------------------------------------------------------------------
+ 5. REMOVING BLOCKER (A): MAKE GOOGLE VERIFY YOUR APP
+--------------------------------------------------------------------------------
+ Once you own a domain, the road is mechanical. Mark each box as done.
+
+ [ ] 5.1  Buy the domain at the registrar of your choice.
+ [ ] 5.2  In GitHub: repo Settings → Pages → Custom domain → type the domain.
+          (This writes/needs a CNAME record — see next step.)
+ [ ] 5.3  In your registrar's DNS panel add:
+              CNAME  whimlet.<tld>  →  thecyberexpert123-stack.github.io
+          (or, if it insists on A records, the 4 GitHub Pages IPs below, but
+           CNAME is preferred for a subdomain.) Do NOT use www unless you want
+           the site on www.whimlet.<tld>.
+ [ ] 5.4  GitHub Pages → re-check "Enforce HTTPS" and wait for the cert
+          (usually a few minutes).
+ [ ] 5.5  Google Search Console → add the domain → verify via DNS TXT record
+          (your registrar gives it to you; paste it as a TXT record). This is
+          THE step that lets Google verify you. No free subdomain can do this.
+ [ ] 5.6  Google Cloud Console → OAuth consent screen → swap all URLs to
+          https://whimlet.<tld>/..., add whimlet.<tld> to Authorized domains.
+              Home page            https://whimlet.<tld>/
+              Privacy policy       https://whimlet.<tld>/privacy/
+              Terms of service     https://whimlet.<tld>/terms/
+ [ ] 5.7  (If asked) Submit the app for brand verification — with non-sensitive
+          scopes there is NO paid CASA security review; this is just the
+          domain/brand check.
+ [ ] 5.8  Supabase → Authentication → URL Configuration → Redirect URLs: add
+              https://whimlet.<tld>/**
+ [ ] 5.9  Supabase → Authentication → Providers → Google → confirm the client
+          and callback remain correct; the browser returns to
+          https://whimlet.<tld>/signin.
+ [ ] 5.10 Tell the agent the final domain. Code-side, the agent then:
+              - sets NEXT_PUBLIC_BASE_PATH="" and
+                NEXT_PUBLIC_SITE_URL=https://whimlet.<tld> in
+                .github/workflows/deploy-pages.yml
+              - adds the CNAME file for GitHub Pages
+              - re-checks canonical URLs, sitemap, robots, OpenGraph
+          (These are build-time values — they cannot be changed by you in a
+           dashboard; they are code changes on the branch.)
+
+ Result: consent screen shows with NO warning; the ~100-user cap disappears;
+ the "unverified app" banner goes away.
+
+--------------------------------------------------------------------------------
+ 6. REMOVING BLOCKER (B): SUPABASE TIER DECISION
+--------------------------------------------------------------------------------
+ Facts about the FREE tier (current, 2026):
+   - 500 MB Postgres, 1 GB file storage, 5 GB egress, 50k monthly active users
+   - 2 active projects
+   - AUTO-PAUSES after 7 days of API inactivity. GitHub Pages traffic does NOT
+     wake it (Supabase only sees auth/data calls). Symptom: sign-in suddenly
+     errors after a quiet week.
+   - NO automated backups / point-in-time recovery.
+   - Built-in mailer: ~2 emails/hour, unbranded, limited template editing.
+
+ Decision table:
+   STAY FREE                         → cost ₹0. Accept the pause + no backups.
+                                       Adopt the weekly hygiene habit below.
+   SUPABASE PRO (~USD 25/month)      → always-on (no pause), automated daily
+                                       backups + PITR. (If you upgrade, do it
+                                       within 7 days of a pause to reclaim the
+                                       data.) Recommended for a real store.
+
+ Weekly hygiene if you STAY FREE (5 minutes):
+   [ ] Open https://supabase.com/dashboard → your project.
+   [ ] If it shows PAUSED, click Restore and wait ~2 minutes.
+   [ ] If you upgraded to Pro later, this habit becomes unnecessary.
+
+ Email delivery — do this regardless of tier:
+   [ ] Confirm Brevo custom SMTP is actually ENABLED in Supabase →
+       Authentication → Emails → SMTP (you followed supabase/README.md).
+       Values: host smtp-relay.brevo.com, port 587, username = your SMTP Login,
+       password = the generated SMTP key (shown once), sender = verified.
+       This removes the 2-emails/hour ceiling that would otherwise silently
+       drop verification emails on a busy day.
+
+--------------------------------------------------------------------------------
+ 7. REMOVING BLOCKER (C): BUSINESS CONTENT
+--------------------------------------------------------------------------------
+ [ ] Replace AI placeholder product photos in public/images/products/ with real
+     photography (keep filenames, or update paths in src/data/products.ts).
+ [ ] Replace the sample testimonials with real customer quotes (or remove until
+     you have them — never invent testimonials).
+ [ ] Source real Instagram/Pinterest/Facebook handles and update
+     src/data/site.ts (socialPlaceholders) — they are "coming soon" now.
+ [ ] Decide your REAL returns / refund / delivery policy and tighten /privacy
+     and /terms accordingly. Current pages are honest but say "we'll confirm in
+     chat". Fine for soft launch; firm it up before real marketing.
+ [ ] Optional: whitepaper? No — not needed. Skip.
+
+--------------------------------------------------------------------------------
+ 8. HOSTING / DEPLOY MODEL (how this site actually runs)
+--------------------------------------------------------------------------------
+   Hosting: GitHub Pages — served from a STATIC EXPORT (out/ folder) produced
+   by .github/workflows/deploy-pages.yml on every push to
+   arena/01a0bf4f-3dwebsite (and to main after merge).
+
+   Because it is a project Pages site, the app lives under /3Dwebsite/ and the
+   build is configured with:
+       NEXT_PUBLIC_BASE_PATH = /3Dwebsite
+       NEXT_PUBLIC_SITE_URL  = https://thecyberexpert123-stack.github.io
+   Everything base-path-aware was built to respect those. When you move to a
+   custom domain, basePath becomes "" (see 5.10).
+
+   The app ALSO builds in two other shapes when needed (see next.config.ts):
+       - Node (npm run build && next start)                    for local dev
+       - Standalone engine (NEXT_STANDALONE=1)                 for a VPS later
+   You do not need either today. Pages is free and permanent.
+
+   Deploying a change: normal git push to the branch → CI runs tests → Pages
+   deploys. No manual steps. Do NOT merge to main until you say so.
+
+--------------------------------------------------------------------------------
+ 9. SIGN-IN AND DATA — THE COMPLETE PICTURE (how it works)
+--------------------------------------------------------------------------------
+   Ways a customer can get in:
+     1. Email + password     (Supabase hashes it — bcrypt — never stored by us)
+     2. Magic link           (emailed link; lands on /signin)
+     3. 6-digit code         (typed manually — survives corporate link-prefetch)
+     4. Google button        (works today; capped at ~100 until Section 5)
+
+   Password sign-up REQUIRES email verification (Supabase "Confirm email" is
+   ON). No session is issued until the address is confirmed.
+
+   Redirect targets (already correct in code):
+     - OTP / sign-up confirm  →  emailRedirectTo: absoluteUrl("/signin")
+     - Google                 →  redirectTo: absoluteUrl("/signin")
+
+   Data stored (Supabase): profiles, saved_designs (max 5/user), orders,
+   order_items, leads, testimonials, products. Every table is RLS-protected:
+   a customer can only ever read/write their own rows; admin functions
+   re-check the admin claim inside the database (SECURITY DEFINER).
+
+--------------------------------------------------------------------------------
+ 10. ADMIN RUNBOOK (keep this somewhere safe)
+--------------------------------------------------------------------------------
+   The model: there are NO separate admin credentials. "Admin" is a claim on a
+   normal Supabase Auth account. The boundary is the DATABASE (RLS), not the
+   UI. A customer who guesses /admin is refused by the database even if the
+   page paints.
+
+   Add a new admin (the agent cannot reach your project — you run this):
+     1. Have the person sign in once at /signin (creates + verifies account).
+     2. In Supabase → SQL Editor run, with their exact email:
+            update auth.users
+               set raw_app_meta_data = raw_app_meta_data || '{"user_role": "admin"}'
+             where email = 'legitanusuya@gmail.com';
+     3. They sign out and back in → menu shows "Admin", /admin opens.
+
+   Remove an admin: set user_role back to customer (or null):
+            update auth.users
+               set raw_app_meta_data = raw_app_meta_data - 'user_role'
+             where email = 'someone@gmail.com';
+
+   Hidden door (bookmark it, never link it publicly):
+            https://thecyberexpert123-stack.github.io/3Dwebsite/owner
+     It is unlisted, noindex, robots-disallowed. Its secrecy is discretion,
+     not security — the lock is the claim + RLS.
+
+   Current admins:
+     [x] thecyberexpert123@gmail.com   (owner)
+     [x] legitanusuya@gmail.com        (2nd admin — added per owner request)
+
+--------------------------------------------------------------------------------
+ 11. CONTACTS & CREDENTIALS SUMMARY
+--------------------------------------------------------------------------------
+   Support / privacy / terms email : thecyberexpert123@gmail.com
+                                     (site.email in src/data/site.ts)
+   Second admin                   : legitanusuya@gmail.com
+   Business phone / WhatsApp      : +91 74397 48279  (wa.me/917439748279)
+   Region                         : Kolkata, West Bengal, India (governing law)
+   Supabase project URL           : https://hbimqkdirfvmhitkuiqe.supabase.co
+   Supabase publishable key       : sb_publishable_C8nLv5qLVlXWMeJO2i7t_w_ix29PZ3a
+                                    (public by design — safe to ship)
+   NEVER put in the repo or chat : Supabase service/secret key, SMTP keys,
+                                    Google client secret. Publishable only.
+
+--------------------------------------------------------------------------------
+ 12. KNOWN LIMITS & EXPECTED BEHAVIOUR (so nothing surprises you later)
+--------------------------------------------------------------------------------
+   - Supabase pauses after 7 quiet days (Section 6).
+   - Built-in Supabase mail ≈2/hour unless Brevo SMTP is ON.
+   - github.io and work.gd can never be Google-verified (Section 3A).
+   - work.gd is only valid 1 year (DNSExit free subdomain); it
+     currently points at an IP serving nothing — use it only as a redirect if
+     at all. Do not build identity on it.
+   - Google unverified-app banner reappears every ~100 new users until
+     Section 5 is done.
+   - Gmail-only tools that can't host this site: Weebly/Wix are drag-and-drop
+     builders; they cannot run a compiled Next.js + Three.js app.
+
+--------------------------------------------------------------------------------
+ 13. HOW TO RELEASE / DON'T-FORGET LIST
+--------------------------------------------------------------------------------
+   [ ] Decide: stay on free Supabase vs Pro (Section 6).
+   [ ] Decide: buy a domain now, or at first ~100 Google sign-ins (Section 5).
+   [ ] Replace placeholder imagery + testimonials (Section 7).
+   [ ] Final legal wording pass (Section 7).
+   [ ] THEN, and only then, merge arena/01a0bf4f-3dwebsite → main
+       (DO NOT merge without the owner's go-ahead — that is a standing rule).
+   [ ] After merge, the workflow deploys main automatically. Optionally remove
+       the arena branch from the deploy-on-push list in the workflow.
+
+--------------------------------------------------------------------------------
+ 14. RECENT VERSIONS (for context)
+--------------------------------------------------------------------------------
+   0.24.0  app logo + /privacy + /terms (Google publish unblocked)
+   0.23.3  6-digit "use a code instead" fallback on /signin
+   0.23.2  fix admin role read (app_metadata.user_role in the JWT)
+   0.23.1  hidden /owner door + robots/sitemap/noindex
+   0.23.0  admin panel rebuilt phone-first
+   0.22.x  Google sign-in button, branded email templates, sign-out, fixes
+   0.21.0  email+password auth with verification (Supabase-hashed)
+   0.20.0  Supabase auth + accounts (≤5 designs) + first admin panel + RLS
+
+================================================================================
+ END OF CHECKLIST. Keep this file in the repo; update its dates as tasks land.
+================================================================================
