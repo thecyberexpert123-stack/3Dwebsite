@@ -2,6 +2,25 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.22.2] — 2026-09-23
+
+### Added — a visible sign-out everywhere a session is shown
+
+- **Navbar** (desktop + full-screen mobile menu) now shows a **Sign out**
+  button beside "My designs" / "Admin" when signed in; it clears the
+  Supabase session and, on `/account` or `/admin`, returns to the home page
+  (those routes redirect a signed-out visitor anyway).
+- **`/signin`** signed-in panel now also offers **Sign out** next to
+  "My designs" and "Back to Whimlet" — the session can be ended right from
+  the page that created it.
+
+### Verified
+
+- `tsc` clean, tests 91/91, `build:pages` static export compiles (all
+  routes prerendered). The sign-out itself calls `supabase.auth.signOut()`
+  (already in the shared `AuthProvider`) — the same trusted primitive used
+  by the account page.
+
 ## [0.22.1] — 2026-09-23
 
 ### Security — the admin overview RPC now re-checks the role itself

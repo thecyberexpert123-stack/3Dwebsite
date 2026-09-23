@@ -19,7 +19,7 @@ import { useAuth } from "./AuthProvider";
  * database re-checks it on every row, so this UI is only a gate painting.
  */
 export function SignIn() {
-  const { loading, user, role, signInWithOtp, signInWithPassword, signUpWithPassword, signInWithGoogle } = useAuth();
+  const { loading, user, role, signInWithOtp, signInWithPassword, signUpWithPassword, signInWithGoogle, signOut } = useAuth();
   const router = useRouter();
 
   const [mode, setMode] = useState<"in" | "up">("in");
@@ -102,6 +102,9 @@ export function SignIn() {
           </button>
           <button type="button" onClick={() => router.push("/")} className="btn btn-outline btn-md">
             Back to Whimlet
+          </button>
+          <button type="button" onClick={() => signOut().then(() => router.replace("/"))} className="btn btn-outline btn-md">
+            Sign out
           </button>
         </div>
       </div>

@@ -19,7 +19,15 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const lastY = useRef(0);
   const { scrollYProgress } = useScroll();
-  const { user, role } = useAuth();
+  const { user, role, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    if (window.location.pathname.includes("/account") || window.location.pathname.includes("/admin")) {
+      window.location.href = "/";
+    }
+    setOpen(false);
+  };
 
   useEffect(() => {
     const onScroll = () => {
@@ -95,9 +103,14 @@ export function Navbar() {
             </a>
 
             {user ? (
-              <Link href={role === "admin" ? "/admin" : "/account"} className="btn btn-glass btn-sm hidden sm:inline-flex" aria-label={role === "admin" ? "Admin panel" : "My account"}>
-                {role === "admin" ? "Admin" : "My designs"}
-              </Link>
+              <>
+                <Link href={role === "admin" ? "/admin" : "/account"} className="btn btn-glass btn-sm hidden sm:inline-flex" aria-label={role === "admin" ? "Admin panel" : "My account"}>
+                  {role === "admin" ? "Admin" : "My designs"}
+                </Link>
+                <button type="button" onClick={handleSignOut} className="btn btn-outline btn-sm hidden sm:inline-flex">
+                  Sign out
+                </button>
+              </>
             ) : (
               <Link href="/signin" className="btn btn-glass btn-sm hidden sm:inline-flex">
                 Sign in
@@ -190,9 +203,14 @@ export function Navbar() {
                   <PhoneDoodle className="h-4 w-4 text-rose-ink" /> {PHONE_DISPLAY}
                 </a>
                 {user ? (
-                  <Link href={role === "admin" ? "/admin" : "/account"} className="btn btn-glass btn-md" onClick={() => setOpen(false)}>
-                    {role === "admin" ? "Admin panel" : "My designs"}
-                  </Link>
+                  <>
+                    <Link href={role === "admin" ? "/admin" : "/account"} className="btn btn-glass btn-md" onClick={() => setOpen(false)}>
+                      {role === "admin" ? "Admin panel" : "My designs"}
+                    </Link>
+                    <button type="button" onClick={handleSignOut} className="btn btn-outline btn-md">
+                      Sign out
+                    </button>
+                  </>
                 ) : (
                   <Link href="/signin" className="btn btn-glass btn-md" onClick={() => setOpen(false)}>
                     Sign in
