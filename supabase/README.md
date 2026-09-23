@@ -76,8 +76,10 @@ are automatically email-verified by Google itself.
 
 The "Confirm signup" and "Magic link" emails are unbranded by default. Two
 paste-ready Whimlet templates (pastel, fully self-contained) live in
-[`email-templates.md`](email-templates.md). Both include a 6-digit fallback
-code for mail scanners that prefetch links.
+[`email-templates.md`](email-templates.md). Each has a clickable button plus a
+plain-text link fallback. A "use a 6-digit code instead" entry box on
+`/signin` (for scanners that prefetch and consume email links) is the next
+auth step — the templates deliberately don't promise it until it exists.
 
 ## Security model (why admin data stays admin-only)
 
