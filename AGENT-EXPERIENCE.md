@@ -859,6 +859,18 @@ telling the sandbox it "verified" what it cannot reach.
   router targets in `withBasePath()` (double-prefix); raw `<a href>` to your
   own routes *does* need it.
 
+**Gotcha (deploy, real and root-caused).** An *unset* GitHub Actions
+secret referenced in an `env:` block reaches the build as `""` — and empty
+string is NOT nullish, so `process.env.X ?? default` does not fall back. That
+broke `output: "export"` with a `URL constructor` throw from
+`createClient("", "")` during prerender — while CI passed, because CI never
+set the var (a genuinely-undefined env DOES fall back). Fix layered twice:
+(1) the app reads `envUrl && envUrl.length > 0 ? envUrl : default` (immune to
+how secrets resolve), and (2) the workflow gates secrets with
+`${{ secrets.X && format('{0}', secrets.X) }}`. Lesson: treat empty-string
+and absent as synonyms for any build-time env read, not just the undefined
+case.
+
 **Confidence.** High on struct/types/patterns (spec + tsc + lockfile). The
 live round-trip is UNVERIFIED here — sandbox cannot reach `*.supabase.co`
 (blocked), so I documented an on-device smoke list and said so explicitly
