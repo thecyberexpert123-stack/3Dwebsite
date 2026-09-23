@@ -96,7 +96,12 @@ Pointing auth at a real SMTP provider fixes both.
    (Note: these settings menus are under the top-right account menu, NOT the
    left sidebar; the left "Transactional" item is for campaigns/logs.)
 2. **Brevo, top-right menu → Settings → SMTP & API → SMTP tab**: note the
-   *server*, *port*, *Login* and *Master password (SMTP key)* shown there.
+   *server*, *port* and *Login*. The password is NOT shown by default —
+   click **Generate a new SMTP key** (name e.g. `Supabase`, variant
+   **Standard**, expiry **No expiration**), then **copy the full key
+   immediately** — it is displayed exactly once and only the last digits
+   remain visible afterwards (lost key ⇒ generate a new one and update
+   Supabase).
 3. **Supabase → Authentication → Emails → SMTP settings → Enable custom
    SMTP**, then:
 
