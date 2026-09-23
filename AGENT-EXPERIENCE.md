@@ -857,8 +857,59 @@ A mis-configuration fails earlier with a Supabase "provider not enabled" or a
 Google `redirect_uri_mismatch`. That probe is a useful non-invasive smoke:
 it needs no credentials and no secret key.
 
-## v0.22.1 — SECURITY DEFINER bypasses RLS: re-check the role INSIDE the function
+## v0.23.0 — an admin table is a card on a phone; a native select beats a custom one
 
+**Problem.** "Make the admin panel work on phones." The existing panel was a
+desktop table (`<table>`), so on a 390 px screen the orders/catalog rows
+overflowed and forced a two-thumb pinch; the six section tabs wrapped into
+2–3 crowded rows; and the (recently added) Sign out lived only in a header
+that scrolled away. None of it was *broken* on desktop — it was simply
+untranslated for touch.
+
+**Findings (mechanism, reusable).**
+- **One tablist, two presentations.** `overflow-x-auto` + `shrink-0` +
+  `whitespace-nowrap` turns a wrap-into-a-cube of chips into a native
+  momentum scroll rail on mobile, while `md:flex-wrap md:overflow-visible`
+  restores the desktop pill cloud — same elements, no fork. The site's
+  existing `no-scrollbar` utility hides the bar; on a phone a visible
+  scrollbar is worse than none here.
+- **Tables are the desktop idiom; lists of cards are the both-idiom.** Every
+  admin row became a stacking card with a full-width control, so content
+  reflows instead of shrinking. The value stays the same on desktop (cards in
+  a grid), which is *less* code than a responsive `<table>` and better on
+  every width.
+- **Native `<select>`/`<input inputMode>` beat custom pickers.** The status
+  dropdown uses the OS picker (thumb-sized, keyboard-openable); the price and
+  stock fields use `inputMode="decimal|numeric"` so the phone raises the
+  number pad. Custom menus inline in a scrollable card fight the page scroll
+  on touch — this project's repeated lesson (dual scroll capture).
+- **Edit-on-blur inputs with `key={id}-{field}-{value}`** let a row own its
+  display value while typing (no re-render clobber) and commit on blur with
+  an empty-string⇒NULL convention — no submit button, no optimistic-state
+  bookkeeping.
+- **Data loading collapses to one hook.** `useAdminRows<T>(table, orderBy)`
+  folds "null while loading / rows when ready / error string when failed"
+  into one shape, feeding shimmer skeletons and a *Retry* note. The previous
+  panels permanently rendered "…" on any failure (the sandbox can't reach
+  Supabase, so it was *always* failing here — the failure path matters).
+- **Unicode glyphs are still not icons** (v0.13.0 again): the `▾` chevron
+  used to hint a select is absent from Quicksand/Caveat's Latin subsets —
+  an inline SVG filled that beat, not a font-dependent character.
+
+**Verification trick.** The panel is role-gated, but you can *paint* it in
+headless without Supabase by pre-seeding `localStorage["sb-<ref>-auth-token"]`
+with a synthetically-valid admin session (a `user.app_metadata.user_role`
+claim is enough for the client check) *before* the page loads. Data calls
+then fail (no network) → which is exactly the Retry path you want to assert.
+Result: both viewports rendered all six tabs, the rail scrolled on mobile and
+wrapped on desktop, Sign out was present, no horizontal overflow, 0 page
+errors.
+
+**Confidence.** High on structure/layout (headless, two viewports). Live
+data (rows, Realtime, writes) remains an owner-device check — RLS is the
+authorization boundary and the sandbox cannot reach `*.supabase.co`.
+
+## v0.22.1 — SECURITY DEFINER bypasses RLS: re-check the role INSIDE the function
 **Problem.** `admin_overview_v1()` is `SECURITY DEFINER`, so its body runs with
 the function owner's rights and the table-level RLS policies do **not** apply
 to what it reads. Its only gate was `grant execute … to authenticated` +

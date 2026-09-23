@@ -2,6 +2,44 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.23.0] — 2026-09-23
+
+### Changed — the admin panel rebuilt phone-first, without losing the desktop
+
+The Yarn Room (`/admin`) is now genuinely usable on a phone instead of
+being a shrunken desktop: the same sections, reflowed rather than cut.
+
+- **Tabs stop wrapping into a tall stack.** On mobile the six sections are
+  a horizontally scrollable rail (native momentum, `no-scrollbar`); on
+  desktop they wrap as before — one tablist, one of each per breakpoint.
+- **Tables are gone — cards everywhere.** Orders, messages and catalog
+  become stacking cards, so nothing forces a two-thumb pinch/pan on a
+  390 px screen. Order/message rows keep their native **status `<select>`**
+  (the OS picker, tinted per status), phone numbers are tap-to-call, and
+  desktop still sees the richer date/email/nav chrome.
+- **The header is sticky on touch** so *Sign out* is never a scroll away
+  (the recent sign-out addition reaches the panel properly on a phone).
+- **Catalog is actually editable now.** Price (whole ₹ → `price_cents`)
+  and stock are inline number fields (numeric keypad, empty = clear).
+- **Live price formatting** for revenue (₹, `en-IN`) instead of a raw
+  "¢" figure, and an "Unread messages" stat in the overview.
+- **Honest loading/error/empty states** — shimmer skeletons while loading,
+  a "Couldn't load … Retry" note when the backend is unreachable (the
+  panel used to render a permanent "…"), and specific empty copy per tab.
+- Accessibility: tablist `role`/`aria-selected`/`aria-controls`, labelled
+  section landmarks, `aria-pressed` toggles, `sr-only` select labels, and
+  a UTF-8 font glyph (▾) swapped for an inline SVG chevron.
+
+### Verified
+
+- `tsc` clean, tests 91/91, Node build + Pages export both compile.
+- Headless Chromium at 390×844 (touch) and 1440×900: title + all six tabs
+  render, the tab rail scrolls on mobile and wraps on desktop, Sign out is
+  present, zero horizontal page overflow, and a (sandbox-blocked) fetch
+  renders the Retry state instead of a crash — **0 page errors** in both
+  viewports. Live Supabase data still needs the owner's device (RLS is the
+  boundary, not the build machine).
+
 ## [0.22.2] — 2026-09-23
 
 ### Added — a visible sign-out everywhere a session is shown
