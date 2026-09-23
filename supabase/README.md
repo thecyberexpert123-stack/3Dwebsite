@@ -79,6 +79,17 @@ paste-ready Whimlet templates (pastel, fully self-contained) live in
 [`email-templates.md`](email-templates.md). Both include a 6-digit fallback
 code for mail scanners that prefetch links.
 
+## Security model (why admin data stays admin-only)
+
+- Every table is guarded by **RLS** policies keyed to `auth.uid()` /
+  `is_admin()`. The publishable key only reaches rows a policy allows.
+- `admin_overview_v1()` is **`SECURITY DEFINER`**, so it intentionally
+  bypasses RLS — that is exactly why its body re-checks `is_admin()` first
+  and raises for anyone else. `grant execute … to authenticated` only
+  decides who may *attempt* the call; the in-function guard decides who
+  may *succeed*. This is not redundant with RLS — a DEFINER function would
+  otherwise be readable by any signed-in user.
+
 ## Passwords — how they are stored
 
 The site never stores passwords at all. Both sign-up and sign-in go through

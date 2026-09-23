@@ -2,6 +2,28 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.22.1] — 2026-09-23
+
+### Security — the admin overview RPC now re-checks the role itself
+
+- `admin_overview_v1()` is `SECURITY DEFINER`, so its body ran with the
+  function owner's rights and **bypassed RLS**; its only gate was
+  `grant execute … to authenticated`, which controls *who may call*, not
+  *who may succeed* — any signed-in customer could have pulled every admin
+  aggregate. The function is now `plpgsql` (a SQL function has no
+  exception block) and its **first statement** raises unless
+  `is_admin()` is true. Documented in `supabase/README.md`. Re-run
+  `schema.sql` in the SQL editor to apply.
+
+### Verified
+
+- **Google Sign-In is live**: the owner completed the real Google consent +
+  sign-in on-device (the one step that cannot be exercised here), and the
+  `deploy-pages` run for `ad6aea4` (v0.22.0) succeeded. The provider config
+  was also probed unauthenticated via Supabase's `/auth/v1/authorize`
+  endpoint, which redirects to Google with the expected `client_id` +
+  callback — the signature of a correctly-wired provider.
+
 ## [0.1.0] — 2026-09-20
 
 Initial release. Full single-page boutique experience for Whimlet (handmade

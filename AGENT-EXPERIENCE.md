@@ -846,7 +846,42 @@ accounts arrive email-verified).
   → Client ID/secret; and the *app* redirect must be in URL Configuration.
 
 **Confidence.** High on the client mechanics (types + build + smoke); the
-Google consent + template delivery are owner-device steps, stated as such.
+Google consent + template delivery were owner-device steps — the owner has
+since completed the real Google sign-in on-device (confirmed 2026-09-23), so
+the OAuth round-trip is live. The provider config was also probed from here
+via `GET /auth/v1/authorize?provider=google`, which — for a correctly-wired
+project — redirects to Google with `client_id=…` and
+`redirect_uri=https://<ref>.supabase.co/auth/v1/callback`, and Google then
+shows its sign-in page (proving the redirect URI is on the approved list).
+A mis-configuration fails earlier with a Supabase "provider not enabled" or a
+Google `redirect_uri_mismatch`. That probe is a useful non-invasive smoke:
+it needs no credentials and no secret key.
+
+## v0.22.1 — SECURITY DEFINER bypasses RLS: re-check the role INSIDE the function
+
+**Problem.** `admin_overview_v1()` is `SECURITY DEFINER`, so its body runs with
+the function owner's rights and the table-level RLS policies do **not** apply
+to what it reads. Its only gate was `grant execute … to authenticated` +
+`revoke … from anon, public` — which decides *who may call*, not *who may
+succeed*. Any signed-in customer could have called it and received every
+admin aggregate in one JSON blob.
+
+**Mechanism (reusable).** A `SECURITY DEFINER` function must re-establish the
+authorization boundary itself, as its first statement — `if not
+is_admin() then raise exception … end if;`. This required flipping the
+function from `language sql` to `language plpgsql` (a SQL function has no
+`begin/exception` block). The `grant … to authenticated` stays: it is the
+outer gate, the in-body check is the inner one. **Rule:** `grant execute`
+controls the *attempt*; the function body controls the *outcome*. For
+authorization-relevant data you always need both when the function is
+DEFINER. (Contrast: `is_admin()` / `get_user_role()` are also DEFINER but
+reveal nothing sensitive — they read only the caller's own JWT, so they need
+no guard.)
+
+**Confidence.** High on the Postgres semantics (a DEFINER SQL function runs
+with definer rights and RLS is by-passed — that is documented PostgreSQL
+behaviour); the function was never live-run here (sandbox cannot reach
+`*.supabase.co`), so re-running `schema.sql` remains an owner step.
 
 ## v0.21.1 — a verification email is only good if the link lands somewhere real
 

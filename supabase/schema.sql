@@ -287,21 +287,34 @@ create policy "products: admins all" on public.products for all
   using (public.is_admin()) with check (public.is_admin());
 
 -- dashboard RPC (admins only — a single query for the overview) ---------------
+-- SECURITY DEFINER runs this with the function owner's rights, so it bypasses
+-- RLS. The table-level policies do NOT apply, which is why the very first
+-- statement re-checks the caller's claim: `grant execute to authenticated`
+-- below therefore only decides who may *try*, while `is_admin()` decides who
+-- may succeed. A signed-in customer calling this gets an error, not the counts.
 create or replace function public.admin_overview_v1()
-returns jsonb language sql stable security definer set search_path = public as $$
-  select jsonb_build_object(
-    'orders',        coalesce((select count(*) from public.orders), 0),
-    'orders_new',    coalesce((select count(*) from public.orders where status = 'new'), 0),
-    'orders_in_progress', coalesce((select count(*) from public.orders where status = 'in_progress'), 0),
-    'leads_new',     coalesce((select count(*) from public.leads where status = 'new'), 0),
-    'leads',         coalesce((select count(*) from public.leads), 0),
-    'customers',     coalesce((select count(*) from public.profiles where user_role = 'customer'), 0),
-    'designs',       coalesce((select count(*) from public.saved_designs), 0),
-    'testimonials',  coalesce((select count(*) from public.testimonials), 0),
-    'testimonials_pending', coalesce((select count(*) from public.testimonials where approved = false), 0),
-    'products',      coalesce((select count(*) from public.products where active), 0),
-    'revenue_cents', coalesce((select sum(total_cents) from public.orders where status in ('ready','done')), 0)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_admin() then
+    raise exception 'admin_overview_v1: admin role required';
+  end if;
+
+  return (
+    select jsonb_build_object(
+      'orders',        coalesce((select count(*) from public.orders), 0),
+      'orders_new',    coalesce((select count(*) from public.orders where status = 'new'), 0),
+      'orders_in_progress', coalesce((select count(*) from public.orders where status = 'in_progress'), 0),
+      'leads_new',     coalesce((select count(*) from public.leads where status = 'new'), 0),
+      'leads',         coalesce((select count(*) from public.leads), 0),
+      'customers',     coalesce((select count(*) from public.profiles where user_role = 'customer'), 0),
+      'designs',       coalesce((select count(*) from public.saved_designs), 0),
+      'testimonials',  coalesce((select count(*) from public.testimonials), 0),
+      'testimonials_pending', coalesce((select count(*) from public.testimonials where approved = false), 0),
+      'products',      coalesce((select count(*) from public.products where active), 0),
+      'revenue_cents', coalesce((select sum(total_cents) from public.orders where status in ('ready','done')), 0)
+    )
   );
+end;
 $$;
 
 revoke all on function public.admin_overview_v1() from anon, authenticated, public;
