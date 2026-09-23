@@ -36,6 +36,11 @@ jobs:
       NEXT_EXPORT: "1"
       NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
       NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io
+      # The site falls back to the committed project defaults for these, so
+      # they are optional. Set them as Actions secrets to point the public
+      # build at your Supabase project (the publishable key is safe to ship).
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
     steps:
       - name: Check out
         uses: actions/checkout@v4

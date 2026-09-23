@@ -819,6 +819,51 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.20.0 — auth + an admin panel on a static host: Supabase, and never localStorage "passwords"
+
+**Problem.** Owner wanted sign-in *and* a real admin panel, but the site is a
+static GitHub Pages export with no server. Three traps to avoid:
+(1) inventing client-side "auth" (a password string checked in JS —
+obfuscation, zero security); (2) hiding a secret key in `NEXT_PUBLIC_*`; (3)
+telling the sandbox it "verified" what it cannot reach.
+
+**Findings (research + evidence).**
+- A static site can only authenticate via a browser-callable service.
+  Supabase (free 50k MAU) is a good fit: the **publishable key is designed to
+  ship in the bundle** (it only reaches rows RLS allows; the *secret*
+  service-role key bypasses RLS and must never leave the server). Verified
+  against the advisory-db reality: anon/publishable are the same public
+  credential, protection = policies, not secrecy.
+- Clerk/Auth0 lock SSO behind paid plans; Auth.js/Better-Auth need a Node
+  server. Given Pages-only until the owner stands up the VPS engine, Supabase
+  is the only zero-server path. Escalation path exists (the VPS Caddyfile).
+- Gear/version facts: supabase-js 2.117.0 (0 CVEs on install);
+  `postgrest-js` now **requires `Relationships: []` on every table** in a
+  hand-written `Database` type or the whole client silently degrades to
+  `never` (found by tsc — this is why small generated-style types beat
+  `as any` casts).
+
+**Mechanism (reusable).**
+- Sessions: `supabase-js` in the browser with PKCE; "signed in" = a session;
+  an **admin** is a `user_role` claim inside `app_metadata`, mirrored into a
+  `profiles` table by an auth trigger. The client reads the role for UI only;
+  **RLS re-checks it on every query**, so claiming admin in the DOM does not.
+- The 5-design cap is a **trigger** (raise exception on insert when count
+  ≥ 5). Enforcing business invariants only in the client is theatre — the DB
+  is the one guarantee that survives a malicious client.
+- Mount a client `AuthProvider` **above** server `children` by wrapping the
+  children slot in a client component — this is the supported Next pattern
+  when a client context must reach every route without turning the root
+  layout client.
+- **basePath gotcha:** `next/router` is already basePath-aware — do NOT wrap
+  router targets in `withBasePath()` (double-prefix); raw `<a href>` to your
+  own routes *does* need it.
+
+**Confidence.** High on struct/types/patterns (spec + tsc + lockfile). The
+live round-trip is UNVERIFIED here — sandbox cannot reach `*.supabase.co`
+(blocked), so I documented an on-device smoke list and said so explicitly
+instead of claiming it works.
+
 ## v0.19.0 — "attack-proof" isn't a feature, it's a posture; scope it to the host
 
 **Problem.** Owner asked to make the site "attack proof" and add sign-in +

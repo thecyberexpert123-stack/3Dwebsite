@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { HeartTrail } from "@/components/HeartTrail";
 import { EngineProvider } from "@/lib/engine/EngineProvider";
 import { GlassDefs } from "@/components/GlassDefs";
@@ -155,7 +156,7 @@ export default function RootLayout({
         <meta name="referrer" content="strict-origin-when-cross-origin" />
       </head>
       <body className="gingham min-h-screen">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <HeartTrail />
         <GlassDefs />
         <EngineProvider />

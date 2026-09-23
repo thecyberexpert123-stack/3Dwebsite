@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useScroll } from "framer-motion";
 import { primaryNav, site } from "@/data/site";
 import { waLink, waMessages, PHONE_DISPLAY, PHONE_TEL } from "@/lib/whatsapp";
+import Link from "next/link";
 import { HeartDoodle, PhoneDoodle, WhatsAppGlyph } from "./Decorations";
 import { lockScroll, unlockScroll } from "@/lib/scroll";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 /**
  * Floating translucent navbar: compacts while scrolling down, expands when
@@ -17,6 +19,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const lastY = useRef(0);
   const { scrollYProgress } = useScroll();
+  const { user, role } = useAuth();
 
   useEffect(() => {
     const onScroll = () => {
@@ -90,6 +93,16 @@ export function Navbar() {
             >
               Order Now
             </a>
+
+            {user ? (
+              <Link href={role === "admin" ? "/admin" : "/account"} className="btn btn-glass btn-sm hidden sm:inline-flex" aria-label={role === "admin" ? "Admin panel" : "My account"}>
+                {role === "admin" ? "Admin" : "My designs"}
+              </Link>
+            ) : (
+              <Link href="/signin" className="btn btn-glass btn-sm hidden sm:inline-flex">
+                Sign in
+              </Link>
+            )}
 
             {/* hamburger */}
             <button
@@ -176,6 +189,15 @@ export function Navbar() {
                 <a href={`tel:${PHONE_TEL}`} className="flex items-center gap-2 text-sm font-semibold text-cocoa-soft">
                   <PhoneDoodle className="h-4 w-4 text-rose-ink" /> {PHONE_DISPLAY}
                 </a>
+                {user ? (
+                  <Link href={role === "admin" ? "/admin" : "/account"} className="btn btn-glass btn-md" onClick={() => setOpen(false)}>
+                    {role === "admin" ? "Admin panel" : "My designs"}
+                  </Link>
+                ) : (
+                  <Link href="/signin" className="btn btn-glass btn-md" onClick={() => setOpen(false)}>
+                    Sign in
+                  </Link>
+                )}
                 <p className="font-hand text-lg text-rose-ink">{site.closingPhrase}</p>
               </motion.div>
             </nav>

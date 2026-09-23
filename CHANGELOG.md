@@ -174,6 +174,50 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.20.0] — 2026-09-23
+
+### Added — customer accounts + a real admin panel (Supabase, free tier)
+
+The site stays fully static on GitHub Pages; Supabase supplies auth + a
+Postgres database from the browser, with security living in **Row Level
+Security** (see `supabase/schema.sql`), not in hiding a key.
+
+- **Sign-in (`/signin`)** — email magic link (the password tab ships
+  decorative; a real password flow needs the SMTP-endpoint service we gate
+  behind `NEXT_PUBLIC_AUTH_API_URL`). "Signed in" = a valid Supabase session;
+  the admin *role* is a `user_role` claim on the JWT, set once by SQL
+  (documented), and re-checked by RLS on every row — never trustable from
+  the client.
+- **Customer accounts (`/account`)** — saved designs as a shelf of ≤ 5 (open
+  back into the 3D studio, download a `.whimlet.json`, or delete to make
+  room; the studio gains a "‥ Save to my designs" button). The 5-cap is
+  enforced by a **database trigger** (`enforce_design_cap`) so no client can
+  exceed it; the friendly message comes from the client.
+- **Admin panel (`/admin`, "The Yarn Room")** — role-gated overview (orders
+  / messages / customers / revenue / pending reviews), WhatsApp **orders**
+  inbox with statuses, **messages** (leads) inbox, **catalog** (seed + tweak
+  products), **testimonials** (add + approve), and a read of customers'
+  saved designs. Live refresh via Postgres Changes (Realtime), falling back
+  gracefully.
+- **Navbar** gains a context-aware "Sign in" / "My designs" / "Admin" link
+  (desktop + mobile menu).
+- `output robots.txt` hides the private routes (`/admin /account /signin`).
+- Adds `@supabase/supabase-js` (2.117.0, audited: 0 vulnerabilities); the
+  expose-safe variables are `NEXT_PUBLIC_SUPABASE_URL` /
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` (repo defaults + optional Actions secrets
+  in `deploy-pages.yml`; a local `.env.local` is git-ignored).
+
+### Verified
+- `tsc` clean; domain tests 82/58/91; Node build + Pages static export both
+  compile (`/signin /account /admin` prerendered).
+- Headless smoke (SwiftShader, no sandbox network to supabase.co): `/signin`
+  renders; a signed-out `/account` and `/admin` redirect to `/signin`; the
+  home navbar shows "Sign in"; **0 console errors** on all four pages.
+- **Not verifiable here:** the live Supabase round-trip. The sandbox cannot
+  reach `*.supabase.co` (curl → 000), so auth/data goes through the user's
+  browser and must be smoke-tested on-device — that is by design (RLS is the
+  boundary, not the build machine). See the `supabase/README.md` 3-step setup.
+
 ## [0.19.0] — 2026-09-22
 
 ### Security — first hardening pass (see AGENT-EXPERIENCE v0.19.0)

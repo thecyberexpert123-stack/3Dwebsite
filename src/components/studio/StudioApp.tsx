@@ -13,6 +13,8 @@ import { BACKDROPS, DEFAULT_VIEW, type BackdropId, type StudioView } from "../th
 import { PANELS, Panel, countOptions, type PanelId } from "./OptionPanels";
 import { ColourChip } from "./controls";
 import { useDesign } from "./useDesign";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { MAX_SAVED_DESIGNS, saveDesign } from "@/lib/designs";
 
 const DesignScene = dynamic(() => import("../three/DesignScene"), { ssr: false, loading: () => <SceneLoading /> });
 
@@ -39,6 +41,7 @@ export function StudioApp() {
   const c = d.config;
   const webgl = useWebGL();
   const reduce = useReducedMotion();
+  const auth = useAuth();
   const [panel, setPanel] = useState<PanelId | null>("piece");
   const [drawing, setDrawing] = useState(false);
   const [view, setView] = useState<StudioView>({ ...DEFAULT_VIEW, autoRotate: true });
@@ -97,6 +100,15 @@ export function StudioApp() {
     setToast(m);
     setTimeout(() => setToast(null), 2400);
   }, []);
+
+  const saveToMyDesigns = useCallback(async () => {
+    if (!auth.user) {
+      say("Sign in to save designs (up to " + MAX_SAVED_DESIGNS + ") ♥");
+      return;
+    }
+    const r = await saveDesign(c, saveName);
+    say(r.ok ? "Saved to your designs ♥" : r.error);
+  }, [auth.user, c, saveName, say]);
 
   // the camera follows the open group
   const focus = useMemo(() => PANELS.find((p) => p.id === panel)?.focus ?? "all", [panel]);
@@ -437,6 +449,9 @@ export function StudioApp() {
             </label>
             <button type="button" onClick={() => { d.download(saveName); say("Saved your .whimlet.json ♥"); }} className="btn btn-glass btn-sm" title="Download a design file the maker can open">
               ⤓ Save file
+            </button>
+            <button type="button" onClick={saveToMyDesigns} className="btn btn-glass btn-sm" title="Save this design to your account (up to 5)">
+              ♥ Save to my designs
             </button>
             <button type="button" onClick={() => fileInput.current?.click()} className="btn btn-glass btn-sm" title="Open a .whimlet.json file (or drop it anywhere)">
               ⤒ Open
