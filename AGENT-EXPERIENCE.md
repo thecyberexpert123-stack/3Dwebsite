@@ -1479,3 +1479,40 @@ measured here (SwiftShader ≈ 10 fps, no real device).
 - **Canonical + basePath:** `metadata.alternates.canonical = absoluteUrl(p)` on
   the new pages emits `/3Dwebsite/privacy/` in Pages mode automatically —
   confirmed in the exported HTML.
+
+## v0.25.0 — customer order tracking + DB hardening
+
+- **The `GenericSchema` in the installed supabase-js (2.117.x) requires
+  `Relationships` on every *view* too**, not just tables — I'd carried forward
+  the older "Views: Record<string, never>" shape and added a view row without
+  `Relationships`, which silently collapsed the entire `Database` client type
+  to `never`. Symptom was a wall of `Argument of type '{ ... }' is not
+  assignable to parameter of type 'never'` across every `.from().insert()`.
+  Fix: give every `Views` entry a `Relationships: []` (and drop the now-
+  obsolete `Comments` key). Keep this when adding future views.
+- **Client side can't flip its own role even through a backdoor:** the
+  `profiles.user_role` column was client-updatable (a customer could set
+  themselves "admin" in the *table* — not as an RLS grant, but enough to
+  corrupt admin stats and mislead support). Frozen with a BEFORE UPDATE trigger
+  keyed on `current_user <> 'postgres'`: PostgREST always acts as
+  `authenticated`/`anon`, the `auth.users` sync trigger runs as `postgres`,
+  so "escrow" climbs in one direction and out the other.
+- **`security_invoker` views are the right customer-facing shape** for
+  "your own rows, safe columns": keep the RLS policy on the base table as the
+  single source of truth instead of re-writing predicates in the view body.
+  The `orders_status_history` view therefore lists only non-sensitive columns
+  (id/status/name/dates) and lets customers read their own linked orders.
+- **Bound free-text columns at the DB**, not just in forms (`leads.message`,
+  `saved_designs.config` size + `jsonb_typeof='object'`): a hostile client
+  speaks SQL against the anon key, not the UI. Additive `CHECK` constraints
+  are wrapped in a `do $$ ... information_schema` guard so `schema.sql` stays
+  idempotent — `ADD CONSTRAINT IF NOT EXISTS` is not always available.
+- **grants**: Postgres grants EXECUTE to PUBLIC by default on functions;
+  `revoke ... from public, anon` is the real fix — RLS policies and definer
+  bodies still call the helpers fine.
+- **Headless harness is gone between sessions**: the earlier Playwright
+  (installed under /home/user/pw and /tmp/chromium) was outside the snapshot
+  and didn't persist; verification here was: `tsc`, unit tests (91),
+  Pages export, and grepping the compiled bundles for the new surfaces +
+  serving `out/` over http for 200s. If a real click-through test is needed
+  again, re-install Playwright/chromium first.

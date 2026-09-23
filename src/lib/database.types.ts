@@ -56,10 +56,24 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Comments: Record<string, never>;
+    Views: {
+      orders_status_history: {
+        Row: { id: string; customer_id: string | null; status: string; customer_name: string | null; created_at: string; updated_at: string };
+        Relationships: [];
+      };
+    };
     Functions: {
       admin_overview_v1: { Args: Record<string, never>; Returns: Record<string, number> };
       is_admin: { Args: Record<string, never>; Returns: boolean };
+      create_order_from_chat: {
+        Args: { p_customer_email: string | null; p_customer_name: string | null; p_customer_phone: string | null; p_notes: string | null; p_total_cents: number | null };
+        Returns: { id: string; linked: boolean };
+      };
+      record_customer_order_v1: {
+        Args: { p_name: string; p_phone: string; p_notes: string };
+        Returns: { id: string };
+      };
     };
   };
 }

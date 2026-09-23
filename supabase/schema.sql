@@ -103,6 +103,29 @@ create trigger profiles_set_updated_at
   before update on public.profiles
   for each row execute function public.set_claimed_at();
 
+-- Hardening: clients may edit their own profile ROW, but never the columns
+-- that carry authorization or identity. `user_role` is the mirror of the JWT
+-- claim that RLS trusts (is_admin() reads the JWT, so a forged profile value
+-- never grants anything) — but letting a customer paint themselves "admin"
+-- in the table would corrupt admin lists/stats and mislead support. The
+-- database-only sync (public.handle_new_user, which runs as its OWNER
+-- `postgres`) is the ONLY writer allowed to touch these two columns; every
+-- PostgREST client runs as `authenticated`/`anon` and gets them preserved.
+create or replace function public.guard_profile_role()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if current_user <> 'postgres' then
+    new.user_role := old.user_role;
+    new.email := old.email;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists profiles_guard_role on public.profiles;
+create trigger profiles_guard_role
+  before update on public.profiles
+  for each row execute function public.guard_profile_role();
+
 -- saved_designs (customers: save up to 5 designs) -----------------------------
 create table if not exists public.saved_designs (
   id uuid primary key default gen_random_uuid(),
@@ -164,6 +187,30 @@ create trigger enforce_design_cap_trigger
   before insert on public.saved_designs
   for each row execute function public.enforce_design_cap();
 
+-- Hardening: a design's `config` must be a JSON object (never a bare scalar /
+-- array — the studio always writes an object) and is capped at 200 KB, so a
+-- hostile client can't bloat rows or smuggle non-design payloads through the
+-- save path. `name` is already capped at 60 chars in the column definition.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where constraint_name = 'saved_designs_config_object'
+      and table_schema = 'public' and table_name = 'saved_designs'
+  ) then
+    execute 'alter table public.saved_designs
+      add constraint saved_designs_config_object check (jsonb_typeof(config) = ''object'')';
+  end if;
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where constraint_name = 'saved_designs_config_size'
+      and table_schema = 'public' and table_name = 'saved_designs'
+  ) then
+    execute 'alter table public.saved_designs
+      add constraint saved_designs_config_size check (octet_length(config::text) <= 200000)';
+  end if;
+end $$;
+
 -- orders + items (WhatsApp orders mirrored by an admin) ----------------------
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
@@ -222,6 +269,88 @@ create trigger orders_set_updated_at
   before update on public.orders
   for each row execute function public.orders_set_updated();
 
+-- Admin helper: mirror a WhatsApp order onto the board, and — when the email
+-- matches a known account — LINK it to that customer so the customer can
+-- watch its status on /account. SECURITY DEFINER (needs to reach auth.users),
+-- so it re-checks the caller's own claim before touching anything. A forged
+-- caller cannot use it to attach rows they lack; the insert still lands in
+-- `orders`, which the caller only sees via the admin policy they had to pass.
+create or replace function public.create_order_from_chat(
+  p_customer_email text, p_customer_name text, p_customer_phone text,
+  p_notes text, p_total_cents integer
+) returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_customer_id uuid;
+  v_order_id uuid;
+begin
+  if not public.is_admin() then
+    raise exception 'create_order_from_chat: admin role required';
+  end if;
+
+  if p_customer_email is not null and btrim(p_customer_email) <> '' then
+    select id into v_customer_id
+      from auth.users
+     where email = lower(btrim(p_customer_email))
+     limit 1;
+  end if;
+
+  insert into public.orders (customer_id, customer_name, customer_phone, notes, source, total_cents)
+  values (
+    v_customer_id,
+    nullif(btrim(p_customer_name), ''),
+    nullif(btrim(p_customer_phone), ''),
+    nullif(btrim(p_notes), ''),
+    'whatsapp',
+    p_total_cents
+  )
+  returning id into v_order_id;
+
+  return jsonb_build_object('id', v_order_id, 'linked', v_customer_id is not null);
+end $$;
+
+revoke all on function public.create_order_from_chat(text, text, text, text, integer) from anon, authenticated, public;
+grant execute on function public.create_order_from_chat(text, text, text, text, integer) to authenticated;
+
+-- A signed-in CUSTOMER can mirror their own enquiry as an order. The
+-- authorization is written right here (SECURITY DEFINER would otherwise
+-- bypass RLS): only non-admin, authenticated callers may run it, and the row
+-- is stamped with THEIR uid. The row stays admin-scoped afterwards (customers
+-- can read it, never edit/delete it).
+create or replace function public.record_customer_order_v1(
+  p_name text, p_phone text, p_notes text
+) returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_id uuid;
+begin
+  if public.get_user_role() = 'admin' then
+    raise exception 'record_customer_order_v1: the shop owner records orders from the admin panel';
+  end if;
+  if auth.uid() is null then
+    raise exception 'record_customer_order_v1: sign in required';
+  end if;
+  insert into public.orders (customer_id, customer_name, customer_phone, notes, source)
+  values (
+    auth.uid(),
+    coalesce(nullif(btrim(p_name), ''), (select name from public.profiles where id = auth.uid()), 'Customer'),
+    nullif(btrim(p_phone), ''),
+    nullif(btrim(p_notes), ''),
+    'website'
+  )
+  returning id into v_id;
+  return jsonb_build_object('id', v_id);
+end $$;
+
+revoke all on function public.record_customer_order_v1(text, text, text) from anon, authenticated, public;
+grant execute on function public.record_customer_order_v1(text, text, text) to authenticated;
+
+-- Customer-facing pre-filtered order history (their own rows, safe columns).
+-- security_invoker keeps the underlying orders RLS policy authoritative.
+create or replace view public.orders_status_history
+with (security_invoker = on) as
+  select id, customer_id, status, customer_name,
+         created_at, updated_at
+    from public.orders;
+
 -- leads (customer messages) --------------------------------------------------
 create table if not exists public.leads (
   id uuid primary key default gen_random_uuid(),
@@ -245,6 +374,30 @@ create policy "leads: admins all" on public.leads for all
 drop policy if exists "leads: insert own (signed in)" on public.leads;
 create policy "leads: insert own (signed in)" on public.leads for insert
   with check (user_id = auth.uid());
+
+drop policy if exists "leads: select own (signed in)" on public.leads;
+create policy "leads: select own (signed in)" on public.leads for select
+  using (user_id = auth.uid());
+
+-- Hardening: bound the free-text fields so a hostile client can't stuff
+-- megabytes into a single enquiry row (name ≤ 80, message ≤ 4000).
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where constraint_name = 'leads_name_len'
+      and table_schema = 'public' and table_name = 'leads'
+  ) then
+    execute 'alter table public.leads add constraint leads_name_len check (char_length(name) between 1 and 80)';
+  end if;
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where constraint_name = 'leads_message_len'
+      and table_schema = 'public' and table_name = 'leads'
+  ) then
+    execute 'alter table public.leads add constraint leads_message_len check (message is null or char_length(message) <= 4000)';
+  end if;
+end $$;
 
 -- testimonials (site content; admin-managed) ----------------------------------
 create table if not exists public.testimonials (
@@ -332,7 +485,15 @@ grant select, insert, update, delete on public.profiles to authenticated;
 grant select, insert, update, delete on public.saved_designs to authenticated;
 grant select, insert, update, delete on public.orders, public.order_items, public.leads, public.testimonials, public.products to authenticated;
 grant select on public.products to anon;
+grant select on public.orders_status_history to authenticated;
 grant execute on function public.is_admin(), public.get_user_role(), public.admin_overview_v1() to authenticated;
+
+-- Hardening: Postgres grants EXECUTE to PUBLIC by default on every function.
+-- The role accessors are only ever used by signed-in requests (RLS policies
+-- evaluated by `authenticated`) and, internally, by the definer functions,
+-- so shrink their audience to `authenticated`. `admin_overview_v1` was already
+-- revoked-by-default above and re-granted to `authenticated` only.
+revoke execute on function public.is_admin(), public.get_user_role() from public, anon;
 
 -- ============================================================================
 -- MAKING YOURSELF AN ADMIN (after you have signed in at /signin once)

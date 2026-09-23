@@ -76,3 +76,42 @@ export async function countDesigns(): Promise<number> {
 export function designShareUrl(config: DesignConfig): string {
   return `/studio?design=${encodeDesign(config)}`;
 }
+
+/* ------------------------------------------------------------------ *
+ * Orders — a customer can watch the status of the WhatsApp orders the
+ * shop has mirrored for them (the admin "New order" form links by email).
+ * Reading goes through the `orders_status_history` view, which is
+ * security_invoker + RLS-scoped to the caller, so even a hand-crafted
+ * query can only ever return that customer's own rows.
+ * ------------------------------------------------------------------ */
+
+export type CustomerOrder = {
+  id: string;
+  status: string;
+  customer_name: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function listMyOrders(): Promise<CustomerOrder[]> {
+  const sb = supabaseClient();
+  const { data, error } = await sb
+    .from("orders_status_history")
+    .select("id, status, customer_name, created_at, updated_at")
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return (data ?? []) as CustomerOrder[];
+}
+
+/** Signed-in customers mirror their own enquiry as a trackable order. */
+export async function recordCustomerOrder(name: string, phone: string, notes: string): Promise<{ error: string | null }> {
+  const sb = supabaseClient();
+  const { data: session } = await sb.auth.getSession();
+  if (!session.session) return { error: "Sign in to track orders." };
+  const { error } = await sb.rpc("record_customer_order_v1", {
+    p_name: name,
+    p_phone: phone,
+    p_notes: notes,
+  });
+  return { error: error ? error.message : null };
+}

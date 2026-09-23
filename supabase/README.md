@@ -48,6 +48,13 @@ policies (see `schema.sql`); the publishable key that ships in the site is
    products in the `testimonials` / `products` tables above once you author
    them there.
 
+   > **v0.25.0 ships an updated schema.** Re-run `schema.sql` now to pick up
+   > the security hardening (no self role-escalation, size/shape caps on
+   > designs and leads, revoked PUBLIC execute on the role helpers) and the
+   > three order-tracking pieces: the `create_order_from_chat` /
+   > `record_customer_order_v1` RPCs and the `security_invoker` view
+   > `orders_status_history` that customers read on `/account`.
+
 ## Environment
 
 The client reads these at **build time** from the deploy workflow
@@ -131,6 +138,19 @@ Pointing auth at a real SMTP provider fixes both.
    email** (or sign up on the live site). With custom SMTP on, the **Email
    Templates** editor unlocks on every plan — paste the two blocks from
    [`email-templates.md`](email-templates.md).
+
+## Order tracking (customer-facing)
+
+- **Admin → Orders → "New order from WhatsApp"** mirrors a WhatsApp order onto
+  the board; if you type the customer's sign-in email, the order is **linked**
+  to their account and shows a green "linked" badge.
+- A linked order appears in that customer's **`/account` → Orders** with a live
+  status — they watch New → In progress → Ready → Done there. (They can never
+  edit or delete it; customers only have `select` on their own orders.)
+- A signed-in customer can also tap **"Start tracking"** on `/account` to
+  mirror their own custom enquiry (creates an order stamped with their `uid`).
+- The customer read path is the **`security_invoker` view**
+  `orders_status_history` — the `orders` RLS policy stays the real boundary.
 
 ## Security model (why admin data stays admin-only)
 

@@ -2,6 +2,51 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.25.0] — 2026-09-23
+
+### Added — customer order tracking + a hardening pass on the database
+
+- **Customers can track their WhatsApp orders.** `/account` gains an **Orders**
+  tab: a customer sees a live list of every order the shop has linked to their
+  account (status badges — New / In progress / Ready / Done / Cancelled — and
+  placed date). Reading goes through a new **`security_invoker` view**
+  (`orders_status_history`), so even a hand-crafted client query can only
+  return that customer's own rows (the underlying `orders` RLS policy stays
+  authoritative).
+- **Customers can ask to track a custom order** from `/account` via a
+  `record_customer_order_v1` RPC (SECURITY DEFINER that re-checks the caller is
+  a *customer*, then stamps the row with their own `uid`).
+- **Admin "New order from WhatsApp"** form on the Orders tab mirrors a WhatsApp
+  order onto the board and — when the customer's email matches a known account
+  — **links** it (`create_order_from_chat` RPC) so the customer can watch its
+  status. Linked orders show a "linked" badge; unlinked orders stay on the
+  board as before.
+- **Messages (leads) now show their state** as a status badge next to the date.
+
+### Security updates (all in `supabase/schema.sql` — re-run it)
+
+- **No self role/password-escalation:** a `guard_profile_role` trigger reshapes
+  every client `UPDATE` on `profiles` so `user_role` and `email` are preserved
+  (only the database-owned `auth.users` sync runs as `postgres` and may set
+  them). A customer can no longer paint themselves "admin" in the table.
+- **Design payload hardening:** `saved_designs.config` must be a JSON *object*
+  and ≤ 200 KB; `leads.name` ≤ 80 and `leads.message` ≤ 4000 chars — a hostile
+  client can't bloat rows or smuggle arbitrary payloads through the save path.
+- **Function surface shrank:** `is_admin()`/`get_user_role()` had their default
+  PUBLIC execute privileges revoked down to `authenticated` (the admin RPC was
+  already revoked-by-default).
+- **Customers can now read their own messages** (`leads: select own`),
+  previously admin-only.
+- Typed the new view + RPCs in `database.types.ts`, and tightened the admin
+  `.from()` union so the PostgREST client stays fully typed.
+
+### Verified
+
+- `tsc` clean, tests 91/91, Node-type static export compiles (Pages env),
+  `/account`, `/admin`, `/signin` serve 200 with the new surfaces present in
+  their bundles. Live Supabase writes need the owner to re-run `schema.sql`
+  (sandbox has no `*.supabase.co` egress, same limit as always).
+
 ## [0.24.0] — 2026-09-23
 
 ### Added — app logo + public `/privacy` and `/terms` (Google publish unblocked)

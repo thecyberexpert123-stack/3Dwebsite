@@ -24,7 +24,7 @@ import { useRealtimeVersion } from "@/lib/useRealtime";
  */
 
 /* ---------- domain types (mirror supabase/schema.sql columns) ---------- */
-type Order = { id: string; status: string; customer_name: string | null; customer_phone: string | null; notes: string | null; total_cents: number | null; created_at: string };
+type Order = { id: string; customer_id: string | null; status: string; customer_name: string | null; customer_phone: string | null; notes: string | null; total_cents: number | null; created_at: string };
 type Lead = { id: string; name: string; phone: string | null; message: string | null; status: string; created_at: string };
 type Product = { id: string; name: string; category: string; price_cents: number | null; stock: number | null; active: boolean };
 type Testimonial = { id: string; quote: string; author: string | null; approved: boolean };
@@ -182,7 +182,7 @@ function TabBody({ tab }: { tab: Tab }) {
 }
 
 /* ---------- shared list/data hook: rows + error + reload on realtime -------- */
-function useAdminRows<T>(table: string, orderBy: string, ascending = false) {
+function useAdminRows<T>(table: "orders" | "leads" | "products" | "testimonials", orderBy: string, ascending = false) {
   const [rows, setRows] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const version = useRealtimeVersion(table, true);
@@ -310,6 +310,7 @@ function Orders() {
 
   return (
     <section aria-label="Orders">
+      <NewOrder onCreated={reload} />
       {error && <ErrorNote error={error} onRetry={reload} />}
       <ul className="grid gap-3 lg:gap-4">
         {(rows ?? []).map((o) => (
@@ -320,6 +321,11 @@ function Orders() {
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-cocoa-soft">
                   <span>{fmtDate(o.created_at)}</span>
                   {o.customer_phone && <a href={telHref(o.customer_phone)} className="font-semibold text-rose-ink underline-offset-2 hover:underline">{o.customer_phone}</a>}
+                  {o.customer_id && (
+                    <span className="rounded-full bg-mint/60 px-2 py-0.5 text-[0.62rem] font-bold uppercase tracking-wide text-sage-deep" title="Linked to a customer account, who can track its status on /account">
+                      linked
+                    </span>
+                  )}
                 </p>
               </div>
               {o.total_cents != null && <p className="shrink-0 font-script text-2xl leading-none text-cocoa">{fmtCents(o.total_cents)}</p>}
@@ -331,9 +337,138 @@ function Orders() {
           </li>
         ))}
       </ul>
-      {!error && rows && rows.length === 0 && <Empty note="No orders yet. Mirror a WhatsApp order here and it appears on this board." />}
+      {!error && rows && rows.length === 0 && <Empty note="No orders yet. Mirror a WhatsApp order above and it appears on this board." />}
       {!error && rows === null && <Skeleton />}
     </section>
+  );
+}
+
+/** Mirror a WhatsApp order onto the board, optionally linking it to a signed-in
+ *  customer by email (that customer then sees its status on /account). The
+ *  insert goes through the SECURITY DEFINER RPC, which re-checks is_admin(). */
+function NewOrder({ onCreated }: { onCreated: () => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [amount, setAmount] = useState("");
+  const [status, setStatus] = useState("new");
+  const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const create = async () => {
+    if (busy) return;
+    let total: number | null = null;
+    if (amount.trim()) {
+      const n = Number(amount.trim());
+      if (!Number.isFinite(n) || n < 0) {
+        setNote("Amount must be a positive number.");
+        return;
+      }
+      total = Math.round(n * 100);
+    }
+    setBusy(true);
+    setNote(null);
+    const { data, error } = await supabaseClient().rpc("create_order_from_chat", {
+      p_customer_email: email.trim() || null,
+      p_customer_name: name.trim() || null,
+      p_customer_phone: phone.trim() || null,
+      p_notes: notes.trim() || null,
+      p_total_cents: total,
+    });
+    if (error) {
+      setNote(error.message);
+    } else {
+      const linked = (data as { linked?: boolean } | null)?.linked;
+      setNote(
+        linked
+          ? "Order added and linked to that customer's account — they can now track it."
+          : "Order added. (That email doesn't match a signed-up account, so it isn't linked — no worries, the board still tracks it.)"
+      );
+      setName("");
+      setEmail("");
+      setPhone("");
+      setNotes("");
+      setAmount("");
+      setStatus("new");
+      onCreated();
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div className="glass-sheet mb-4 flex flex-col gap-3 p-4 md:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-script text-2xl text-cocoa">New order from WhatsApp</p>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          aria-label="Initial status"
+          className="appearance-none rounded-full border border-blush-deep/30 bg-white/80 px-3 py-1.5 text-xs font-semibold text-cocoa focus:border-rose focus:outline-none"
+        >
+          {ORDER_STATUSES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Customer name"
+          aria-label="Customer name"
+          className="rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2 text-sm text-cocoa placeholder:text-cocoa-soft/50 focus:border-rose focus:outline-none"
+        />
+        <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          type="tel"
+          inputMode="tel"
+          placeholder="Phone"
+          aria-label="Customer phone"
+          className="rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2 text-sm text-cocoa placeholder:text-cocoa-soft/50 focus:border-rose focus:outline-none"
+        />
+      </div>
+      <input
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        type="email"
+        inputMode="email"
+        placeholder="Customer email (links the order to their account)"
+        aria-label="Customer email"
+        className="rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2 text-sm text-cocoa placeholder:text-cocoa-soft/50 focus:border-rose focus:outline-none"
+      />
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        rows={2}
+        placeholder="What they ordered / notes"
+        aria-label="Order notes"
+        className="w-full resize-none rounded-2xl border border-blush-deep/30 bg-white/80 px-4 py-2.5 text-sm text-cocoa placeholder:text-cocoa-soft/50 focus:border-rose focus:outline-none"
+      />
+      <div className="flex flex-wrap items-center gap-2.5">
+        <input
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          type="number"
+          inputMode="decimal"
+          min={0}
+          placeholder="Total (₹)"
+          aria-label="Order total in rupees"
+          className="w-40 rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2 text-sm text-cocoa placeholder:text-cocoa-soft/50 focus:border-rose focus:outline-none"
+        />
+        <button type="button" onClick={create} disabled={busy} className="btn btn-primary btn-sm disabled:opacity-60">
+          {busy ? "Adding…" : "Add order"}
+        </button>
+        {note && (
+          <span role="status" className="text-xs font-semibold text-rose-ink">
+            {note}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -360,7 +495,16 @@ function Leads() {
                     </a>
                   )}
                 </p>
-                <p className="text-xs text-cocoa-soft">{fmtDate(l.created_at)}</p>
+                <p className="mt-1 flex items-center gap-2 text-xs text-cocoa-soft">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[0.62rem] font-bold uppercase tracking-wide ${
+                      LEAD_STATUSES.find((s) => s.value === l.status)?.tone ?? "bg-white/70 text-cocoa-soft"
+                    }`}
+                  >
+                    {LEAD_STATUSES.find((s) => s.value === l.status)?.label ?? l.status}
+                  </span>
+                  <span>{fmtDate(l.created_at)}</span>
+                </p>
               </div>
               <div className="w-28 shrink-0">
                 <StatusSelect value={l.status} onChange={(v) => setStatus(l.id, v)} options={LEAD_STATUSES} />
