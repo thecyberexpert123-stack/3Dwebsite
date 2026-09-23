@@ -174,6 +174,18 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.21.1] — 2026-09-23
+
+### Fixed — the email-verification loop now closes
+
+- Sign-up and magic-link emails now carry `emailRedirectTo` →
+  `{origin}/3Dwebsite/signin`, so the confirmation / verification link
+  always lands on our `/signin` instead of Supabase's default Site URL
+  (which lacked the `/3Dwebsite` base path on the Pages build — a 404 that
+  silently lost the "Confirm email is already on" verification step).
+  Supabase's client auto-detects the token in the URL and signs the user in
+  there (`detectSessionInUrl`), so clicking "confirm" → `/signin` → signed in.
+
 ## [0.21.0] — 2026-09-23
 
 ### Changed — real email+password auth, with email verification

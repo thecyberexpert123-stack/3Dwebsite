@@ -819,6 +819,30 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.21.1 — a verification email is only good if the link lands somewhere real
+
+**Problem.** Owner confirmed "Confirm email" was already ON — which is the
+*switch*, but the loop only closes if the emailed link resolves. Supabase
+directs magic-link/confirmation links to `emailRedirectTo` when provided,
+else the project Site URL — which by default has no `/3Dwebsite` base path,
+404ing on a project Pages site and silently dropping users who just verified.
+
+**Mechanism (reusable).** Always pass `options.emailRedirectTo` on
+`signInWithOtp` and `signUp`, computed from the build-time origin +
+`withBasePath()` (`absoluteUrl("/signin")` — not a hard-coded string, so the
+VPS/domain shape gets it too). The JS client then needs NO callback glue:
+`detectSessionInUrl` defaults on and picks the `code`/`token` out of the
+returning URL, signs the user in, and `onAuthStateChange` propagates it. The
+`/signin` page already renders its "you're signed in" panel from state, so
+confirm → `/signin` → signed in, in one hop.
+
+**Also.** Put profile fields in `options.data` (`user_metadata`) only; the
+role claim lives in `app_metadata` (user-immutable) and is the only thing RLS
+reads — never mirror a client-provided `user_role` column into trust.
+
+**Confidence.** High (supabase auth-js types in node_modules document both
+options; verified by tsc + export build).
+
 ## v0.21.0 — "store it encrypted" means what? Hash, don't encrypt
 
 **Problem.** Owner asked to "store the password encrypted in the database."

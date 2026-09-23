@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createClient, type Session, type User } from "@supabase/supabase-js";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase";
+import { absoluteUrl } from "@/lib/paths";
 
 /** The role claim the DB policies actually check (auth.jwt() ->> 'user_role'). */
 export type UserRole = "customer" | "admin";
@@ -75,7 +76,10 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   const signInWithOtp = useCallback(
     async (email: string) => {
       try {
-        const { error } = await client.auth.signInWithOtp({ email });
+        const { error } = await client.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: absoluteUrl("/signin") },
+        });
         return { error: error ? error.message : null };
       } catch (e) {
         return { error: e instanceof Error ? e.message : "Could not reach the server." };
@@ -99,11 +103,16 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   const signUpWithPassword = useCallback(
     async (email: string, password: string, name?: string) => {
       try {
-        // send the `name` through so the profiles table trigger can use it
+        // send the `name` through so the profiles table trigger can use it;
+        // emailRedirectTo lands the confirmation link on /signin, where the
+        // client auto-detects the token and signs them in (detectSessionInUrl).
         const { error } = await client.auth.signUp({
           email,
           password,
-          options: { data: name ? { name } : undefined },
+          options: {
+            data: name ? { name } : undefined,
+            emailRedirectTo: absoluteUrl("/signin"),
+          },
         });
         return { error: error ? error.message : null };
       } catch (e) {
