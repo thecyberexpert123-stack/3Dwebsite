@@ -24,6 +24,10 @@ export interface AuthState {
   /** Google sign-in — free, no SMS provider; redirects to /signin after the
    *  OAuth grant where the session is auto-detected. */
   signInWithGoogle: () => Promise<{ error: string | null }>;
+  /** 6-digit fallback — verifies the `{{ .Token }}` OTP from the email, for
+   *  users whose mail scanner prefetched/consumed the ConfirmationURL link.
+   *  `type: "email"` covers both signup confirmations and magic links. */
+  verifyCode: (email: string, token: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -143,6 +147,26 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     }
   }, [client]);
 
+  const verifyCode = useCallback(
+    async (email: string, token: string) => {
+      try {
+        // `type: "email"` accepts the 6-digit OTP for BOTH flows that email
+        // one (sign-up confirmation and magic link). On success GoTrue issues
+        // the session; onAuthStateChange propagates it to `session` here.
+        const { error } = await client.auth.verifyOtp({ email, token, type: "email" });
+        if (error) {
+          // a consumed/expired code is expected failure, not a crash, so give
+          // the caller Supabase's own message rather than inventing one
+          return { error: error.message };
+        }
+        return { error: null };
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : "Could not reach the server." };
+      }
+    },
+    [client]
+  );
+
   const signOut = useCallback(async () => {
     await client.auth.signOut();
     setSession(null);
@@ -158,9 +182,10 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       signInWithPassword,
       signUpWithPassword,
       signInWithGoogle,
+      verifyCode,
       signOut,
     }),
-    [loading, session, role, signInWithOtp, signInWithPassword, signUpWithPassword, signInWithGoogle, signOut]
+    [loading, session, role, signInWithOtp, signInWithPassword, signUpWithPassword, signInWithGoogle, verifyCode, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

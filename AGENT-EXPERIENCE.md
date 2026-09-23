@@ -857,8 +857,31 @@ A mis-configuration fails earlier with a Supabase "provider not enabled" or a
 Google `redirect_uri_mismatch`. That probe is a useful non-invasive smoke:
 it needs no credentials and no secret key.
 
-## v0.23.2 — the JWT is nested: read the claim where it actually lives
+## v0.23.3 — an emailed code is a fallback, not a link; verify with type "email"
 
+**Problem.** Mail scanners (Microsoft Safe Links) prefetch and consume the
+link inside confirmation/magic-link emails — one token, one use. Before this
+there was no second way in: a customer whose email scanner ate the link was
+simply stuck. (v0.22.0 had added a `{{ .Token }}` fallback in the templates,
+then removed it for honesty when no code entry existed; this closes the loop
+for real.)
+
+**Mechanism (reusable).**
+- `verifyOtp({ email, token, type: "email" })` accepts the **same** 6-digit
+  token whether it came from a sign-up confirmation or a magic link — one
+  entry point covers both flows, no separate "type" switcher needed.
+- Validate the shape **client-side first** (`/^\d{6}$/`) so a typo never
+  costs a round-trip; pass Supabase's error through verbatim (expired /
+  consumed codes are expected outcomes, not crashes).
+- The email-side fallback must render `{{ .Token }}` as *visible text to
+  type*, never inside an `href` — it is a 6-digit number, not a URL
+  (v0.22.0's trap), and only `{{ .ConfirmationURL }}` is linkable.
+
+**Confidence.** High on the client mechanics (auth-js types in node_modules
+document `VerifyEmailOtpParams` + `EmailOtpType`; UI smoke passed). The live
+token exchange needs a real Supabase round-trip — owner's device.
+
+## v0.23.2 — the JWT is nested: read the claim where it actually lives
 **Problem.** The real admin saw the admin *UI* but the database still refused
 (`admin_overview_v1: admin role required`). Root cause found only because it
 finally surfaced on-device: the grant SQL writes

@@ -19,11 +19,13 @@ import { useAuth } from "./AuthProvider";
  * database re-checks it on every row, so this UI is only a gate painting.
  */
 export function SignIn() {
-  const { loading, user, role, signInWithOtp, signInWithPassword, signUpWithPassword, signInWithGoogle, signOut } = useAuth();
+  const { loading, user, role, signInWithOtp, signInWithPassword, signUpWithPassword, signInWithGoogle, verifyCode, signOut } = useAuth();
   const router = useRouter();
 
   const [mode, setMode] = useState<"in" | "up">("in");
   const [method, setMethod] = useState<"otp" | "password">("otp");
+  const [codeView, setCodeView] = useState(false);
+  const [code, setCode] = useState("");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [name, setName] = useState("");
@@ -32,11 +34,43 @@ export function SignIn() {
 
   const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
+  const openCode = () => {
+    setCodeView(true);
+    setStatus(null);
+    setCode("");
+  };
+  const closeCode = () => {
+    setCodeView(false);
+    setStatus(null);
+    setCode("");
+  };
+
   const google = async () => {
     setBusy(true);
     try {
       const r = await signInWithGoogle();
       if (r.error) setStatus({ kind: "error", text: r.error });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitCode = async () => {
+    const e = email.trim().toLowerCase();
+    const token = code.trim();
+    if (!validEmail(e)) {
+      setStatus({ kind: "error", text: "That email address doesn't look right — mind the @?" });
+      return;
+    }
+    if (!/^\d{6}$/.test(token)) {
+      setStatus({ kind: "error", text: "The code is the 6 digits from the email — check it and try again." });
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await verifyCode(e, token);
+      setStatus(r.error ? { kind: "error", text: r.error } : null);
+      // on success the session lands and the signed-in panel below renders
     } finally {
       setBusy(false);
     }
@@ -55,7 +89,7 @@ export function SignIn() {
         setStatus(
           r.error
             ? { kind: "error", text: r.error }
-            : { kind: "info", text: "Check your email for a magic link — it signs you straight in. (Check spam too.)" }
+            : { kind: "info", text: "Check your email for a magic link — it signs you straight in. Scanners sometimes eat the link, so you can also type the 6-digit code from that email below." }
         );
         return;
       }
@@ -69,7 +103,7 @@ export function SignIn() {
         setStatus(
           r.error
             ? { kind: "error", text: r.error }
-            : { kind: "info", text: "Almost there — we've emailed you a link to verify your address. Click it, then sign in with your password." }
+            : { kind: "info", text: "Almost there — we've emailed you a link to verify your address. Click it, then sign in. Prefer a code? Use the 6-digit code from that email with “Got an email code?” below." }
         );
         return;
       }
@@ -81,8 +115,6 @@ export function SignIn() {
       setBusy(false);
     }
   };
-
-  // Already signed in?
   if (!loading && user) {
     const admin = role === "admin";
     return (
@@ -115,13 +147,17 @@ export function SignIn() {
     <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col justify-center px-6">
       <div className="rounded-[1.9rem] border border-white/70 bg-white/70 p-7 shadow-card backdrop-blur-md">
         <h1 className="text-center font-script text-4xl text-cocoa">
-          {mode === "in" ? "Sign in to Whimlet" : "Join Whimlet"}
+          {codeView ? "Enter your code" : mode === "in" ? "Sign in to Whimlet" : "Join Whimlet"}
         </h1>
         <p className="mt-2 text-center font-hand text-lg leading-snug text-cocoa-soft">
-          {mode === "in" ? "Save your designs (up to 5) and pick them up anywhere." : "An account keeps your crochet designs safe."}
+          {codeView
+            ? "Type the 6-digit code from the email we sent, with the same email address."
+            : mode === "in"
+              ? "Save your designs (up to 5) and pick them up anywhere."
+              : "An account keeps your crochet designs safe."}
         </p>
 
-        {mode === "in" && (
+        {mode === "in" && !codeView && (
           <>
             <button
               type="button"
@@ -157,93 +193,146 @@ export function SignIn() {
           </>
         )}
 
-        <div role="tablist" aria-label="Sign-in method" className="mt-5 flex rounded-full border border-blush-deep/30 bg-white/60 p-1">
-          {(
-            [
-              { id: "otp", label: "Magic link" },
-              { id: "password", label: "Password" },
-            ] as const
-          ).map((m) => (
-            <button
-              key={m.id}
-              role="tab"
-              aria-selected={method === m.id}
-              type="button"
-              onClick={() => setMethod(m.id)}
-              className={`flex-1 rounded-full py-1.5 text-sm font-semibold transition-colors ${
-                method === m.id ? "bg-blush text-cocoa shadow-sm" : "text-cocoa-soft"
-              }`}
-            >
-              {m.label}
+        {!codeView && (
+          <>
+            <div role="tablist" aria-label="Sign-in method" className="mt-5 flex rounded-full border border-blush-deep/30 bg-white/60 p-1">
+              {(
+                [
+                  { id: "otp", label: "Magic link" },
+                  { id: "password", label: "Password" },
+                ] as const
+              ).map((m) => (
+                <button
+                  key={m.id}
+                  role="tab"
+                  aria-selected={method === m.id}
+                  type="button"
+                  onClick={() => setMethod(m.id)}
+                  className={`flex-1 rounded-full py-1.5 text-sm font-semibold transition-colors ${
+                    method === m.id ? "bg-blush text-cocoa shadow-sm" : "text-cocoa-soft"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            {mode === "up" && method === "password" && (
+              <label className="mt-5 block">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-cocoa-soft">Your name</span>
+                <input
+                  type="text"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="What should we call you?"
+                  className="mt-1.5 w-full rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2.5 text-cocoa placeholder:text-cocoa-soft/60 focus:border-rose focus:outline-none"
+                />
+              </label>
+            )}
+
+            <label className="mt-5 block">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-cocoa-soft">Email</span>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="mt-1.5 w-full rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2.5 text-cocoa placeholder:text-cocoa-soft/60 focus:border-rose focus:outline-none"
+              />
+            </label>
+
+            {method === "password" && (
+              <label className="mt-4 block">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-cocoa-soft">
+                  Password{mode === "up" ? " (6+ characters)" : ""}
+                </span>
+                <input
+                  type="password"
+                  autoComplete={mode === "up" ? "new-password" : "current-password"}
+                  value={pw}
+                  onChange={(e) => setPw(e.target.value)}
+                  placeholder="••••••••"
+                  className="mt-1.5 w-full rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2.5 text-cocoa placeholder:text-cocoa-soft/60 focus:border-rose focus:outline-none"
+                />
+              </label>
+            )}
+
+            <button type="button" onClick={submit} disabled={busy} className="btn btn-primary btn-lg mt-6 w-full disabled:opacity-60">
+              {busy
+                ? "…"
+                : method === "otp"
+                  ? "Send me a magic link"
+                  : mode === "up"
+                    ? "Create my account"
+                    : "Sign in"}
             </button>
-          ))}
-        </div>
 
-        {mode === "up" && method === "password" && (
-          <label className="mt-5 block">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-cocoa-soft">Your name</span>
-            <input
-              type="text"
-              autoComplete="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="What should we call you?"
-              className="mt-1.5 w-full rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2.5 text-cocoa placeholder:text-cocoa-soft/60 focus:border-rose focus:outline-none"
-            />
-          </label>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === "in" ? "up" : "in");
+                  setStatus(null);
+                  if (mode === "up") setMethod("password");
+                }}
+                className="text-sm font-semibold text-rose-ink underline-offset-4 hover:underline"
+              >
+                {mode === "in" ? "No account yet? Create one" : "Already have an account? Sign in"}
+              </button>
+            </div>
+          </>
         )}
 
-        <label className="mt-5 block">
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-cocoa-soft">Email</span>
-          <input
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="mt-1.5 w-full rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2.5 text-cocoa placeholder:text-cocoa-soft/60 focus:border-rose focus:outline-none"
-          />
-        </label>
-
-        {method === "password" && (
-          <label className="mt-4 block">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-cocoa-soft">
-              Password{mode === "up" ? " (6+ characters)" : ""}
-            </span>
-            <input
-              type="password"
-              autoComplete={mode === "up" ? "new-password" : "current-password"}
-              value={pw}
-              onChange={(e) => setPw(e.target.value)}
-              placeholder="••••••••"
-              className="mt-1.5 w-full rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2.5 text-cocoa placeholder:text-cocoa-soft/60 focus:border-rose focus:outline-none"
-            />
-          </label>
-        )}
-
-        <button type="button" onClick={submit} disabled={busy} className="btn btn-primary btn-lg mt-6 w-full disabled:opacity-60">
-          {busy
-            ? "…"
-            : method === "otp"
-              ? "Send me a magic link"
-              : mode === "up"
-                ? "Create my account"
-                : "Sign in"}
-        </button>
-
-        <div className="mt-4 text-center">
+        {!codeView && (
           <button
             type="button"
-            onClick={() => {
-              setMode(mode === "in" ? "up" : "in");
-              setStatus(null);
-              if (mode === "up") setMethod("password");
-            }}
-            className="text-sm font-semibold text-rose-ink underline-offset-4 hover:underline"
+            onClick={openCode}
+            className="mx-auto mt-4 block text-sm font-semibold text-cocoa-soft underline-offset-4 hover:text-rose-ink hover:underline"
           >
-            {mode === "in" ? "No account yet? Create one" : "Already have an account? Sign in"}
+            Got an email code? Use it instead
           </button>
-        </div>
+        )}
+
+        {codeView && (
+          <>
+            <label className="mt-5 block">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-cocoa-soft">Email</span>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="mt-1.5 w-full rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2.5 text-cocoa placeholder:text-cocoa-soft/60 focus:border-rose focus:outline-none"
+              />
+            </label>
+            <label className="mt-4 block">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-cocoa-soft">6-digit code</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                placeholder="000000"
+                aria-label="Six digit code"
+                className="mt-1.5 w-full rounded-full border border-blush-deep/30 bg-white/80 px-4 py-2.5 text-center font-mono text-xl tracking-[0.35em] text-cocoa placeholder:text-cocoa-soft/40 focus:border-rose focus:outline-none"
+              />
+            </label>
+            <button type="button" onClick={submitCode} disabled={busy} className="btn btn-primary btn-lg mt-6 w-full disabled:opacity-60">
+              {busy ? "Verifying…" : "Verify and sign in"}
+            </button>
+            <button
+              type="button"
+              onClick={closeCode}
+              className="mx-auto mt-4 block text-sm font-semibold text-cocoa-soft underline-offset-4 hover:text-rose-ink hover:underline"
+            >
+              ← Back to sign in
+            </button>
+          </>
+        )}
 
         <AnimatePresence>
           {status && (

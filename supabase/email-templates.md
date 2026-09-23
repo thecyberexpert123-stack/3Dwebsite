@@ -9,10 +9,11 @@ are used (`{{ .Token }}` is 6-digit-only, WILL BREAK as a URL with
 "Confirm email" ON — so we use `{{ .ConfirmationURL }}` everywhere).
 
 Failsafe: every template ships a clickable button PLUS the raw
-`{{ .ConfirmationURL }}` as plain text to paste — both are fully supported by
-the site today. (A "use a 6-digit code instead" entry box on `/signin` is the
-next auth step; until it ships, the templates deliberately do NOT promise a
-code-entry path that does not exist yet.)
+`{{ .ConfirmationURL }}` as plain text to paste PLUS the 6-digit
+`{{ .Token }}` fallback. All three are supported by the site: `/signin` now
+has a "Got an email code? Use it instead" entry that verifies the code for
+both sign-up confirmations and magic links (mail scanners prefetch and
+consume button links, so the visible code is the escape hatch).
 
 ---
 
@@ -34,6 +35,9 @@ code-entry path that does not exist yet.)
     <p style="margin:22px 0 0;font-size:12px;line-height:1.6;color:#a98d95">
       Button not working? Paste this into your browser:<br />
       <a href="{{ .ConfirmationURL }}" style="color:#b8456f;word-break:break-all">{{ .ConfirmationURL }}</a>
+    </p>
+    <p style="margin:18px 0 0;padding-top:16px;border-top:1px dashed #f3d7e0;font-size:12px;color:#a98d95">
+      Prefer a code? Enter <strong style="color:#4a3238">{{ .Token }}</strong> on the sign-in page.
     </p>
     <p style="margin:6px 0 0;font-size:11px;color:#c2aab0">If you didn't make a Whimlet account, you can ignore this email.</p>
   </div>
@@ -61,6 +65,9 @@ code-entry path that does not exist yet.)
       Or paste this into your browser:<br />
       <a href="{{ .ConfirmationURL }}" style="color:#b8456f;word-break:break-all">{{ .ConfirmationURL }}</a>
     </p>
+    <p style="margin:18px 0 0;padding-top:16px;border-top:1px dashed #f3d7e0;font-size:12px;color:#a98d95">
+      Prefer a code? Enter <strong style="color:#4a3238">{{ .Token }}</strong>.
+    </p>
     <p style="margin:6px 0 0;font-size:11px;color:#c2aab0">Didn't ask for this? You can safely ignore it.</p>
   </div>
 </div>
@@ -70,10 +77,10 @@ code-entry path that does not exist yet.)
 
 ## Notes
 
-- Use `{{ .ConfirmationURL }}` for anything clickable. `{{ .Token }}` is a
-  **6-digit number** — putting it in an `href` breaks email confirmation.
-- A "use a 6-digit code instead" entry on `/signin` is the next auth step;
-  until that box exists the templates only promise what the page supports
-  (button + plain-text link).
+- Keep **both** `{{ .ConfirmationURL }}` (the clickable link) **and**
+  `{{ .Token }}` (the 6-digit fallback) — the code is the escape hatch for
+  mail scanners that prefetch links, and `/signin` now accepts it.
+- `{{ .Token }}` is a **6-digit number**. Do NOT use it as a URL / inside
+  `href` — it breaks email confirmation.
 - Google Sign-In doesn't go through these templates at all (Google handles
   its own screen), so this only affects email sign-up + magic link.

@@ -2,6 +2,40 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.23.3] — 2026-09-23
+
+### Added — the 6-digit "use a code instead" fallback on /signin
+
+The one honest rescue hatch the email flow was missing. Corporate mail
+scanners (Microsoft Safe Links) prefetch and consume emailed links; until
+now those customers had no way in. Now:
+
+- `/signin` gains a **"Got an email code? Use it instead"** link, which
+  swaps the form for email + a **6-digit code** field (numeric keypad,
+  `inputMode="numeric"`, `autocomplete="one-time-code"`, digits-only input)
+  and verifies it via `auth.verifyOtp({ email, token, type: "email" })` —
+  `type: "email"` covers **both** the sign-up confirmation and the
+  magic-link code.
+- Client-side guard: a non-6-digit code is rejected with a friendly message
+  before any round-trip; Supabase's own error (expired/consumed code)
+  surfaces verbatim.
+- The sign-up and magic-link success hints now point at the code option, so
+  no flow dead-ends.
+
+And because the box now exists, the **email templates** in
+`supabase/email-templates.md` regain their `{{ .Token }}` fallback line the
+honest way (as a *visible code* to type, never a link — `Token` is
+6-digits-only and breaks inside an `href`).
+
+### Verified
+
+- `tsc` clean, tests 91/91, Node build + Pages export compile.
+- Headless (390×844, touch): the code view renders (email + code field +
+  "Verify and sign in" + "← Back to sign in"), the numeric input mode is
+  set, a too-short code shows the expected validation message, no horizontal
+  overflow, 0 page errors. The live `verifyOtp` call needs the owner's
+  device (same sandbox egress limit as always).
+
 ## [0.23.2] — 2026-09-23
 
 ### Fixed — the admin was client-side "admin" but database-side "customer"
