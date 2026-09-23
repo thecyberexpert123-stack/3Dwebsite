@@ -10,7 +10,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: withBasePath("/"),
-        disallow: [withBasePath("/admin"), withBasePath("/account"), withBasePath("/signin")],
+        disallow: [withBasePath("/admin"), withBasePath("/account"), withBasePath("/signin"), withBasePath("/owner")],
       },
     ],
     sitemap: absoluteUrl("/sitemap.xml"),

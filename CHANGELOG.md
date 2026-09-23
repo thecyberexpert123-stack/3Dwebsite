@@ -2,6 +2,27 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.23.1] — 2026-09-23
+
+### Added — the owner's quiet door (`/owner`)
+
+- A hidden, unlinked page at **`/owner`** (bookmark it) that consolidates the
+  owner sign-in: a "Sign in" shortcut plus the one-time
+  `update auth.users … user_role = admin` grant SQL, step by step.
+- `noindex` + robots-disallowed + absent from the sitemap, so it never
+  appears in search. It is linked from nothing — nav, footer and sitemap all
+  omit it.
+
+### Honest about what it is
+
+There are no separate "admin credentials", by design. On a static host a
+hidden admin username/password would ship in the bundle and be readable by
+any visitor — worse than useless. **Admin = your own account + a `user_role`
+claim** set once in Supabase's SQL editor; RLS re-checks that claim on every
+query, so the client cannot grant it. The door is a *discreet shortcut and a
+reminder*; its secrecy is not the lock — `/admin` still refuses a customer
+who goes straight there.
+
 ## [0.23.0] — 2026-09-23
 
 ### Changed — the admin panel rebuilt phone-first, without losing the desktop

@@ -31,6 +31,14 @@ policies (see `schema.sql`); the publishable key that ships in the site is
    Log out and back in at `/signin` to pick up the new `user_role` claim.
    `/admin` will now open for you; a normal customer is refused.
 
+   > **Where do I manage this later?** There are no separate "admin
+   > credentials" — *admin is your own account + the claim above.* Bookmark
+   > the hidden owner door: **`https://thecyberexpert123-stack.github.io/3Dwebsite/owner`**
+   > (unlisted, `noindex`, robots-disallowed). It shows the sign-in entry
+   > point plus this grant SQL in one place. The door's secrecy is
+   > *discretion, not security* — the lock is the claim + RLS, which refuse
+   > a normal customer even at `/admin` directly.
+
 4. **(Optional) site content.** The admin panel can manage testimonials and
    products in the `testimonials` / `products` tables above once you author
    them there.
