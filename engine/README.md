@@ -58,6 +58,40 @@ process, gift), i.e. five times down the page.
 (`animate-float`, `animate-twinkle`, `animate-heartbeat`, …) while their
 element is off-screen and resumes them 160 px before they return.
 
+### Refresh-aware smoothness (v0.26.0)
+
+Three additions close the gaps a *measured* panel rate exposes, with zero
+scene changes:
+
+1. **Touch high-refresh frame cap.** A 90/120/144/165/240 Hz phone was
+   rendering the scenes at the panel's full rate even though the content is
+   authored for 60 — twice the GPU work and battery, and when the GPU
+   overloads it drops frames on the very scene you're looking at. The
+   scheduler now *measures* the real rAF cadence once (median of frame gaps)
+   and, on coarse-pointer devices only, renders on a clean divisor of the
+   panel — 120 Hz → 60 fps, 144 Hz → 48 fps, 165 Hz → 55 fps, 240/100 Hz →
+   60/50 fps. 90/75 Hz have no divisor in the 48–60 band, so they stay native
+   (a non-integer divisor reads as judder, never as smoothness). Desktop
+   (fine pointer) is never capped.
+2. **Refresh-scaled frame budget.** The scheduler's "over budget → secondary
+   scenes half-rate" threshold was a fixed 18 ms — correct at 60 Hz, but a
+   120/144 Hz display runs on 8.3/6.9 ms frames so 18 ms *never* tripped and
+   a decorative scene kept stealing frames from the primary. The budget now
+   scales with the measured panel (`effectiveFrameBudget`, clamped 8–18 ms),
+   so the same protection holds on every display.
+3. **Idle shutdown.** The scheduler's rAF used to tick forever even with every
+   canvas off-screen. It now stops the loop whenever nothing needs a frame
+   (no visible scene, no pending prime) and wakes on intersection changes /
+   scroll / resize / tab-focus / registrations — so a resting page spends
+   nothing. The tilt tracking loop got the same treatment: a phone lying still
+   (no new orientation samples and the pointer settled) stops its rAF and
+   waits for the next `deviceorientation` event.
+
+`window.__engine.stats()` now also reports `hz` (measured panel rate),
+`intervalMs` (the touch frame cap, 0 = native) and `budgetMs` (the active
+frame-time budget). All the decision math is pure and unit-tested
+(`npm run test:engine`).
+
 ### Evidence (same build, `?engine=off` vs on, headless SwiftShader — relative only)
 
 GPU link/reflection calls by the context they ran in, whole-page journey:

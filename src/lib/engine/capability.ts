@@ -139,6 +139,59 @@ export function monitorBounds(hz: number): [number, number] {
   return hz > 100 ? [48, 80] : hz > 70 ? [44, 66] : [40, 60];
 }
 
+/* ------------------------------------------------------------------ */
+/* Refresh-aware frame budget & frame cap (the scheduler's side)       */
+/* ------------------------------------------------------------------ */
+
+/** Hard ceiling/foor for the frame-time budget the scheduler hands to
+ *  `decide()`: never clamps below what a 165+ Hz compositor needs, never
+ *  relaxes beyond the 60 Hz target of the content. */
+export const FRAME_BUDGET_CEILING_MS = 18;
+export const FRAME_BUDGET_FLOOR_MS = 8;
+
+/**
+ * The per-frame budget (ms above which secondary scenes drop to half rate),
+ * from the measured refresh rate. On a 60 Hz display 18 ms is right; on a
+ * 120/144 Hz display the compositor runs on 8.3/6.9 ms frames, so 18 ms
+ * would never trip and a decorative scene would keep stealing frames from
+ * the primary — the budget must shrink with the refresh.
+ */
+export function effectiveFrameBudget(hz: number): number {
+  const h = Math.min(240, Math.max(30, hz));
+  return Math.min(FRAME_BUDGET_CEILING_MS, Math.max(FRAME_BUDGET_FLOOR_MS, (1000 / h) * 1.2));
+}
+
+/** Round a measured rAF median onto the nearest real panel rate. */
+export function nearestRefreshRate(medianMs: number): number {
+  const hz = 1000 / Math.max(1, medianMs);
+  const known = [60, 90, 120, 144, 165, 240];
+  let best = 60;
+  for (const k of known) if (Math.abs(k - hz) < Math.abs(best - hz)) best = k;
+  return best;
+}
+
+/**
+ * Frame-cap interval (ms) for a touch device with a given panel rate,
+ * or 0 = uncapped (render at the panel's own rate).
+ *
+ * Only clean divisors of the refresh are used, so a cap is *uniformly paced*
+ * (every 2nd/3rd vsync — never a stuttering 2.4-vsync pattern):
+ *   120 Hz → 60 fps,  144 Hz → 48 fps,  165 Hz → 55 fps,  240 Hz → 60 fps.
+ * 90 Hz has no divisor in the 48–60 band, so it stays native (45 fps would
+ * read as judder for content authored at 60). 60 Hz is already native.
+ */
+export function renderIntervalMs(hz: number): number {
+  if (hz <= 62) return 0;
+  for (let k = 1; k <= 4; k++) {
+    const f = hz / k;
+    if (Math.abs(f - Math.round(f)) < 0.05) {
+      const rate = Math.round(f);
+      if (rate >= 48 && rate <= 60) return 1000 / rate;
+    }
+  }
+  return 0;
+}
+
 /**
  * Glass budget for touch devices. The liquid-glass recipe layers a
  * backdrop blur + an SVG displacement (`#glass-bend`) under ~90 buttons and
@@ -239,6 +292,25 @@ export const REAL_POINTER_HOLD_MS = 800;
 
 export function tiltMayDrive(nowMs: number, lastRealPointerMs: number): boolean {
   return nowMs - lastRealPointerMs > REAL_POINTER_HOLD_MS;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tilt idle — a phone lying still costs nothing                       */
+/* ------------------------------------------------------------------ */
+
+/** |pointer| below this is "settled" (rest pose has converged). */
+export const TILT_SETTLE_MAG = 0.02;
+/** no new orientation samples for this long, and settled → the tracking loop may rest. */
+export const TILT_REST_AFTER_MS = 1500;
+
+/**
+ * Should the tilt tracking loop stop its requestAnimationFrame and wait for
+ * the next `deviceorientation` event? True only when the sample stream has
+ * gone quiet AND the deflection has settled — a phone on a table draws
+ * nothing, a phone in a hand keeps breathing.
+ */
+export function tiltShouldRest(nowMs: number, lastSampleMs: number, magnitude: number, restAfterMs: number = TILT_REST_AFTER_MS): boolean {
+  return nowMs - lastSampleMs > restAfterMs && magnitude < TILT_SETTLE_MAG;
 }
 
 function clamp(v: number): number {

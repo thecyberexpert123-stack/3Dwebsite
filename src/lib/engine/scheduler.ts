@@ -36,8 +36,16 @@ export type RootInfo = {
 
 export type Decision = { id: string; render: boolean; primary: boolean };
 
-/** frame budget in ms — beyond this, secondary roots go half-rate */
+/** frame budget in ms — beyond this, secondary roots go half-rate. This is
+ *  the legacy constant (60 Hz). The scheduler now scales the *measured* budget
+ *  with the panel's refresh rate via `effectiveFrameBudget()` so a 144 Hz
+ *  display still triggers half-rate for decorative scenes; `FRAME_BUDGET_MS`
+ *  remains the value `decide()` is called with on a 60 Hz display and stays
+ *  exported for the unit tests and for anything reading it. */
 export const FRAME_BUDGET_MS = 18;
+
+/** When the page first boots we have no rAF median yet: use the 60 Hz budget. */
+export const INITIAL_FRAME_BUDGET_MS = 18;
 
 /** scroll speed (CSS px per ms) above which the page is "flinging" — the
  *  compositor is busy and a secondary scene's frame is the first thing to give */
@@ -54,7 +62,7 @@ export function isFlinging(dy: number, dtMs: number, agoMs: number): boolean {
  * `frameIndex` alternates secondary roots when over budget or while the
  * page flings (`busy`); the primary root always renders every frame.
  */
-export function decide(roots: RootInfo[], avgFrameMs: number, frameIndex: number, busy = false): Decision[] {
+export function decide(roots: RootInfo[], avgFrameMs: number, frameIndex: number, busy = false, budgetMs: number = FRAME_BUDGET_MS): Decision[] {
   const visible = roots.filter((r) => r.hint === "run" && r.area > 0);
   const out = new Map<string, Decision>();
   // Priming: an off-screen root whose programs are linked gets ONE frame so
@@ -66,7 +74,7 @@ export function decide(roots: RootInfo[], avgFrameMs: number, frameIndex: number
   if (visible.length) {
     const sorted = [...visible].sort((a, b) => b.priority - a.priority || b.area - a.area);
     const primary = sorted[0].id;
-    const tight = (avgFrameMs > FRAME_BUDGET_MS || busy) && sorted.length > 1;
+    const tight = (avgFrameMs > budgetMs || busy) && sorted.length > 1;
     sorted.forEach((r, i) => {
       if (r.id === primary) out.set(r.id, { id: r.id, render: true, primary: true });
       else {
@@ -89,6 +97,8 @@ export function smoothFrameMs(prev: number, dt: number): number {
 /* Runtime                                                              */
 /* ------------------------------------------------------------------ */
 
+import { nearestRefreshRate, renderIntervalMs, effectiveFrameBudget } from "./capability";
+
 type Root = {
   id: string;
   el: Element;
@@ -110,6 +120,12 @@ export type EngineStats = {
   hidden: boolean;
   /** page was flinging on the last frame (secondary scenes at half rate) */
   flinging: boolean;
+  /** measured panel rate (Hz) — 0 until the rAF cadence settles */
+  hz: number;
+  /** frame cap in ms (0 = native rate) — touch high-refresh panels only */
+  intervalMs: number;
+  /** refresh-scaled frame-time budget the scheduler is currently using */
+  budgetMs: number;
 };
 
 class Scheduler {
@@ -122,6 +138,19 @@ class Scheduler {
   private lastDecisions: Decision[] = [];
   private fpsWindow: number[] = [];
   private scroll = { y: 0, t: 0, dy: 0, dt: 0 };
+  /** rAF timestamps of the last few frames → the panel's real cadence.
+   *  `null` once the median has settled (or the window gave up). */
+  private stamps: number[] | null = [];
+  /** measured frame-time median (ms) → the panel rate the budget scales by. */
+  private medianMs = 0;
+  /** touch devices: render only at a clean divisor of the panel rate. */
+  private intervalMs = 0;
+  /** Touch is detected once per page and defaults to *not* capped. */
+  private touch: boolean | null = null;
+  /** refresh-scaled frame-time budget (see effectiveFrameBudget). */
+  private budget: number = INITIAL_FRAME_BUDGET_MS;
+  private hiddenWired = false;
+  private lastAdvance = 0;
   private onScroll = () => {
     const now = performance.now();
     const y = window.scrollY;
@@ -138,12 +167,38 @@ class Scheduler {
     const root: Root = { id, el, advance, hint: "run", priority, area: 0, prime: false, frames: 0, primed: 0 };
     this.roots.set(id, root);
     this.observer().observe(el);
+    this.detectTouch();
     this.ensureLoop();
     return () => {
       this.io?.unobserve(el);
       this.roots.delete(id);
       if (!this.roots.size) this.stopLoop();
     };
+  }
+
+  /** Touch (coarse-pointer) devices get a frame cap only while the panel is
+   *  high-refresh; the scene renders at a clean divisor (48–60 fps) instead
+   *  of every vsync. Fine-pointer devices stay uncapped. */
+  private detectTouch(): void {
+    if (this.touch !== null) return;
+    try {
+      this.touch = window.matchMedia("(pointer: coarse)").matches;
+    } catch {
+      this.touch = false;
+    }
+    this.touch = this.touch === true;
+    this.recomputeCadence();
+  }
+
+  /** Recompute the frame cap + frame-time budget from the measured rAF median. */
+  private recomputeCadence(): void {
+    if (!this.medianMs) {
+      this.intervalMs = 0;
+      return;
+    }
+    const hz = nearestRefreshRate(this.medianMs);
+    this.intervalMs = this.touch ? renderIntervalMs(hz) : 0;
+    this.budget = effectiveFrameBudget(hz);
   }
 
   setHint(id: string, hint: RootHint): void {
@@ -172,7 +227,13 @@ class Scheduler {
     const roots = [...this.roots.values()].map((r) => ({ id: r.id, area: +r.area.toFixed(3), hint: r.hint, rendering: this.isRendering(r.id), frames: r.frames, primed: r.primed }));
     const fps = this.fpsWindow.length > 1 ? Math.round(1000 / (this.fpsWindow.reduce((a, b) => a + b, 0) / this.fpsWindow.length)) : 0;
     const sc = this.scroll;
-    return { roots, avgFrameMs: +this.avg.toFixed(2), fps, hidden, flinging: isFlinging(sc.dy, sc.dt, performance.now() - sc.t) };
+    let hz = 0;
+    try {
+      hz = this.medianMs ? nearestRefreshRate(this.medianMs) : 0;
+    } catch {
+      /* ignore */
+    }
+    return { roots, avgFrameMs: +this.avg.toFixed(2), fps, hidden, flinging: isFlinging(sc.dy, sc.dt, performance.now() - sc.t), hz, intervalMs: +this.intervalMs.toFixed(2), budgetMs: +this.budget.toFixed(2) };
   }
 
   private observer(): IntersectionObserver {
@@ -201,7 +262,27 @@ class Scheduler {
     this.last = 0;
     this.raf = requestAnimationFrame(this.loop);
     window.addEventListener("scroll", this.onScroll, { passive: true });
+    // The loop stops its rAF whenever every root is off-screen (and wakes on
+    // the next intersection/scroll/tab-focus/register). Wire the wake-ups once.
+    if (!this.hiddenWired) {
+      this.hiddenWired = true;
+      document.addEventListener("visibilitychange", this.onVisibility);
+      window.addEventListener("resize", this.onActivity);
+      window.addEventListener("scroll", this.onActivity);
+    }
   }
+
+  /** Tab became visible again → resume and re-measure the cadence. */
+  private onVisibility = (): void => {
+    if (!document.hidden) {
+      this.lastAdvance = 0;
+      this.ensureLoop();
+    }
+  };
+  /** Scroll/resize → an off-screen root may be about to come back; idle loops wake. */
+  private onActivity = (): void => {
+    this.ensureLoop();
+  };
 
   private stopLoop(): void {
     if (this.raf) cancelAnimationFrame(this.raf);
@@ -210,39 +291,96 @@ class Scheduler {
   }
 
   private loop = (t: number): void => {
-    this.raf = requestAnimationFrame(this.loop);
+    this.raf = 0;
+    let any = false; // did at least one root draw this frame?
     if (this.last) {
       const dt = t - this.last;
       this.avg = smoothFrameMs(this.avg, dt);
       this.fpsWindow.push(Math.min(dt, 100));
       if (this.fpsWindow.length > 60) this.fpsWindow.shift();
     }
-    this.last = t;
-    this.frameIndex++;
-    const infos: RootInfo[] = [...this.roots.values()].map((r) => ({ id: r.id, area: r.area, hint: r.hint, priority: r.priority, prime: r.prime }));
-    const sc = this.scroll;
-    const busy = isFlinging(sc.dy, sc.dt, t - sc.t);
-    this.lastDecisions = decide(infos, this.avg, this.frameIndex, busy);
-    for (const d of this.lastDecisions) {
-      if (!d.render) continue;
-      const r = this.roots.get(d.id);
-      if (!r) continue;
-      try {
-        r.advance(t);
-        r.frames++;
-        if (r.area === 0) {
-          r.primed++;
-          r.prime = false;
-          try {
-            performance.mark(`engine:${r.id}:primed`);
-          } catch {
-            /* ignore */
+    // Measure the panel cadence (rAF interval) once, until the median settles;
+    // a changing median (60 Hz → 120 Hz, or a throttled background tab) starts
+    // the window over. Settled → `stamps = null` and never sampled again.
+    if (this.stamps) {
+      this.stamps.push(t);
+      if (this.stamps.length >= 16) {
+        const diffs: number[] = [];
+        for (let i = 1; i < this.stamps.length; i++) {
+          const d = this.stamps[i] - this.stamps[i - 1];
+          if (d > 1 && d < 100) diffs.push(d);
+        }
+        if (diffs.length >= 8) {
+          diffs.sort((a, b) => a - b);
+          const m = diffs[Math.floor(diffs.length / 2)];
+          if (this.medianMs === 0) this.medianMs = m;
+          else if (Math.abs(m - this.medianMs) < 0.5) {
+            this.medianMs = m;
+            this.recomputeCadence();
+            this.stamps = null; // settled — keep this cadence for the session
+          } else {
+            this.medianMs = m;
+            this.stamps = [t]; // cadence changed — re-measure from here
           }
         }
-      } catch (err) {
-        // one broken scene must not take the others down
-        if (process.env.NODE_ENV !== "production") console.error(`[engine] ${d.id}`, err);
       }
+      if (this.stamps && this.stamps.length >= 60) this.stamps = null; // give up → native rate
+    }
+    this.last = t;
+
+    // Touch frame cap: a high-refresh phone renders only on the vsync nearest
+    // each interval slot (48–60 fps). Frames in between are *skipped* — the
+    // advance is cheap-to-miss, the render is not.
+    let due = true;
+    if (this.intervalMs > 0) {
+      const slot = this.lastAdvance + this.intervalMs;
+      due = t >= slot;
+      if (due) this.lastAdvance = t;
+    }
+
+    if (due) {
+      this.frameIndex++;
+      const infos: RootInfo[] = [...this.roots.values()].map((r) => ({ id: r.id, area: r.area, hint: r.hint, priority: r.priority, prime: r.prime }));
+      const sc = this.scroll;
+      const busy = isFlinging(sc.dy, sc.dt, t - sc.t);
+      this.lastDecisions = decide(infos, this.avg, this.frameIndex, busy, this.budget);
+      for (const d of this.lastDecisions) {
+        if (!d.render) continue;
+        const r = this.roots.get(d.id);
+        if (!r) continue;
+        try {
+          r.advance(t);
+          any = true;
+          r.frames++;
+          if (r.area === 0) {
+            r.primed++;
+            r.prime = false;
+            try {
+              performance.mark(`engine:${r.id}:primed`);
+            } catch {
+              /* ignore */
+            }
+          }
+        } catch (err) {
+          // one broken scene must not take the others down
+          if (process.env.NODE_ENV !== "production") console.error(`[engine] ${d.id}`, err);
+        }
+      }
+    }
+
+    // Self-sleep: keep the rAF only while a scene may need frames (a visible
+    // run-hint root, a pending prime, or a draw this tick). Off-screen and
+    // quiet → the loop stops; intersection changes / scroll / tab-focus /
+    // registrations wake it again, so a returning scene misses no frame.
+    const needed =
+      this.roots.size === 0 ||
+      any ||
+      [...this.roots.values()].some((r) => r.hint === "run" && r.area > 0) ||
+      [...this.roots.values()].some((r) => r.prime);
+    if (needed) this.raf = requestAnimationFrame(this.loop);
+    else {
+      this.lastAdvance = 0;
+      this.raf = 0;
     }
   };
 }

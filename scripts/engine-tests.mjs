@@ -14,9 +14,9 @@ if (!outDir) {
   process.exit(2);
 }
 const require = createRequire(import.meta.url);
-const { decide, smoothFrameMs, FRAME_BUDGET_MS, isFlinging } = require(resolve(outDir, "scheduler.js"));
+const { decide, smoothFrameMs, FRAME_BUDGET_MS, INITIAL_FRAME_BUDGET_MS, isFlinging } = require(resolve(outDir, "scheduler.js"));
 const { decideBack, shouldPushEntry } = require(resolve(outDir, "android.js"));
-const { gpuScore, scoreDevice, tierFromScore, decideParity, orientationToPointer, followRest, tiltMayDrive, TILT_RANGE_DEG, monitorBounds, glassLevel } = require(resolve(outDir, "capability.js"));
+const { gpuScore, scoreDevice, tierFromScore, decideParity, orientationToPointer, followRest, tiltMayDrive, tiltShouldRest, TILT_RANGE_DEG, monitorBounds, glassLevel, effectiveFrameBudget, renderIntervalMs, nearestRefreshRate } = require(resolve(outDir, "capability.js"));
 
 let pass = 0;
 let fail = 0;
@@ -212,6 +212,44 @@ console.log("engine: scroll fling");
   check("fling: primary renders every frame", f0.hero.render && f1.hero.render);
   check("fling: secondary alternates", f0.gift.render !== f1.gift.render);
   check("fling with one visible root: still renders", decide([two[0]], 8, 0, true)[0].render);
+}
+
+console.log("engine: refresh-aware frame cap + budget");
+{
+  check("90 Hz → native (no divisor in 48–60)", renderIntervalMs(90) === 0);
+  check("120 Hz → 60 fps cap", Math.abs(renderIntervalMs(120) - 1000 / 60) < 1e-9);
+  check("144 Hz → 48 fps cap", Math.abs(renderIntervalMs(144) - 1000 / 48) < 1e-9);
+  check("165 Hz → 55 fps cap", Math.abs(renderIntervalMs(165) - 1000 / 55) < 1e-9);
+  check("240 Hz → 60 fps cap", Math.abs(renderIntervalMs(240) - 1000 / 60) < 1e-9);
+  check("60 Hz → native", renderIntervalMs(60) === 0);
+  check("75 Hz → native (no clean divisor in 48–60)", renderIntervalMs(75) === 0);
+  check("100 Hz → 50 fps cap", Math.abs(renderIntervalMs(100) - 1000 / 50) < 1e-9);
+
+  check("60 Hz → 18 ms budget", effectiveFrameBudget(60) === 18);
+  const b120 = effectiveFrameBudget(120);
+  check("120 Hz → budget shrinks (decorative scenes throttle sooner)", b120 < 18 && b120 >= 8);
+  const b144 = effectiveFrameBudget(144);
+  check("144 Hz → budget near the 6.9 ms frame", b144 < b120 && b144 >= 8);
+  check("30 Hz floor clamps the interval", effectiveFrameBudget(30) === 18);
+  check("240 Hz floors at 8 ms", effectiveFrameBudget(240) === 8);
+
+  // a refresh-scaled budget actually trips for a fast-but-overloaded machine
+  const roots = [{ id: "hero", area: 0.6, hint: "run", priority: 1 }, { id: "gift", area: 0.3, hint: "run", priority: 0 }];
+  const g0 = by(decide(roots, 10, 0, false, effectiveFrameBudget(144))); // 10 ms > 8 ms budget → tight
+  const g1 = by(decide(roots, 10, 1, false, effectiveFrameBudget(144)));
+  check("refresh-scaled budget throttles secondaries at 10 ms on a 144 Hz panel", g0.gift.render !== g1.gift.render && g0.hero.render && g1.hero.render);
+
+  check("nearestRefreshRate: ~16.7 ms → 60 Hz", nearestRefreshRate(16.7) === 60);
+  check("nearestRefreshRate: ~8.3 ms → 120 Hz", nearestRefreshRate(8.3) === 120);
+  check("nearestRefreshRate: ~6.9 ms → 144 Hz", nearestRefreshRate(6.9) === 144);
+}
+
+console.log("engine: tilt idle rest");
+{
+  check("settled + quiet → rest", tiltShouldRest(10_000, 6_000, 0.001));
+  check("still moving → keep tracking", !tiltShouldRest(10_000, 6_000, 0.2));
+  check("recent sample → keep tracking", !tiltShouldRest(10_000, 9_900, 0.001));
+  check("custom rest window honoured", tiltShouldRest(10_000, 6_000, 0.001, 3999) === true && tiltShouldRest(10_000, 6_000, 0.001, 4001) === false);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

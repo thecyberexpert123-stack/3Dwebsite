@@ -26,13 +26,14 @@
  * a phone on a table is still, a phone in a hand breathes.
  */
 
-import { followRest, orientationToPointer, tiltMayDrive, type TiltSample } from "./capability";
+import { followRest, orientationToPointer, tiltMayDrive, tiltShouldRest, type TiltSample } from "./capability";
 
 let users = 0;
 let off: (() => void) | null = null;
 let sample: TiltSample | null = null;
 let rest: TiltSample | null = null;
 let lastFrameMs = 0;
+let lastSampleMs = 0;
 let lastRealMs = -1e9;
 let current: { x: number; y: number } | null = null;
 let raf = 0;
@@ -147,11 +148,19 @@ export function acquireTilt(): () => void {
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta === null || e.gamma === null) return;
       sample = { beta: e.beta, gamma: e.gamma };
+      lastSampleMs = performance.now();
       if (!rest) rest = sample;
+      // a new sample ends the idle rest: wake the tracking loop, if it slept
+      if (!raf) raf = requestAnimationFrame(loop);
     };
     const loop = (t: number) => {
-      raf = requestAnimationFrame(loop);
+      raf = 0;
       integrate(t);
+      // A phone that has settled (no fresh samples, pointer at rest) stops its
+      // rAF and waits for the next `deviceorientation` event — a still phone
+      // costs nothing; the next tilt restarts the loop from the event above.
+      if (tiltShouldRest(t, lastSampleMs, current ? Math.hypot(current.x, current.y) : 0)) return;
+      raf = requestAnimationFrame(loop);
     };
     const start = () => {
       if (!alive || listening) return;

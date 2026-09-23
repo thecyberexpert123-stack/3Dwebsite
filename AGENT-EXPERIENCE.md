@@ -1516,3 +1516,37 @@ measured here (SwiftShader ≈ 10 fps, no real device).
   Pages export, and grepping the compiled bundles for the new surfaces +
   serving `out/` over http for 200s. If a real click-through test is needed
   again, re-install Playwright/chromium first.
+
+## v0.26.0 — refresh-aware engine upgrades (no website code touched)
+
+- **The measured panel rate is the missing input** for every "budget" the
+  engine holds. A fixed FRAME_BUDGET_MS=18 silently stops throttling on fast
+  displays (realtime never trips when frames are 6.9 ms) and touch phones
+  render at 120/144 Hz even though the content is 60-fps-authored — both
+  become *worse*, not better, on nicer hardware. Fix: sample the rAF cadence
+  once (median of frame-gap diffs, re-measured when it flaps), round it to a
+  known panel rate, then derive the budget and a touch-only frame cap from
+  it.
+- **Frame caps must be integer divisors of the refresh** (120→60, 144→48,
+  165→55, 240→60). A fractional cap (e.g. 85 Hz → 50) hits ~2.4-vsync slots
+  and renders *unevenly* — users read that as judder, not "a lower frame
+  rate". 90/75 Hz have no divisor in the 48–60 band, so they stay native.
+  Only coarse-pointer devices are capped; desktop keeps vsync.
+- **Decide the cap by *skipping* frames in the loop, not by rescheduling
+  rAF** with setTimeout/hand-rolled wait-probes. My first draft tried the
+  latter (wake listeners, a probe frame, an on-demand restart) and it was
+  fragile and un-reviewable. Skipping the `advance()` off-grid is a few
+  arithmetic lines, keeps rAF vsync-locked, and is obviously correct; the
+  render (expensive) is what you skip, the decision (cheap) costs nothing.
+- **Idle rAF shutdown is safe only if you keep a guaranteed wake path**: the
+  scheduler sleeps when nothing needs a frame and wakes on intersection /
+  scroll / resize / visibilitychange / register. IntersectionObserver entries
+  and scroll events both fire *before* a re-entering canvas would want its
+  first frame, so no frame is dropped. Same pattern for the tilt loop, keyed
+  off "no fresh deviceorientation samples AND |pointer| settled".
+- **`requestIdleCallback` and `performance.mark` are the only non-standalone**
+  APIs the engine assumes — keep it that way; anything fancier (Paint Timing,
+  `navigator.connection`) adds signals we do not need and platforms that lag.
+- The engine's contract held: changes stayed in `src/lib/engine/` + tests +
+  README. Reminder for next time — every new decision rule gets a pure
+  function + a unit assertion *before* wiring it into the class.

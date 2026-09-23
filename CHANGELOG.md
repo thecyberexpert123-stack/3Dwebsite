@@ -2,6 +2,42 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.26.0] — 2026-09-23
+
+### Changed — the Optimization Engine got smarter (no website code touched)
+
+Three refreshes-rate-aware upgrades to `src/lib/engine/` only — not one scene,
+section or style file changed:
+
+- **Touch high-refresh frame cap.** A 90/120/144/165/240 Hz phone was
+  rendering the 3D scenes at the panel's full rate although the content is
+  authored for 60 — double the GPU work and battery, and when overloaded it
+  drops frames on the scene you are looking at. The scheduler now measures the
+  real rAF cadence once and, on coarse-pointer devices only, renders on a
+  clean divisor of the panel: 120 Hz → 60 fps, 144 Hz → 48 fps, 165 Hz →
+  55 fps, 240/100 Hz → 60/50 fps. 90/75 Hz stay native (a fractional divisor
+  would judder). Desktop is never capped.
+- **Refresh-scaled frame budget.** The "over budget → secondary scenes at
+  half rate" threshold was a fixed 18 ms — right at 60 Hz, but a 120/144 Hz
+  display runs on 8.3/6.9 ms frames so 18 ms never tripped and a decorative
+  scene kept stealing frames from the primary. The budget now scales with the
+  measured panel (clamped 8–18 ms).
+- **Idle shutdown.** The scheduler's rAF used to tick forever even with every
+  canvas off-screen; it now sleeps until something needs a frame (and wakes on
+  scroll/intersection/tab-focus/registration). The tilt tracking loop got the
+  same rest: a phone lying still stops its rAF and waits for the next
+  orientation event.
+
+`window.__engine.stats()` now also reports `hz`, `intervalMs` (the touch cap)
+and `budgetMs`.
+
+### Verified
+
+- `tsc` clean; **112/112 unit tests** (21 new assertions for the cap, budget
+  and idle-rest decisions); Pages export compiles. Frame pacing / battery
+  effects are panel-dependent and need a real 90–144 Hz device to observe —
+  flagged honestly, not simulated.
+
 ## [0.25.0] — 2026-09-23
 
 ### Added — customer order tracking + a hardening pass on the database
