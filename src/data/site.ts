@@ -4,6 +4,7 @@ export const site = {
   name: "Whimlet",
   tagline: "Handmade crochet, made with love.",
   closingPhrase: "One stitch at a time.",
+  email: "thecyberexpert123@gmail.com",
   metaTitle: "Whimlet | Handmade Crochet Products & Custom Crochet",
   metaDescription:
     "Discover handmade crochet flowers, bouquets, keychains, charms, accessories, bandanas and customizable crochet creations from Whimlet.",

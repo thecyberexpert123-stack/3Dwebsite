@@ -2,6 +2,48 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.24.0] — 2026-09-23
+
+### Added — app logo + public `/privacy` and `/terms` (Google publish unblocked)
+
+The release that gets Whimlet out of Google's "Testing" corner and ready to
+be published to production on the OAuth consent screen.
+
+- **App logo, one source of truth** — `scripts/build-icons.mjs` (`npm run icons`)
+  renders a hand-drawn pastel mark (cream gradient tile, running-stitch seam,
+  crocheted heart in rows of little "V" stitches, two yarn-sparkles) into:
+  - `src/app/icon.svg` (favicon / head icon)
+  - `public/icons/*` (192/512 + `maskable-*` + `apple-touch-icon`)
+  - `public/logo/whimlet-logo-{128,512}.png` — square files that meet Google's
+    OAuth app-logo rules (128–1200 px, ≤1 MB, no readable text; guidelines:
+    900×900 or the App Store icon crop is a good idea).
+  - Maskable icons are full-bleed with **no ring/sparkles** and heart kept in
+    the 10–90% safe zone, so launcher mask crops can't chop the mark.
+- **`/privacy` and `/terms`** — public, indexable policy pages (Google requires
+  both for a production OAuth app, and they are honest compliance for collecting
+  emails). Copy is fact-only and reflects what the site really does: no checkout,
+  enquiries happen over WhatsApp, supabase stores accounts + ≤5 saved designs,
+  nothing is sold or tracked. Both carry a contact card and the `site.email`
+  support address.
+- **Footer** links to Privacy Policy & Terms of Service; privacy/terms added to
+  `sitemap.ts` with canonical URLs.
+- **`site.email`** brand address (`thecyberexpert123@gmail.com`) wired through
+  `src/data/site.ts`.
+
+### Fixed
+
+- Raw `<a href="/studio">` / `/maker` and the new policy links in the Footer now
+  go through `withBasePath()` — they previously would have 404'd under the
+  GitHub Pages `/3Dwebsite/` base path (only `next/link` auto-prefixes).
+
+### Verified
+
+- `tsc` clean, tests 91/91, Node build + static export compile.
+- Pages-mode export: canonical `/3Dwebsite/privacy/`, footer links and sitemap
+  entries all base-path correct; `/privacy` + `/terms` serve HTTP 200 with the
+  right titles and the support email present.
+- Icons regenerated and maskable art verified inside the safe zone by pixel scan.
+
 ## [0.23.3] — 2026-09-23
 
 ### Added — the 6-digit "use a code instead" fallback on /signin

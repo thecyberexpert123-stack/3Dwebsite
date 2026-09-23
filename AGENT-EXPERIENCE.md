@@ -1438,3 +1438,44 @@ measured here (SwiftShader ≈ 10 fps, no real device).
   with a network-first, hash-scoped strategy and a kill switch.
 - **Not verified:** the real install prompt, TWA build, and any real-device
   GPU behaviour — no Android toolchain or device here; emulation only.
+
+## v0.24.0 — policy pages + generative app icon
+
+- **Google lets you add `*.github.io`-style hosts too, but they stay
+  unverified forever** (public-suffix rule). Verified Authorized Domains are
+  for *your own* domains you'll prove in Search Console. The owner consented
+  to the Pages URL, so the launch plan is: ship `/privacy` + `/terms` + logo
+  > paste the Pages URLs on the consent screen > **Test users** must still
+  include `thecyberexpert123@gmail.com` + `legitanusuya@gmail.com` (Testing =
+  explicit allowlist only) > flip Publishing status to **In production**
+  (non-sensitive `openid, email, profile` — no formal verification wait) >
+  treat the "increase your app's user cap" as a real launch step: Google
+  re-flags unverified apps at ~100 distinct users and asks for CASA
+  verification.
+- **Trust verdict for Google OAuth + Pages:** soft-launch-viable today, but
+  any real user base needs a domain Google can verify. A verified domain is
+  the only honest durable fix; that can be an inexpensive rented domain with
+  a Search Console TXT record (Pages already serves a CNAME). Don't promise
+  "production, set-and-forget" on `*.github.io`.
+- **OAuth logo constraints:** 128–1200 px, ≤1 MB, no readable words/taglines,
+  and Google keeps a copy forever once submitted — upload the clean mark, not
+  a screen-cropped one. `public/logo/whimlet-logo-{128,512}.png` exist because
+  the console either resizes to 900×900 (square) or crops an App Store icon
+  shape, so the logo must be a square with centred art (ours is a centred
+  heart with transparent-padding built in). Use `npm run icons` to regenerate.
+- **Maskable icons** must be full-bleed and keep critical art inside the 10–90%
+  safe zone; also leave breathing room *around* the maskable heart and put the
+  art *on* it, not near the rim (launcher masks at 20% radius). Verified by
+  raw-pixel extent scans with `sharp`.
+- **Raw `<a href="/x">` is NOT base-path aware** in the Pages build — only
+  `next/link` (and `<Image>`) auto-prefix `basePath`. The Footer's `/studio`,
+  `/maker`, `/privacy`, `/terms` silently broken before; now routed through
+  `withBasePath()`. Grep any hand-written href in exported HTML (`/3Dwebsite/`)
+  when adding footer/nav links.
+- **Stale dev server on :3000** can 404 freshly-built routes (old process
+  answers). `ss -ltnp` or `ps aux | grep next` to find the holder; `pkill
+  -f next-server`/`next start` before re-smoking Node routes. The static export
+  (`out/`) is unaffected, which is why Pages was fine while Node 404'd.
+- **Canonical + basePath:** `metadata.alternates.canonical = absoluteUrl(p)` on
+  the new pages emits `/3Dwebsite/privacy/` in Pages mode automatically —
+  confirmed in the exported HTML.

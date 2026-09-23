@@ -1,5 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="16" fill="#FBF5EC"/>
-  <path d="M32 50C22 43 13 36 13 27.5 13 21 18 16 24 16c3.2 0 6 1.6 8 4 2-2.4 4.8-4 8-4 6 0 11 5 11 11.5C51 36 42 43 32 50z" fill="#F2C4CE" stroke="#D8849C" stroke-width="2.5" stroke-linejoin="round"/>
-  <path d="M21 30h22" stroke="#D8849C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffdfe"/>
+      <stop offset="0.52" stop-color="#ffeef3"/>
+      <stop offset="1" stop-color="#f9c6d3"/>
+    </linearGradient>
+    <linearGradient id="heart" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0" stop-color="#f3a8bf"/>
+      <stop offset="1" stop-color="#e07a9a"/>
+    </linearGradient>
+    <pattern id="stitch" width="23" height="18" patternUnits="userSpaceOnUse">
+      <path d="M5 3.5 11.5 12.5 18 3.5" fill="none" stroke="#fffbfc"
+            stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"
+            opacity="0.65"/>
+    </pattern>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#tile)"/>
+  <rect x="38" y="38" width="436" height="436" rx="92" fill="none"
+        stroke="#e07a9a" stroke-width="5" stroke-dasharray="0.1 26"
+        stroke-linecap="round" opacity="0.7"/>
+  <g transform="translate(256 268) scale(7.4) translate(-32 -34)">
+    <path d="M32 50C22 43 13 36 13 27.5 13 21 18 16 24 16c3.2 0 6 1.6 8 4 2-2.4 4.8-4 8-4 6 0 11 5 11 11.5C51 36 42 43 32 50z" fill="url(#heart)" stroke="#b8456f"
+          stroke-width="0.28" stroke-linejoin="round"/>
+    <path d="M32 50C22 43 13 36 13 27.5 13 21 18 16 24 16c3.2 0 6 1.6 8 4 2-2.4 4.8-4 8-4 6 0 11 5 11 11.5C51 36 42 43 32 50z" fill="url(#stitch)"/>
+  </g>
+  <g fill="#ffffff">
+    <path d="M392 136 l7 17 17 7 -17 7 -7 17 -7 -17 -17 -7 17 -7 z" opacity="0.95"/>
+    <path d="M118 372 l5 12 12 5 -12 5 -5 12 -5 -12 -12 -5 12 -5 z" opacity="0.8"/>
+  </g>
 </svg>

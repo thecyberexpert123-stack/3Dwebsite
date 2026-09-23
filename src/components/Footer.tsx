@@ -1,5 +1,6 @@
 import { footerNav, site, socialPlaceholders } from "@/data/site";
 import { PHONE_DISPLAY, PHONE_TEL, waLink, waMessages } from "@/lib/whatsapp";
+import { withBasePath } from "@/lib/paths";
 import { HeartDoodle, PhoneDoodle, WhatsAppGlyph } from "./Decorations";
 
 /** Boutique-catalogue footer: rose background, closing phrase. */
@@ -20,6 +21,15 @@ export function Footer() {
             accessories, bandanas and custom creations — made specially for you.
           </p>
           <p className="font-hand text-xl text-whitish">{site.closingPhrase}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-whitish/95">
+            <a href={withBasePath("/privacy")} className="rounded px-1 py-0.5 transition-colors hover:text-butter">
+              Privacy Policy
+            </a>
+            <span className="mx-1.5 opacity-50">·</span>
+            <a href={withBasePath("/terms")} className="rounded px-1 py-0.5 transition-colors hover:text-butter">
+              Terms of Service
+            </a>
+          </p>
         </div>
 
         {/* explore */}
@@ -30,7 +40,7 @@ export function Footer() {
               <li key={item.href}>
                 <a
                   className="rounded px-1 py-0.5 text-whitish transition-colors hover:text-butter"
-                  href={item.href}
+                  href={withBasePath(item.href)}
                 >
                   {item.label}
                 </a>
