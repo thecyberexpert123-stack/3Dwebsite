@@ -81,6 +81,36 @@ plain-text link fallback. A "use a 6-digit code instead" entry box on
 `/signin` (for scanners that prefetch and consume email links) is the next
 auth step — the templates deliberately don't promise it until it exists.
 
+## Custom SMTP — Brevo (production email)
+
+Supabase's built-in mailer is for testing only: ≈2 emails/hour, unbranded,
+and (since mid-2026) new free-tier projects on it can't edit templates.
+Pointing auth at a real SMTP provider fixes both.
+**Brevo** works without a domain to start and needs no card (~300/day free).
+
+1. **Brevo → Senders & IPs → Senders → Add**: From name `Whimlet`, From email
+   = a real address you control (or authenticate a whole domain under
+   Domains). Brevo emails a confirmation link — click it. Fill any "Complete
+   your profile" notice or first sends can silently block.
+2. **Brevo → SMTP & API → SMTP tab**: note the *server*, *port*, *Login* and
+   *Master password (SMTP key)* shown there.
+3. **Supabase → Authentication → Emails → SMTP settings → Enable custom
+   SMTP**, then:
+
+   | Field | Value |
+   | --- | --- |
+   | Sender email | the verified From address (must match Brevo's exactly) |
+   | Sender name | `Whimlet` |
+   | Host | `smtp-relay.brevo.com` |
+   | Port | `587` |
+   | Username | the **Login** value from step 2 (often `1234567@smtp-brevo.com` — not necessarily your account email) |
+   | Password | the **Master password / SMTP key** (not your login password, not the v3 API key) |
+
+4. **Save**, then test: **Authentication → Users → ⋯ → Send confirmation
+   email** (or sign up on the live site). With custom SMTP on, the **Email
+   Templates** editor unlocks on every plan — paste the two blocks from
+   [`email-templates.md`](email-templates.md).
+
 ## Security model (why admin data stays admin-only)
 
 - Every table is guarded by **RLS** policies keyed to `auth.uid()` /
