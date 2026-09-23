@@ -16,7 +16,8 @@ if (!outDir) {
 const require = createRequire(import.meta.url);
 const { decide, smoothFrameMs, FRAME_BUDGET_MS, INITIAL_FRAME_BUDGET_MS, isFlinging } = require(resolve(outDir, "scheduler.js"));
 const { decideBack, shouldPushEntry } = require(resolve(outDir, "android.js"));
-const { gpuScore, scoreDevice, tierFromScore, decideParity, orientationToPointer, followRest, tiltMayDrive, tiltShouldRest, TILT_RANGE_DEG, monitorBounds, glassLevel, effectiveFrameBudget, renderIntervalMs, nearestRefreshRate } = require(resolve(outDir, "capability.js"));
+const { gpuScore, scoreDevice, tierFromScore, decideParity, orientationToPointer, followRest, tiltMayDrive, tiltShouldRest, demoteByPressure, MAX_PRESSURE_DEMOTION, TILT_RANGE_DEG, monitorBounds, glassLevel, effectiveFrameBudget, renderIntervalMs, nearestRefreshRate } = require(resolve(outDir, "capability.js"));
+const { strainFromPressure, pressureSupported } = require(resolve(outDir, "pressure.js"));
 
 let pass = 0;
 let fail = 0;
@@ -250,6 +251,25 @@ console.log("engine: tilt idle rest");
   check("still moving → keep tracking", !tiltShouldRest(10_000, 6_000, 0.2));
   check("recent sample → keep tracking", !tiltShouldRest(10_000, 9_900, 0.001));
   check("custom rest window honoured", tiltShouldRest(10_000, 6_000, 0.001, 3999) === true && tiltShouldRest(10_000, 6_000, 0.001, 4001) === false);
+}
+
+console.log("engine: pressure → strain mapping");
+{
+  check("critical → hot", strainFromPressure("critical", false) === "hot");
+  check("serious → busy", strainFromPressure("serious", false) === "busy");
+  check("fair → nominal", strainFromPressure("fair", false) === "nominal");
+  check("nominal + flinging → nominal", strainFromPressure("nominal", true) === "nominal");
+  check("null + calm → idle", strainFromPressure(null, false) === "idle");
+  check("null + flinging → nominal", strainFromPressure(null, true) === "nominal");
+  check("no window (SSR/test) → unsupported", pressureSupported() === false);
+}
+
+console.log("engine: pressure tier elasticity");
+{
+  check("high drops to mid under pressure", demoteByPressure("high") === "mid");
+  check("mid drops to low under pressure", demoteByPressure("mid") === "low");
+  check("low stays low", demoteByPressure("low") === "low");
+  check("demotion budget is one hop (never high→low via pressure)", MAX_PRESSURE_DEMOTION === 1);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

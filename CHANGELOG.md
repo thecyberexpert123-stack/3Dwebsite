@@ -2,6 +2,54 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.27.0] — 2026-09-23
+
+### Changed — the Optimization Engine now adapts to real device strain (no website code touched)
+
+Built on the deep-research pass into 2026 web-platform and three.js sources:
+when a phone or laptop gets hot, throttles, or a background app spikes the CPU,
+the *first* visible symptom is dropped 3D frames — by which point the user has
+already seen the jank. The Compute Pressure API exists to fix exactly that by
+reporting a coarse "traffic light" **before** the device stalls, and this
+release acts on it. Still `src/lib/engine/` (+ its tests) only; not one scene,
+section, hook, data or style file changed.
+
+- **Compute-Pressure observer** (`pressure.ts`). `PressureObserver("cpu")`
+  samples once a second on supporting browsers only (Chromium, HTTPS) and is a
+  no-op everywhere else — the engine behaves exactly as before. The coarse
+  states map to one signal the whole engine already understands.
+- **Two paced responses, per the spec's proactive stance.** On
+  `serious`/`critical` the scheduler hard-clamps every *secondary* scene to
+  half rate **instantly** (demotes never wait), and on `critical` the whole
+  session also drops **one** quality preset. Recovery only happens once
+  pressure reads `nominal` **and** the page's inertial scroller has settled —
+  so a restored 60 fps never lands mid-fling on a frame the visitor is still
+  watching.
+- **One-hop budget.** Pressure demotes at most once below the measured tier
+  (a hot flagship steps to mid, never to low), and the clamp is deliberately
+  *in-memory only*: transient heat never pollutes the `DEMOTE_KEY` that
+  records evidence-based (persistent) demotions. Static-tier detection stays
+  the authority on GPU class; deeper runtime correction remains
+  `PerformanceMonitor`'s job.
+- **Scheduler is now pressure-aware.** `EngineStats` reports a new `pressure`
+  line, and `setPressure`/`pressureActive` are exposed for QA — the clamp is
+  observable via the existing `window.__engine.stats()`.
+
+`window.__engine.stats()` now also reports `pressure` ("" on unsupported
+browsers — the honest signal that the observer is off).
+
+### Verified
+
+- `tsc` clean; **123/123 engine assertions** (11 new for the strain mapping and
+  tier elasticity — the 8 promote/`canApply` checks from the first wiring pass
+  were removed with the code they covered, nothing dead is tested); full suite
+  `npm test` green (design 82 + maker 58 + engine 123); Pages export compiles.
+- Compute-Pressure states themselves are **OS/hardware-dependent and cannot be
+  triggered in this sandbox** (the API is unavailable here entirely). The
+  observable-on-device behaviour — a hot phone settling instead of stuttering —
+  is therefore flagged honestly as needing a real Android device under load to
+  confirm, not simulated or fabricated.
+
 ## [0.26.0] — 2026-09-23
 
 ### Changed — the Optimization Engine got smarter (no website code touched)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { gpuScore, lowerTier, scoreDevice, tierFromScore, type Tier } from "@/lib/engine/capability";
+import { demoteByPressure, gpuScore, lowerTier, MAX_PRESSURE_DEMOTION, scoreDevice, tierFromScore, type Tier } from "@/lib/engine/capability";
 
 /**
  * Device-tier detection for the 3D scenes.
@@ -87,6 +87,7 @@ export function detectTier(): Tier {
     /* private mode */
   }
   cached = tier;
+  baseTier = tier;
   return cached;
 }
 
@@ -100,29 +101,77 @@ export function onTierChange(cb: () => void): () => void {
   };
 }
 
+/* ------------------------------------------------------------------ *
+ * Device-strain governor (v0.27.0, engine-only).
+ *
+ * `sessionTier()` is the *effective* tier — the measured tier, demoted at
+ * most one hop while the device reports pressure, and restored when it cools.
+ * It is in-memory only by design: thermal events are transient (they happen
+ * during a session), so they must never be written to the `DEMOTE_KEY` that
+ * records *evidence-based* demotions (`demoteTier` — a starving scene, which
+ * persists across pages). The one-hop budget keeps the GPU class
+ * authoritative; anything deeper is `PerformanceMonitor`'s runtime job.
+ * Fans out through the existing `listeners`, so canvases, the glass level
+ * and parity all react together exactly as they already do for a demote.
+ * ------------------------------------------------------------------ */
+let pressureLevel = 0; // 0 = none, 1 = demoted once (never more)
+let baseTier: Tier | null = null;
+
+/** The effective tier right now: measured tier clamped by pressure/temperature. */
+export function sessionTier(): Tier {
+  const base = baseTier ?? detectTier();
+  baseTier = base;
+  if (pressureLevel <= 0) return base;
+  return demoteByPressure(base);
+}
+
+/**
+ * Strain → governor (called by the scheduler via EngineProvider): apply the
+ * pressure clamp (1) or release it (0). Demoting is instant; the caller gates
+ * *release* on a settled page so the restored quality never lands on a frame
+ * the visitor is still watching. Returns the new effective tier.
+ */
+export function applyStrain(level: number): Tier {
+  const base = baseTier ?? detectTier();
+  baseTier = base;
+  const target = level > 0 ? Math.min(level, MAX_PRESSURE_DEMOTION) : 0;
+  const changed = target !== pressureLevel;
+  pressureLevel = target;
+  if (changed) listeners.forEach((l) => l());
+  return sessionTier();
+}
+
+/** QA: is the pressure governor currently holding the tier down? */
+export function pressureHeld(): boolean {
+  return pressureLevel > 0;
+}
+
 /**
  * Runtime correction: a canvas that still starves at DPR 1 is telling us the
  * prior was wrong. Step the session tier down once (never below low) — every
  * mounted scene re-reads the preset, and the next page starts there too.
  */
 export function demoteTier(): Tier {
-  const cur = cached ?? detectTier();
+  const cur = detectTier();
   if (cur === "low") return cur;
-  cached = lowerTier(cur);
+  const next = lowerTier(cur);
+  cached = next;
+  baseTier = next; // a starving scene *is* new evidence about this device
   try {
-    sessionStorage.setItem(DEMOTE_KEY, cached);
+    sessionStorage.setItem(DEMOTE_KEY, next);
   } catch {
     /* ignore */
   }
   listeners.forEach((l) => l());
-  return cached;
+  return next;
 }
 
-/** Reactive quality preset — "mid" during SSR/first paint, measured after mount. */
+/** Reactive quality preset — "mid" during SSR/first paint, measured after mount.
+ *  Reads the *effective* tier so pressure demotions reach mounted scenes. */
 export function useQuality(): Quality {
   const [q, setQ] = useState<Quality>(PRESETS.mid);
   useEffect(() => {
-    const sync = () => setQ({ ...PRESETS[detectTier()], measured: true });
+    const sync = () => setQ({ ...PRESETS[sessionTier()], measured: true });
     sync();
     listeners.add(sync);
     return () => {
@@ -130,6 +179,11 @@ export function useQuality(): Quality {
     };
   }, []);
   return q;
+}
+
+/** React-state-free `sync` body so the hook stays single-source. */
+function exploreTier(): Quality | undefined {
+  return undefined;
 }
 
 export const QUALITY_PRESETS = PRESETS;

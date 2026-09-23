@@ -1,6 +1,6 @@
 {
   "name": "whimlet",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "private": true,
   "description": "Whimlet — handmade crochet products & custom crochet orders. Boutique 3D marketing site.",
   "scripts": {
@@ -11,7 +11,7 @@
     "optimize:images": "node scripts/optimize-images.mjs",
     "icons": "node scripts/build-icons.mjs",
     "test:maker": "tsc --module commonjs --target es2020 --skipLibCheck --outDir node_modules/.maker-test src/lib/maker.ts src/lib/sculpt.ts && node scripts/maker-tests.mjs node_modules/.maker-test",
-    "test:engine": "tsc --module commonjs --target es2020 --skipLibCheck --outDir node_modules/.engine-test src/lib/engine/scheduler.ts src/lib/engine/android.ts src/lib/engine/capability.ts && node scripts/engine-tests.mjs node_modules/.engine-test",
+    "test:engine": "tsc --module commonjs --target es2020 --skipLibCheck --outDir node_modules/.engine-test src/lib/engine/scheduler.ts src/lib/engine/android.ts src/lib/engine/capability.ts src/lib/engine/pressure.ts && node scripts/engine-tests.mjs node_modules/.engine-test",
     "test": "npm run test:design && npm run test:maker && npm run test:engine",
     "engine:build": "NEXT_STANDALONE=1 next build",
     "engine:pack": "sh engine/pack.sh",

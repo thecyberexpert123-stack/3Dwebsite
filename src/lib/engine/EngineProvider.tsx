@@ -2,10 +2,12 @@
 
 import { useEffect } from "react";
 import { engineEnabled } from "./EngineRoot";
+import { engine, scrollerRunning } from "./scheduler";
 import { installAndroidShim } from "./android";
 import { acquireTilt } from "./tilt";
 import { glassLevel } from "./capability";
-import { detectTier, onTierChange } from "@/lib/quality";
+import { detectTier, onTierChange, applyStrain, sessionTier } from "@/lib/quality";
+import { installPressureObserver, strainFromPressure } from "./pressure";
 
 /**
  * Whimlet Engine — page-level governor. Mounted once in the root layout.
@@ -48,8 +50,49 @@ export function EngineProvider() {
     const offTilt = acquireTilt();
     const html = document.documentElement;
     const coarse = window.matchMedia("(pointer: coarse)").matches;
+
+    // Device strain (Compute Pressure) → governor. Two responses, both paced
+    // as the platform recommends (demote immediately, relax only on calm):
+    //   1. the scheduler hard-clamps secondary scenes to half rate the moment
+    //      the device reports `serious`/`critical` (no scroll needed);
+    //   2. the tier governor drops the whole session one preset on `critical`
+    //      and eases it back only once pressure reads nominal AND the page's
+    //      inertial scroller has settled (so the quality bump never lands on
+    //      a frame the visitor is still watching).
+    let lastStrain: ReturnType<typeof strainFromPressure> = "idle";
+    let relaxTimer = 0;
+    const clearRelax = () => {
+      if (relaxTimer) {
+        window.clearTimeout(relaxTimer);
+        relaxTimer = 0;
+      }
+    };
+
+    const offPressure = installPressureObserver((state) => {
+      // 1. scheduler clamp — instant, cheap, reversible. `serious`/`critical`
+      //    halves every secondary scene this frame; `nominal` lifts it.
+      engine().setPressure(state);
+      const strain = strainFromPressure(state, false);
+      if (strain === "busy" || strain === "hot") {
+        // 2. layered shed: "busy" (serious) keeps the clamp only; "hot"
+        //    (critical, needs cooling) also drops the session one preset.
+        clearRelax();
+        if (strain === "hot") applyStrain(1);
+      } else {
+        // 3. nominal/idle: ease back up only once the page has settled
+        const relax = () => {
+          relaxTimer = 0;
+          if (strainFromPressure(state, false) !== lastStrain) return; // moved on
+          if (!scrollerRunning()) applyStrain(0);
+        };
+        clearRelax();
+        relaxTimer = window.setTimeout(relax, 600);
+      }
+      lastStrain = strain;
+    });
+
     const applyGlass = () => {
-      const level = glassLevel(coarse, detectTier());
+      const level = glassLevel(coarse, sessionTier());
       html.classList.toggle("glass-frosted", level === "frosted");
       html.classList.toggle("glass-lite", level === "lite");
     };
@@ -59,6 +102,8 @@ export function EngineProvider() {
       offShim();
       offTilt();
       offTier();
+      offPressure();
+      clearRelax();
       html.classList.remove("glass-frosted", "glass-lite");
     };
   }, []);

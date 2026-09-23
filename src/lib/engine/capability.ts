@@ -121,6 +121,17 @@ export function lowerTier(t: Tier): Tier {
   return t === "high" ? "mid" : "low";
 }
 
+/** How far a pressure demotion can push a device below its measured tier.
+ *  One hop only: the static tier is still the truth about the *GPU class* —
+ *  a hot flagship drops to mid, never to low. `lowerTier` forces low.< rare */
+export const MAX_PRESSURE_DEMOTION = 1;
+
+/** One pressure rung → the tier below. Identity when already at the floor. */
+export function demoteByPressure(t: Tier): Tier {
+  if (t === "high") return "mid";
+  return "low";
+}
+
 /* ------------------------------------------------------------------ */
 /* Frame-rate targets                                                  */
 /* ------------------------------------------------------------------ */

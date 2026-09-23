@@ -93,11 +93,28 @@ export function smoothFrameMs(prev: number, dt: number): number {
   return prev === 0 ? d : prev + (d - prev) * 0.1;
 }
 
+/** The engine leans on the page's inertial scroller for the relax callbacks:
+ *  Lenis keeps calling rAF while it eases back to rest, which is exactly the
+ *  window in which a cooled-down scene should ease back up. `scrollerRunning`
+ *  is checked before promoting, never before demoting (demotes act instantly). */
+export function scrollerRunning(): boolean {
+  try {
+    const w = window as { __lenis?: { isStopped?: boolean; velocity?: number } | null };
+    const l = w.__lenis;
+    if (!l) return false;
+    if (typeof l.isStopped === "boolean" && l.isStopped) return false;
+    return Math.abs(l.velocity ?? 0) > 0.01;
+  } catch {
+    return false;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Runtime                                                              */
 /* ------------------------------------------------------------------ */
 
-import { nearestRefreshRate, renderIntervalMs, effectiveFrameBudget } from "./capability";
+import { effectiveFrameBudget, nearestRefreshRate, renderIntervalMs } from "./capability";
+import type { PressureState } from "./pressure";
 
 type Root = {
   id: string;
@@ -126,6 +143,8 @@ export type EngineStats = {
   intervalMs: number;
   /** refresh-scaled frame-time budget the scheduler is currently using */
   budgetMs: number;
+  /** latest Compute-Pressure / thermal state ("" when unsupported) */
+  pressure: PressureState | "";
 };
 
 class Scheduler {
@@ -151,6 +170,8 @@ class Scheduler {
   private budget: number = INITIAL_FRAME_BUDGET_MS;
   private hiddenWired = false;
   private lastAdvance = 0;
+  /** latest CPU/thermal traffic light — "" until the observer first fires. */
+  private pressure: PressureState | "" = "";
   private onScroll = () => {
     const now = performance.now();
     const y = window.scrollY;
@@ -222,6 +243,17 @@ class Scheduler {
     return this.lastDecisions.find((d) => d.id === id)?.render ?? false;
   }
 
+  /** EngineProvider relays the Compute-Pressure state here so the scheduler
+   *  hard-clamps all secondaries to half rate the instant the device stalls. */
+  setPressure(state: PressureState | null | ""): void {
+    this.pressure = state ?? "";
+  }
+
+  /** Is CPU/thermal pressure currently holding the scheduler in its hard clamp? */
+  pressureActive(): boolean {
+    return this.pressure === "serious" || this.pressure === "critical";
+  }
+
   stats(): EngineStats {
     const hidden = typeof document !== "undefined" && document.hidden;
     const roots = [...this.roots.values()].map((r) => ({ id: r.id, area: +r.area.toFixed(3), hint: r.hint, rendering: this.isRendering(r.id), frames: r.frames, primed: r.primed }));
@@ -233,7 +265,7 @@ class Scheduler {
     } catch {
       /* ignore */
     }
-    return { roots, avgFrameMs: +this.avg.toFixed(2), fps, hidden, flinging: isFlinging(sc.dy, sc.dt, performance.now() - sc.t), hz, intervalMs: +this.intervalMs.toFixed(2), budgetMs: +this.budget.toFixed(2) };
+    return { roots, avgFrameMs: +this.avg.toFixed(2), fps, hidden, flinging: isFlinging(sc.dy, sc.dt, performance.now() - sc.t), hz, intervalMs: +this.intervalMs.toFixed(2), budgetMs: +this.budget.toFixed(2), pressure: this.pressure };
   }
 
   private observer(): IntersectionObserver {
@@ -342,7 +374,8 @@ class Scheduler {
       this.frameIndex++;
       const infos: RootInfo[] = [...this.roots.values()].map((r) => ({ id: r.id, area: r.area, hint: r.hint, priority: r.priority, prime: r.prime }));
       const sc = this.scroll;
-      const busy = isFlinging(sc.dy, sc.dt, t - sc.t);
+      // hard clamp while the device reports strain (demotes act instantly)
+      const busy = this.pressureActive() || isFlinging(sc.dy, sc.dt, t - sc.t);
       this.lastDecisions = decide(infos, this.avg, this.frameIndex, busy, this.budget);
       for (const d of this.lastDecisions) {
         if (!d.render) continue;

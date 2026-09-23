@@ -92,6 +92,32 @@ scene changes:
 frame-time budget). All the decision math is pure and unit-tested
 (`npm run test:engine`).
 
+### Strain-aware self-protection (v0.27.0)
+
+The static tier and the runtime DPR monitor both react to symptoms *after*
+they appear. The one signal the web platform gives us before that is device
+strain — the Compute Pressure API (MDN / W3C Level 1), which reports coarse,
+privacy-safe states so an app can shed load *proactively*:
+
+1. **Observer** (`pressure.ts`). `PressureObserver("cpu", { sampleInterval:
+   1000 })` — Chromium, HTTPS-only, `window.isSecureContext` guarded, and a
+   compiled-in no-op everywhere else. `"nominal" | "fair" | "serious" |
+   "critical"` map to `idle/nominal/busy/hot`.
+2. **Instant demote, gated relax.** `serious`/`critical` half-rates every
+   secondary canvas this frame (via the scheduler's existing fling clamp) and
+   `critical` also steps the session **one** quality preset. Relaxing back is
+   gated: only when pressure reads `nominal` **and** the inertial scroller
+   (`window.__lenis`) has settled, so the restored quality never lands
+   mid-fling on a frame the visitor is still watching.
+3. **Transient by design.** The pressure clamp is in-memory only — it never
+   writes `whimlet-tier-cap`, so a hot evening never gets remembered as a
+   weaker device across pages. The measured tier stays the authority; pressure
+   can only nudge it one hop, and `PerformanceMonitor` still owns deeper
+   runtime correction.
+
+`window.__engine.stats()` adds a `pressure` line (`""` where unsupported — an
+honest "observer off" signal). Everything else is unchanged.
+
 ### Evidence (same build, `?engine=off` vs on, headless SwiftShader — relative only)
 
 GPU link/reflection calls by the context they ran in, whole-page journey:

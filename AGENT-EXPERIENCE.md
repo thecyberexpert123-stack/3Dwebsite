@@ -1550,3 +1550,38 @@ measured here (SwiftShader ≈ 10 fps, no real device).
 - The engine's contract held: changes stayed in `src/lib/engine/` + tests +
   README. Reminder for next time — every new decision rule gets a pure
   function + a unit assertion *before* wiring it into the class.
+
+- **Device strain is a *rate-of-change* problem, so demote instantly and relax
+  slowly.** Compute Pressure wants proactive shedding (before jank, not after),
+  which means the demote path must bypass every gate — the fling clamp engages
+  this frame, the tier drop on `critical` is immediate. Recovery is the opposite:
+  a restored tier bumps every scene's DPR + particle count + shadow map at
+  once, so gate it on *both* a nominal pressure reading *and* a settled
+  inertial scroller (`window.__lenis.isStopped`/`velocity`), else the promotion
+  itself is a visible jank spike the user watches mid-scroll.
+- **Transient signals must not persist.** The pressure demotion is in-memory
+  only, deliberately separate from `DEMOTE_KEY` (`whimlet-tier-cap`), which
+  records *evidence-based* demotions (a scene that starved at DPR 1). Mixing
+  the two means one hot evening permanently eyebolts a phone into low tier, and
+  recovery destroys the evidence the next page needed.
+- **Cap adaptive depth: pressure = one hop.** A thermal event says "back off
+  now", not "your GPU is one class worse". Let the static tier stay
+  authoritative, let pressure nudge once, and let `PerformanceMonitor` own
+  deeper corrections — otherwise three controllers fight over DPR and produce
+  the oscillation they were meant to prevent.
+- **`PressureObserver` is opt-out comfort, never a dependency.** It is
+  SecureContext-gated, Chromium-only, and absent in this sandbox, so every
+  call site must degrade to today's behaviour when it is missing and the API
+  must be wrapped in its own feature-detect before construction. `pressure.ts`
+  compiles into the same CommonJS test bundle as the rest of the engine —
+  feature-detecting behind `typeof window` so the unit run can `require()` it.
+- **A tsc standalone compile infers `rootDir` from the file set and shuffles
+  output into folders when files span directories.** Keeping `pressure.ts`
+  *inside* `src/lib/engine/` (not `src/lib/`) kept `npm run test:engine`'s
+  flat `node_modules/.engine-test/*.js` layout, which `scripts/engine-tests.mjs`
+  already `require()`s. Engine code, engine tests and engine *location* must
+  stay in one directory, or the test harness silently loads a stale flat copy.
+- **`useQuality()` must read the *effective* tier, not `detectTier()`,** or
+  mounted scenes never observe a pressure demotion — the reactive `sync`
+  callback would keep re-emitting the measured tier. One-line change, whole
+  feature's outcome.
