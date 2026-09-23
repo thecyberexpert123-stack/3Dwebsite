@@ -857,8 +857,39 @@ A mis-configuration fails earlier with a Supabase "provider not enabled" or a
 Google `redirect_uri_mismatch`. That probe is a useful non-invasive smoke:
 it needs no credentials and no secret key.
 
-## v0.23.0 — an admin table is a card on a phone; a native select beats a custom one
+## v0.23.2 — the JWT is nested: read the claim where it actually lives
 
+**Problem.** The real admin saw the admin *UI* but the database still refused
+(`admin_overview_v1: admin role required`). Root cause found only because it
+finally surfaced on-device: the grant SQL writes
+`raw_app_meta_data.user_role`, which Supabase embeds in the JWT as
+`app_metadata.user_role` — **nested**. The client read it correctly
+(`session.user.app_metadata.user_role`), but `is_admin()`/`get_user_role()`
+read the **top-level** `auth.jwt() ->> 'user_role'`, which only exists when
+you run a custom access-token auth-hook. We don't, so the DB
+always saw `customer`.
+
+**Mechanism (reusable).** Metadata keys live *inside* objects in the JWT:
+`auth.jwt() -> 'app_metadata' ->> 'user_role'`, `-> 'user_metadata' ->>
+'name'`. A `->>` at the top level reads a claim that no built-in flow
+writes. **Define the role once and delegate**: `is_admin()` = 
+`get_user_role() = 'admin'` so the two can never disagree again. Also mirror
+the claim into your own tables on update (`handle_new_user` now sets
+`user_role = excluded.user_role` on conflict) — a grant after sign-up must
+reach `profiles.user_role` or the admin still counts as a customer in
+aggregates like the overview.
+
+**Verification trap this exposed.** The client's "you are admin" branch and
+the DB's opinion can disagree by exactly this bug. A smoke test that only
+paints the UI (even with a forged session) *cannot* catch it — the DB
+round-trip is the test, and this sandbox can't reach `*.supabase.co`. The
+honest division of labour: build/type/layout verified here; the role claim
+verified on the owner's device.
+
+**Confidence.** High — the nested-claim behaviour is documented Supabase JWT
+structure (app_metadata is an object inside the token; a top-level role
+claim requires the `custom_access_token` hook). The fix is a schema edit
+that only takes effect when the owner re-runs `schema.sql`.
 **Problem.** "Make the admin panel work on phones." The existing panel was a
 desktop table (`<table>`), so on a 390 px screen the orders/catalog rows
 overflowed and forced a two-thumb pinch; the six section tabs wrapped into

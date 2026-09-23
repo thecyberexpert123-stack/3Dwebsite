@@ -17,7 +17,12 @@ policies (see `schema.sql`); the publishable key that ships in the site is
 
 2. **Run the schema.** Open **SQL Editor → New query**, paste the whole of
    `schema.sql`, and run it. It is idempotent — safe to re-run after any
-   schema edit.
+   schema edit. **Re-run it now** if you already ran an earlier copy: the
+   current file fixes the role read (`is_admin()`/`get_user_role()` now read
+   `auth.jwt() -> 'app_metadata' ->> 'user_role'`, matching where the grant
+   SQL writes it — the first attempt read a top-level claim that is always
+   null without an auth-hook, so a real admin was refused with
+   "admin role required").
 
 3. **Seed the admin.** Sign in at `/signin` once (create your account), then
    in the SQL editor run (with your real email):

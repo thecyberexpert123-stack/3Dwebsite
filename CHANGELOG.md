@@ -2,6 +2,30 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.23.2] — 2026-09-23
+
+### Fixed — the admin was client-side "admin" but database-side "customer"
+
+The grant SQL writes `raw_app_meta_data.user_role`, which ships in the JWT
+as `app_metadata.user_role`. The client read exactly that
+(`session.user.app_metadata.user_role`) — so the UI painted the admin
+panel — but `is_admin()` / `get_user_role()` read the **top-level**
+`auth.jwt() ->> 'user_role'` instead, which is only ever set by a custom
+auth-hook we don't run. Result: every RLS policy and the
+`admin_overview_v1()` guard saw a customer, and the overview returned
+"admin role required".
+
+- `get_user_role()` now reads `auth.jwt() -> 'app_metadata' ->> 'user_role'`.
+- `is_admin()` now delegates to `get_user_role()` (one definition of the
+  role — they cannot drift apart again).
+- `handle_new_user` now also syncs `user_role` into `profiles` on update,
+  so a freshly-granted admin's profile stops counting as a "customer".
+
+**Owner action required:** open **Supabase → SQL Editor**, paste the whole
+of `supabase/schema.sql`, and **Run** (idempotent). Then sign out and back
+in once. This is a database-side file — re-running it is what applies the
+fix.
+
 ## [0.23.1] — 2026-09-23
 
 ### Added — the owner's quiet door (`/owner`)

@@ -29,14 +29,19 @@
 -- ============================================================================
 
 -- helpers ---------------------------------------------------------------
+-- NOTE — the role claim lives INSIDE app_metadata. Our grant SQL writes
+-- `raw_app_meta_data.user_role`, which Supabase embeds in the JWT as
+-- `app_metadata.user_role`. Reading a top-level `auth.jwt() ->> 'user_role'`
+-- is therefore always NULL here (that path needs a custom auth-hook, which
+-- we do not run) — it made is_admin() silently false for the real admin.
 create or replace function public.get_user_role()
 returns text language sql stable security definer set search_path = auth, public as $$
-  select coalesce(auth.jwt() ->> 'user_role', 'customer')
+  select coalesce(auth.jwt() -> 'app_metadata' ->> 'user_role', 'customer')
 $$;
 
 create or replace function public.is_admin()
-returns boolean language sql stable security definer set search_path = auth, public as $$
-  select coalesce(auth.jwt() ->> 'user_role', 'customer') = 'admin'
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.get_user_role() = 'admin'
 $$;
 
 -- profiles ------------------------------------------------------------------
@@ -76,6 +81,7 @@ begin
   )
   on conflict (id) do update set
     email = excluded.email,
+    user_role = excluded.user_role,
     updated_at = now();
   return new;
 end $$;
