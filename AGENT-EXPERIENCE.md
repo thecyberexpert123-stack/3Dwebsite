@@ -819,6 +819,35 @@ scenes, adding dependencies or touching the build.
   reviewed against current docs but **not executed** — no daemon in the
   sandbox. Said so in the README rather than implying otherwise.
 
+## v0.21.0 — "store it encrypted" means what? Hash, don't encrypt
+
+**Problem.** Owner asked to "store the password encrypted in the database."
+The right engineering answer is a correction, not compliance: reversible
+encryption means a leak + key loss = plaintext passwords in the wild. The
+industry practice that *satisfies the intent* (passwords not stored in
+recoverable form) is a salted **one-way bcrypt hash** — and you should not
+hand-roll even that when the platform already did it well.
+
+**Mechanism (reusable).** Never put a `password` column in your own tables.
+Delegate to the managed auth provider: `supabase.auth.signUp({ email,
+password, options: { data: { name } } })` and `signInWithPassword`. The
+provider stores only `auth.users.encrypted_password` (a bcrypt hash),
+enforces its own rate limits/brute-force protection, and email verification
+is a project *setting* (Auth → Providers → Email → "Confirm email") that
+makes sign-up return no session until confirmed — surface that state
+explicitly in the UI instead of hiding it.
+
+**Gotcha (auth-specific).** `user_metadata` vs `app_metadata`: put UI/profile
+fields (name) in `options.data` (→ `raw_user_meta_data`, user-editable); put
+the authorization claim (`user_role`) only in `app_metadata`, which the user
+cannot write. The `profiles` table only mirrors `name`/`email` — the role
+comes from the JWT claim the DB policy reads, never from a client-provided
+column.
+
+**Confidence.** High (Supabase GoTrue behaviour is documented + verified in
+the installed `auth-js` types and dist); unverified only the live email
+round-trip, which needs the owner's device.
+
 ## v0.20.0 — auth + an admin panel on a static host: Supabase, and never localStorage "passwords"
 
 **Problem.** Owner wanted sign-in *and* a real admin panel, but the site is a

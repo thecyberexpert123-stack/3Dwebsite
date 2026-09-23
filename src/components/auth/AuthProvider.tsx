@@ -13,31 +13,34 @@ export interface AuthState {
   session: Session | null;
   user: User | null;
   role: UserRole | null;
+  /** Magic link — signs a verified user straight in. */
   signInWithOtp: (email: string) => Promise<{ error: string | null }>;
+  /** Email + password sign-in (requires a confirmed email / verified sign-up). */
+  signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
+  /** Sign-up with email + password; when "Confirm email" is ON, Supabase sends
+   *  a verification link and no session is created until it is confirmed. */
+  signUpWithPassword: (email: string, password: string, name?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
-  /** Remember-the-flag UX for first-setup — will be scoped out in later phases.
-   *  Non-authoritative: the DB role claim is what /admin actually enforces. */
-  rememberAdminFlag: boolean;
-  setRememberAdminFlag: (v: boolean) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
 const ROLE_CLAIM = "user_role";
-const ROLE_SEEN = "whimlet:adminflag";
 
 /**
- * IMPORTANT — the admin flag is NOT an authorization mechanism. /admin and
- * the Supabase RLS policies authorise from the `user_role` claim in the
- * signed-in user's JWT (set on auth.users.raw_app_meta_data). The flag only
- * remembers locally that an admin has used this browser, purely so future
- * phased UI (e.g. a "show admin affordances" store entry) has a place to
- * read a hint. It must never gate data.
+ * Security model (read this before changing anything):
+ *   - Passwords never touch our code paths: `signInWithPassword` / `signUp`
+ *     send them straight to Supabase Auth, which stores only a one-way bcrypt
+ *     hash in the managed `auth.users` table (not reversible "encryption").
+ *   - Email verification is a project setting (Auth → Providers → Email →
+ *     "Confirm email"). With it ON, `signUp` returns no session until the
+ *     link is confirmed; we surface that explicitly.
+ *   - /admin and every RLS policy authorise from the `user_role` claim in the
+ *     signed-in user's JWT — never from anything the client asserts.
  */
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [rememberAdminFlag, setRememberAdminFlagState] = useState(false);
 
   const client = useMemo(() => createClient(SUPABASE_URL, SUPABASE_ANON_KEY), []);
 
@@ -58,12 +61,6 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       if (!cancelled) setSession(s);
     });
 
-    try {
-      setRememberAdminFlagState(localStorage.getItem(ROLE_SEEN) === "admin");
-    } catch {
-      /* private mode — flag just stays false */
-    }
-
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
@@ -75,20 +72,39 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     return claim === "admin" ? "admin" : claim === "customer" ? "customer" : session ? "customer" : null;
   }, [session]);
 
-  // keep the local flag honest whenever we know the role from the JWT
-  useEffect(() => {
-    if (role === "admin") {
-      try {
-        localStorage.setItem(ROLE_SEEN, "admin");
-      } catch {}
-      setRememberAdminFlagState(true);
-    }
-  }, [role]);
-
   const signInWithOtp = useCallback(
     async (email: string) => {
       try {
         const { error } = await client.auth.signInWithOtp({ email });
+        return { error: error ? error.message : null };
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : "Could not reach the server." };
+      }
+    },
+    [client]
+  );
+
+  const signInWithPassword = useCallback(
+    async (email: string, password: string) => {
+      try {
+        const { error } = await client.auth.signInWithPassword({ email, password });
+        return { error: error ? error.message : null };
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : "Could not reach the server." };
+      }
+    },
+    [client]
+  );
+
+  const signUpWithPassword = useCallback(
+    async (email: string, password: string, name?: string) => {
+      try {
+        // send the `name` through so the profiles table trigger can use it
+        const { error } = await client.auth.signUp({
+          email,
+          password,
+          options: { data: name ? { name } : undefined },
+        });
         return { error: error ? error.message : null };
       } catch (e) {
         return { error: e instanceof Error ? e.message : "Could not reach the server." };
@@ -109,11 +125,11 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       user: session?.user ?? null,
       role,
       signInWithOtp,
+      signInWithPassword,
+      signUpWithPassword,
       signOut,
-      rememberAdminFlag,
-      setRememberAdminFlag: setRememberAdminFlagState,
     }),
-    [loading, session, role, signInWithOtp, signOut, rememberAdminFlag]
+    [loading, session, role, signInWithOtp, signInWithPassword, signUpWithPassword, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

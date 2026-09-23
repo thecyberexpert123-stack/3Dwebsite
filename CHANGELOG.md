@@ -174,6 +174,35 @@ gift scene, and richer animation across the page.
   URL round-trips with petal data, tamper rejection, and a 100-stroke
   extrusion-safety sweep proving outputs are always simple polygons).
 
+## [0.21.0] — 2026-09-23
+
+### Changed — real email+password auth, with email verification
+
+- **Password sign-in + sign-up** are now live (they were decorative in
+  v0.20.0). Sign-up asks name + email + password (min 6 chars); when
+  Supabase "Confirm email" is ON the user gets a **verification email** and
+  no session is issued until they confirm — the UI states this honestly
+  ("we've emailed you a link to verify…").
+- **Passwords are never stored by the site.** Both flows call Supabase Auth,
+  which keeps a **one-way bcrypt hash** in its managed `auth.users` table —
+  deliberately `not` a reversible "encryption" (a recoverable password is a
+  breach liability; a hash is not). Documented in `supabase/README.md`.
+- `AuthProvider` refactored: `signInWithPassword` / `signUpWithPassword`
+  added; the dead `rememberAdminFlag` placeholder was removed. Sign-up
+  forwards the `name` through `options.data` so the `profiles` trigger can
+  use it.
+
+### Setup (owner, one-time — same as v0.20.0)
+- Authentication → Providers → Email → **Confirm email ON**.
+
+### Verified
+- `tsc` clean, tests 82/58/91, Node build + Pages export (empty-secret
+  condition) both compile.
+- Headless: sign-up mode shows name/password/6+-char/Create, toggles to
+  sign-in; 0 console errors.
+- Live Supabase round-trip unverifiable here (sandbox cannot reach
+  `*.supabase.co`); the verification-email flow is the on-device smoke item.
+
 ## [0.20.0] — 2026-09-23
 
 ### Added — customer accounts + a real admin panel (Supabase, free tier)

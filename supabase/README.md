@@ -8,9 +8,10 @@ policies (see `schema.sql`); the publishable key that ships in the site is
 ## One-time setup (≈3 minutes)
 
 1. **Create the project** (already done — `https://hbimqkdirfvmhitkuiqe.supabase.co`).
-   In **Authentication → Providers → Email**, enable **Email** and check
-   *Confirm email* (recommended) — magic links then require a confirmed inbox;
-   disable it only if you want instant sign-in during testing.
+   In **Authentication → Providers → Email**, enable **Email** and turn
+   **Confirm email** ON — this is what makes password sign-up send a
+   **verification email** and blocks sign-in until the address is confirmed.
+   (Magic links require a confirmed inbox either way.)
 
    → **Sign In / Up → Redirect URLs**: allow `https://thecyberexpert123-stack.github.io/3Dwebsite/**` (and `http://localhost:3000/**` for dev).
 
@@ -47,6 +48,16 @@ Repository secrets) if they are not already:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the `sb_publishable_…` key from Project Settings → API |
 
 For local dev, copy them into `.env.local` (already git-ignored).
+
+## Passwords — how they are stored
+
+The site never stores passwords at all. Both sign-up and sign-in go through
+Supabase Auth, which keeps a **one-way bcrypt hash** in its managed
+`auth.users` table. (A reversible "encrypted" password would be a security
+bug — it can be decrypted on breach; a hash cannot. This is the same reason
+every serious platform does it.) Email confirmation is enforced by the
+"Confirm email" setting above, and Supabase's own rate limits cover brute
+force.
 
 ## Honesty notes
 
