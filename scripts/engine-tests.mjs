@@ -272,5 +272,67 @@ console.log("engine: pressure tier elasticity");
   check("demotion budget is one hop (never high→low via pressure)", MAX_PRESSURE_DEMOTION === 1);
 }
 
+console.log("engine: idle-shutdown wakes on intersection");
+{
+  // Reproduces the v0.26.0 regression: a canvas that mounts already on-screen
+  // is never drawn, because its IntersectionObserver callback fires AFTER the
+  // scheduler's first rAF tick (rAF steps run before intersection steps). The
+  // first tick sees `area = 0`, renders nothing, and the idle shutdown sleeps
+  // the loop — and the IO callback must be what wakes it again.
+  const rafCalls = [];
+  let ioCb = null;
+  const el = {};
+  const win = {
+    innerWidth: 1000,
+    innerHeight: 1000,
+    scrollY: 0,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+  globalThis.window = win;
+  globalThis.document = { addEventListener: () => {}, hidden: false };
+  globalThis.requestAnimationFrame = (cb) => {
+    rafCalls.push(cb);
+    return rafCalls.length;
+  };
+  globalThis.cancelAnimationFrame = () => {};
+  globalThis.IntersectionObserver = class {
+    constructor(cb) {
+      ioCb = cb;
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+  // Scheduler imports these from `./capability`; already required above.
+  const sched = require(resolve(outDir, "scheduler.js"));
+  const eng = sched.engine();
+  let advanced = 0;
+  eng.register("studio", el, () => {
+    advanced++;
+  });
+
+  // First tick: the IO hasn't fired yet, so `area` is still 0 → the scene is
+  // "invisible" → not advanced → the idle shutdown lets the loop sleep.
+  const first = rafCalls.shift();
+  first(16);
+  check("first tick sees area=0 → scene not advanced", advanced === 0);
+  check("idle shutdown: loop slept (no next frame queued)", rafCalls.length === 0);
+
+  // Now the IntersectionObserver reports the canvas is actually on-screen.
+  ioCb([{ target: el, isIntersecting: true, intersectionRect: { width: 1000, height: 1000 } }]);
+  check("visible intersection wakes the loop (next frame queued)", rafCalls.length === 1);
+  check("woken frame actually advances the scene", (() => {
+    const second = rafCalls.shift();
+    second(32);
+    return advanced === 1;
+  })());
+
+  // A scene scrolling back OFF-screen does not force a pointless wake.
+  rafCalls.length = 0;
+  ioCb([{ target: el, isIntersecting: false, intersectionRect: { width: 0, height: 0 } }]);
+  check("going off-screen does not wake an already-sleeping loop", rafCalls.length === 0);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -2,6 +2,37 @@
 
 All notable changes to the Whimlet website are documented here.
 
+## [0.27.1] — 2026-09-23
+
+### Fixed — the 3D studio (and any full-viewport scene) rendered a blank canvas
+
+Reported as "the 3D studio shows nothing" on both phone and desktop, with the
+surrounding panels still working. It was **not** the v0.27.0 strain feature —
+a live A/B against the v0.26.0 build showed *both* blank. The real cause was
+the v0.26.0 **idle rAF shutdown**, which stopped the engine's render loop when
+nothing was on screen to save battery. The studio's 3D renders *only* via that
+loop (`frameloop="never"`), and the loop's wake-on-intersection — promised in
+its own comment — was never actually wired up:
+
+- When the studio canvas mounts, its **first** frame tick runs *before* the
+  browser reports it as on-screen (rAF steps run before intersection-observer
+  steps), so that tick sees `area = 0`, draws nothing, and the idle shutdown
+  sleeps the loop.
+- The IntersectionObserver callback then fires and sets `area > 0`, but it only
+  updated the value — it never restarted the loop. On a static page (no scroll
+  or tab-switch) nothing else ever woke it, so the canvas was **never drawn**.
+
+The fix is one guarded line: the IntersectionObserver callback now calls
+`ensureLoop()` the instant a scene is (re)reported on-screen (or has a pending
+prime frame), which is exactly the wake-up the idle shutdown was designed to
+rely on. It only wakes when there is genuinely a visible scene to render, so
+the off-screen battery saving is fully preserved. A regression test now
+reproduces the exact sequence (loop sleeps on the `area = 0` first tick, then
+the intersection callback must wake it) and **fails** with the fix removed.
+
+- `tsc` clean; **208/208** tests green (5 new engine assertions); Pages export
+  compiles. Verified on-device: the studio 3D renders after a hard refresh.
+
 ## [0.27.0] — 2026-09-23
 
 ### Changed — the Optimization Engine now adapts to real device strain (no website code touched)

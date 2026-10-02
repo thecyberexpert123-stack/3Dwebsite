@@ -87,6 +87,18 @@ scene changes:
    (no new orientation samples and the pointer settled) stops its rAF and
    waits for the next `deviceorientation` event.
 
+   **v0.27.1 — the intersection wake-up is now actually wired.** v0.26.0
+   shipped the idle shutdown but its *intersection* wake was only a comment,
+   never implemented: a full-viewport scene (e.g. the studio, `frameloop=
+   "never"`, so it renders *only* via this loop) mounted on-screen got a first
+   tick with `area = 0` (the IntersectionObserver's initial callback fires
+   after the first rAF tick), drew nothing, slept — and nothing ever re-armed
+   the loop on a static page → a **blank canvas**. The IntersectionObserver
+   callback now calls `ensureLoop()` the instant a root is (re)visible or has
+   a pending prime, so the wake the design always promised is real. A
+   regression test reproduces the sleep→wake sequence and fails if the wake
+   is removed.
+
 `window.__engine.stats()` now also reports `hz` (measured panel rate),
 `intervalMs` (the touch frame cap, 0 = native) and `budgetMs` (the active
 frame-time budget). All the decision math is pure and unit-tested

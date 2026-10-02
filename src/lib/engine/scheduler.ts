@@ -282,6 +282,16 @@ class Scheduler {
             r.area = e.isIntersecting ? Math.max(1e-4, share) : 0;
           }
         }
+        // The loop self-sleeps when nothing is on screen (v0.26.0 idle shutdown),
+        // so an intersection change is ITS wake-up — the one `ensureLoop`'s
+        // comment promises but nothing else wires up. Without it, a canvas that
+        // mounts already on-screen is never drawn: its IO callback fires AFTER
+        // the loop's first rAF tick (rAF steps run before intersection steps),
+        // so the first tick sees `area = 0`, renders nothing, and sleeps — and
+        // nothing else ever restarts it on a static page. Wake only when there
+        // is actually a visible scene or a pending prime to render.
+        const wake = [...this.roots.values()].some((r) => (r.hint === "run" && r.area > 0) || r.prime);
+        if (wake) this.ensureLoop();
       },
       // a little margin so a scene resumes just before it scrolls into view
       { rootMargin: "120px 0px", threshold: [0, 0.05, 0.25, 0.5, 0.75, 1] }

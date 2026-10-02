@@ -1585,3 +1585,28 @@ measured here (SwiftShader ≈ 10 fps, no real device).
   mounted scenes never observe a pressure demotion — the reactive `sync`
   callback would keep re-emitting the measured tier. One-line change, whole
   feature's outcome.
+
+- **Any "idle self-sleep" MUST have its wake-up actually wired — and a unit
+  test that reproduces the dead state.** The v0.26.0 "idle rAF shutdown" made
+  the 3D render loop sleep when nothing was on screen (good for battery) but
+  never wired up the *intersection* wake its own comment claimed. Result: the
+  studio's 3D (`frameloop="never"` — renders ONLY via that loop) went blank on
+  every device, because the canvas's first tick runs *before* the
+  IntersectionObserver's initial callback (rAF steps precede intersection
+  steps), sees `area = 0`, draws nothing, and sleeps — and the IO callback
+  that then reports it visible only set the value, never restarted the loop.
+  On a static page nothing else wakes it → never drawn. The fix: the IO
+  callback calls `ensureLoop()` when a root is (re)visible/primed. Lesson:
+  when you add a "sleep when idle" optimisation, the wake path is half the
+  feature — test it by simulating the dead state (sleep on a not-yet-visible
+  first tick) and asserting the visibility change re-arms the loop. Also: a
+  "works in dev / worked before" claim is not proof a sleep/wake pair is
+  correct on a cold, static page load.
+- **A blank canvas with a fully-working UI is a *frame-loop* problem, not a
+  React crash.** With `frameloop="never"`, the scene is a blank rectangle until
+  the scheduler calls `advance()`. If the UI renders but the 3D doesn't, stop
+  looking at components/materials and check whether `advance` is ever called —
+  i.e. is the loop running, is the root registered, is `area > 0`, does
+  `decide()` mark it `render`? A/B against the previous release's build
+  (identical config, root base path for the preview) is the fastest way to
+  prove which release introduced it.

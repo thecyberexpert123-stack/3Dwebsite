@@ -181,9 +181,4 @@ export function useQuality(): Quality {
   return q;
 }
 
-/** React-state-free `sync` body so the hook stays single-source. */
-function exploreTier(): Quality | undefined {
-  return undefined;
-}
-
 export const QUALITY_PRESETS = PRESETS;
